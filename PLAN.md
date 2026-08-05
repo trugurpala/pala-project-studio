@@ -86,7 +86,7 @@
 - [x] Temiz Windows kullanıcı profilinde kurulu Pala yok, güncel Pala var,
   eski Pala var ve aynı adlı yabancı kayıt var senaryolarını ayır; kullanıcıya
   ait katalog veya ayarı sessizce değiştirme.
-- [ ] Pala'ya ait kurulum envanteri, güncelleme önbelleği ve logları atomik,
+- [x] Pala'ya ait kurulum envanteri, güncelleme önbelleği ve logları atomik,
   sınırlı ve secretsız yaz.
 
 ## M10 — Tek-kapı yönlendirme ve yönetilen araçlar

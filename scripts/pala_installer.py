@@ -22,6 +22,9 @@ PLUGIN_ID = f"{OWNER}@{OWNER}"
 OFFICIAL_REPOSITORY = "https://github.com/trugurpala/pala-project-studio"
 OFFICIAL_AUTHOR = "https://github.com/trugurpala"
 STATE_NAME = "install-state.json"
+UPDATE_CACHE_NAME = "update-cache.json"
+EVENT_LOG_NAME = "installer-events.jsonl"
+MAX_EVENT_LOG_BYTES = 256 * 1024
 REQUIRED_FILES = (
     Path(".agents/plugins/marketplace.json"),
     Path(".codex-plugin/plugin.json"),
@@ -54,6 +57,41 @@ def atomic_write_json(path: Path, payload: dict[str, object]) -> None:
         with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
             json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
             handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, path)
+    except Exception:
+        temp_path.unlink(missing_ok=True)
+        raise
+
+
+def atomic_append_event(path: Path, event: dict[str, object]) -> None:
+    allowed = {
+        "timestamp": now_utc(),
+        "mode": str(event.get("mode", "unknown"))[:32],
+        "status": str(event.get("status", "unknown"))[:64],
+        "changed": bool(event.get("changed", False)),
+        "version": str(event.get("version", ""))[:128],
+    }
+    line = (
+        json.dumps(allowed, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    ).encode("utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    existing = path.read_bytes() if path.is_file() else b""
+    budget = max(0, MAX_EVENT_LOG_BYTES - len(line))
+    if len(existing) > budget:
+        existing = existing[-budget:]
+        newline = existing.find(b"\n")
+        existing = existing[newline + 1 :] if newline >= 0 else b""
+    descriptor, temp_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temp_path = Path(temp_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(existing)
+            handle.write(line)
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temp_path, path)
@@ -448,6 +486,29 @@ def state_path(state_root: Path) -> Path:
     return state_root / STATE_NAME
 
 
+def update_cache_path(state_root: Path) -> Path:
+    return state_root / UPDATE_CACHE_NAME
+
+
+def event_log_path(state_root: Path) -> Path:
+    return state_root / "logs" / EVENT_LOG_NAME
+
+
+def write_update_cache(state_root: Path, version: str) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "schema_version": SCHEMA_VERSION,
+        "owner": OWNER,
+        "source": OFFICIAL_REPOSITORY,
+        "checked_at": now_utc(),
+        "installed_version": version,
+        "latest_known_version": version,
+        "update_available": False,
+        "network_checked": False,
+    }
+    atomic_write_json(update_cache_path(state_root), payload)
+    return payload
+
+
 def owned_state(install_root: Path, state_root: Path) -> dict[str, object] | None:
     payload = read_json(state_path(state_root))
     if payload is None or payload.get("schema_version") != SCHEMA_VERSION:
@@ -599,6 +660,7 @@ def doctor_installation(
         "git": {"ready": bool(git_path), "executable": git_path},
         "codex_cli": {"ready": bool(codex_path), "executable": codex_path},
         "project": project,
+        "update_cache": read_json(update_cache_path(state_root)),
         "state_file": bundle["state_file"],
     }
 
@@ -664,7 +726,11 @@ def install_bundle(
             "install_root": str(install_root),
             "version": source_manifest["version"],
             "fingerprint": installed_fingerprint,
+            "source": OFFICIAL_REPOSITORY,
+            "license": "MIT",
+            "plugin_id": PLUGIN_ID,
             "installed_at": now_utc(),
+            "last_verified_at": now_utc(),
         }
         atomic_write_json(state_path(state_root), payload)
         if moved_previous and backup.exists():
@@ -778,12 +844,23 @@ def install_all(
         status = "migrated"
     else:
         status = "installed"
+    update_cache = None
+    if not dry_run:
+        existing_cache = read_json(update_cache_path(state_root))
+        if changed or existing_cache is None:
+            try:
+                update_cache = write_update_cache(state_root, expected_version)
+            except OSError:
+                update_cache = {"status": "write_failed"}
+        else:
+            update_cache = existing_cache
     return {
         "status": status,
         "changed": changed,
         "version": expected_version,
         "bundle": bundle,
         "codex": codex,
+        "update_cache": update_cache,
     }
 
 
@@ -877,6 +954,8 @@ def uninstall_all(
         status = "uninstalled"
     else:
         status = "absent"
+    if status == "uninstalled" and not dry_run:
+        update_cache_path(state_root).unlink(missing_ok=True)
     return {"status": status, "changed": changed, "bundle": bundle, "codex": codex}
 
 
@@ -926,8 +1005,29 @@ def main() -> int:
                 repair=args.mode == "repair",
             )
     except (OSError, RuntimeError, ValueError) as error:
+        if not args.dry_run:
+            try:
+                atomic_append_event(
+                    event_log_path(args.state_root),
+                    {"mode": args.mode, "status": "failed", "changed": False},
+                )
+            except OSError:
+                pass
         print(json.dumps({"status": "failed", "error": str(error)}, ensure_ascii=False))
         return 1
+    if not args.dry_run and report.get("changed"):
+        try:
+            atomic_append_event(
+                event_log_path(args.state_root),
+                {
+                    "mode": args.mode,
+                    "status": report.get("status"),
+                    "changed": report.get("changed", False),
+                    "version": report.get("version", ""),
+                },
+            )
+        except OSError:
+            pass
     print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
     if report.get("status") in {
         "attention_required",

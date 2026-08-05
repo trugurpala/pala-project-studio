@@ -14,8 +14,6 @@ $OutputEncoding = [Console]::OutputEncoding
 
 $pluginRoot = Split-Path -Path $PSScriptRoot -Parent
 $core = Join-Path $PSScriptRoot "pala_installer.py"
-$logRoot = Join-Path $env:LOCALAPPDATA "Pala\logs"
-$logFile = Join-Path $logRoot "install-pala.log"
 
 function Resolve-PalaPython {
     $launcher = Get-Command py -ErrorAction SilentlyContinue
@@ -23,19 +21,6 @@ function Resolve-PalaPython {
     $python = Get-Command python -ErrorAction SilentlyContinue
     if ($python) { return @($python.Source) }
     throw "Python bulunamadi. Pala icin Python 3.10 veya ustu gereklidir."
-}
-
-function Write-PalaLog([string]$Text) {
-    if (-not (Test-Path -LiteralPath $logRoot)) {
-        New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
-    }
-    if ((Test-Path -LiteralPath $logFile) -and
-        (Get-Item -LiteralPath $logFile).Length -gt 1MB) {
-        $archive = Join-Path $logRoot "install-pala.previous.log"
-        Move-Item -LiteralPath $logFile -Destination $archive -Force
-    }
-    $safe = $Text -replace '(?i)(token|password|secret|api[_-]?key)\s*[:=]\s*\S+', '$1=[redacted]'
-    Add-Content -LiteralPath $logFile -Value ("{0:u} [{1}] {2}" -f (Get-Date), $Mode, $safe)
 }
 
 function Show-PalaResult([pscustomobject]$Payload) {
@@ -89,15 +74,11 @@ $exitCode = $LASTEXITCODE
 try {
     $payload = $raw | ConvertFrom-Json
 } catch {
-    Write-PalaLog "Kurulum cekirdegi gecersiz cikti uretti."
     Write-Error "Pala kurulum sonucu okunamadi."
     exit 1
 }
 
 Show-PalaResult $payload
-if (-not $WhatIfPreference) {
-    Write-PalaLog ("status={0}; changed={1}" -f $payload.status, $payload.changed)
-}
 if ($exitCode -ne 0) { exit $exitCode }
 
 if ($Mode -in @("Install", "Update", "Repair") -and -not $WhatIfPreference) {
@@ -108,7 +89,6 @@ if ($Mode -in @("Install", "Update", "Repair") -and -not $WhatIfPreference) {
     $doctorExit = $LASTEXITCODE
     $doctor = $doctorRaw | ConvertFrom-Json
     Show-PalaResult $doctor
-    Write-PalaLog ("doctor_healthy={0}; plugin={1}" -f $doctor.healthy, $doctor.plugin.status)
     if ($doctorExit -ne 0) { exit $doctorExit }
     Write-Host "[Pala] Yeni skill ve hook'larin yuklenmesi icin yeni bir Codex sohbeti acin."
 }

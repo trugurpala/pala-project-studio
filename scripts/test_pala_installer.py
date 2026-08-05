@@ -96,6 +96,104 @@ class InstallerCoreTests(unittest.TestCase):
                 self.assertEqual(
                     self.installer.tree_fingerprint(install_root), fingerprint
                 )
+            state = json.loads(
+                (state_root / "install-state.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(state["source"], self.installer.OFFICIAL_REPOSITORY)
+            self.assertEqual(state["license"], "MIT")
+            self.assertEqual(state["plugin_id"], self.installer.PLUGIN_ID)
+
+    def test_atomic_event_log_is_bounded_and_drops_unapproved_fields(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            path = Path(temp) / "logs" / "events.jsonl"
+            path.parent.mkdir(parents=True)
+            seed = b'{"mode":"install","status":"ready"}\n'
+            path.write_bytes(
+                seed * (self.installer.MAX_EVENT_LOG_BYTES // len(seed) + 100)
+            )
+            self.installer.atomic_append_event(
+                path,
+                {
+                    "mode": "install",
+                    "status": "ready",
+                    "changed": True,
+                    "version": "0.4.0+codex.test",
+                    "token": "must-never-appear",
+                    "password": "must-never-appear",
+                },
+            )
+
+            content = path.read_text(encoding="utf-8")
+            self.assertLessEqual(path.stat().st_size, self.installer.MAX_EVENT_LOG_BYTES)
+            self.assertNotIn("must-never-appear", content)
+            self.assertNotIn("token", content)
+            self.assertNotIn("password", content)
+            self.assertFalse(list(path.parent.glob("*.tmp")))
+
+    def test_update_cache_is_atomic_and_contains_no_remote_claim(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            state_root = Path(temp) / "Pala"
+
+            payload = self.installer.write_update_cache(
+                state_root, "0.4.0+codex.test"
+            )
+            stored = json.loads(
+                (state_root / "update-cache.json").read_text(encoding="utf-8")
+            )
+
+            self.assertEqual(stored, payload)
+            self.assertFalse(stored["network_checked"])
+            self.assertFalse(stored["update_available"])
+            self.assertFalse(list(state_root.glob("*.tmp")))
+
+    def test_second_full_install_produces_no_managed_file_changes(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root)
+            install_root = root / "local" / "Pala" / "marketplace"
+            state_root = root / "local" / "Pala"
+            marketplaces: list[dict[str, object]] = []
+            installed: list[dict[str, object]] = []
+
+            def invoke(arguments: list[str]) -> dict[str, object]:
+                command = tuple(arguments)
+                if command == ("plugin", "marketplace", "list", "--json"):
+                    return {"marketplaces": list(marketplaces)}
+                if command == ("plugin", "list", "--json"):
+                    return {"installed": list(installed), "available": []}
+                if command[:3] == ("plugin", "marketplace", "add"):
+                    marketplaces.append(
+                        {"name": "pala-project-studio", "root": str(install_root)}
+                    )
+                    return {"marketplaceName": "pala-project-studio"}
+                if command == ("plugin", "add", self.installer.PLUGIN_ID, "--json"):
+                    installed.append(
+                        {
+                            "pluginId": self.installer.PLUGIN_ID,
+                            "name": "pala-project-studio",
+                            "marketplaceName": "pala-project-studio",
+                            "version": "0.4.0+codex.test",
+                            "installed": True,
+                            "enabled": True,
+                        }
+                    )
+                    return {"pluginId": self.installer.PLUGIN_ID}
+                raise AssertionError(f"unexpected Codex command: {command}")
+
+            first = self.installer.install_all(
+                source, install_root, state_root, invoke=invoke
+            )
+            first_fingerprint = self.installer.tree_fingerprint(state_root)
+            second = self.installer.install_all(
+                source, install_root, state_root, invoke=invoke
+            )
+
+            self.assertEqual(first["status"], "installed")
+            self.assertEqual(second["status"], "ready")
+            self.assertFalse(second["changed"])
+            self.assertEqual(
+                self.installer.tree_fingerprint(state_root), first_fingerprint
+            )
 
     def test_existing_unowned_installation_is_never_overwritten(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:

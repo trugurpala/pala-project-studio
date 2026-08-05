@@ -1,8 +1,8 @@
 # Pala Project Studio Durumu
 
-- Aktif milestone: M9 — İdempotent tek komut Windows kurulumu (`in_progress`)
+- Aktif milestone: M9 — İdempotent tek komut Windows kurulumu (`completed`)
 - Aktif ticket: PALA-041 — Global dağıtıma uygun, atomik ve idempotent Windows
-  kurucu çekirdeği uygulanıyor.
+  kurucu çekirdeği tamamlandı.
 - Son tamamlanan sonuç: 0.3.3 kaynak ve GitHub release artifact'ı `742fb86`
   üzerinde doğrulandı. Yerel `python scripts/verify.py` 54 testi ve tekrarlanabilir
   portable SHA-256 kapısını geçti.
@@ -12,8 +12,8 @@
 - Ortam önkoşulu: Kurucu temiz Windows kullanıcı profillerinde çalışacak;
   geliştirici bilgisayarının donanımına, mutlak yollarına veya önceden kurulmuş
   yardımcı araçlarına güvenmeyecek.
-- Doğrulama: kaynak ve portable içinden `python scripts/verify.py` — 76 test
-  passed; güncel ara `reproducible_zip_sha256=DC62D04ECE4BC2DA30B08CCFEDFF89E073E4CFFC32CBA1CACFCB1D2AD8933FD0`.
+- Doğrulama: kaynak ve portable içinden `python scripts/verify.py` — 79 test
+  passed; güncel ara `reproducible_zip_sha256=8EAFBC06737DC632CF0992804277055D28B54DDEEB43829ED5D10B435A725BBB`.
   Bu SHA yalnız PALA-041 ara paketi içindir; 0.4 release kanıtı değildir.
   Son yayımlanmış 0.3.3 için GitHub Actions `31021033644` Windows ve Ubuntu'da
   başarılıydı.
@@ -29,8 +29,11 @@
   düzeltildi. Eski resmî Pala gerçek Codex CLI ile kaynak hash'i değişmeden
   global kimliğe taşındı. Yabancı aynı adlı eklenti sıfır yazmayla korundu.
   Codex CLI güncelleme hata enjeksiyonunda önceki bundle ve atomik durum kaydı
-  geri yüklendi.
+  geri yüklendi. Kurulum envanteri kaynak/sürüm/SHA/lisans/sahiplik bilgisiyle,
+  güncelleme önbelleği atomik JSON olarak ve olay logu yalnız izinli alanlarla
+  en fazla 256 KB olacak biçimde doğrulandı. İdempotent Update + Doctor
+  Pala-managed fingerprint'i değiştirmedi.
 - Engel: Yok.
-- Tek sonraki iş: Kurulum envanteri, güncelleme önbelleği ve log sınırlarını
-  tamamla; PALA-041'in kalan kapısını kapatıp milestone checkpoint'i üret.
+- Tek sonraki iş: PALA-042 kapsamında örtük tek-kapı yönlendirmesini ve oturum
+  güncellik kontrolünü araç kurulumlarından ayrı, test-first uygula.
 - Güncelleme: 2026-08-05
