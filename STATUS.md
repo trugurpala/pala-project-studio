@@ -40,3 +40,6 @@
 - Tek sonraki iş: PALA-043 CLI lifecycle sözleşmesini gerçek çağrı testleriyle
   tamamla, ardından adapter sözleşmesi ve RTK ayrı ticket'ına geç.
 - Güncelleme: 2026-08-05
+- 0.4 teslim hazırlığı: session-safe state, adapter sözleşmeleri, fail-closed
+  RTK hook'u, graph eşiği ve GitHub routing private release dalında birleşti.
+  Repo görünürlüğü değiştirilmeden private PR/CI/release kanıtı bekleniyor.

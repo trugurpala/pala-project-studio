@@ -71,7 +71,7 @@ class UserExperienceContractTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        self.assertTrue(manifest["version"].startswith("0.3.3+codex."))
+        self.assertTrue(manifest["version"].startswith("0.4.0+codex."))
         self.assertEqual(
             manifest["repository"],
             "https://github.com/trugurpala/pala-project-studio",
