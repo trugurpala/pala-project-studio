@@ -207,6 +207,7 @@ class UserExperienceContractTests(unittest.TestCase):
             status_messages,
             [
                 "Proje durumu yükleniyor",
+                "Güvenli komut optimizasyonu kontrol ediliyor",
                 "Çalışma bağlamı kaydediliyor",
                 "Oturum sahipliği kapatılıyor",
                 "İlerleme kaydı kontrol ediliyor",

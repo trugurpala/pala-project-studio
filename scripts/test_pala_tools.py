@@ -53,6 +53,19 @@ pala_hook = load_module("pala_hook", "pala_hook.py")
 
 
 class PalaStateTests(unittest.TestCase):
+    def test_rtk_rewrites_only_simple_read_only_commands(self) -> None:
+        rtk = load_module("pala_rtk", "pala_rtk.py")
+        with tempfile.TemporaryDirectory() as temp:
+            binary = Path(temp) / "rtk.exe"
+            binary.write_text("", encoding="utf-8")
+            original = {"command": "git status", "timeout_ms": 10, "cwd": "C:/project"}
+            result = rtk.rewrite("git status", original, binary)
+
+            self.assertEqual(result["timeout_ms"], 10)
+            self.assertEqual(result["cwd"], "C:/project")
+            self.assertIn("RTK_TELEMETRY_DISABLED", result["env"])
+            for unsafe in ("git commit -m x", "rg x | sort", "grep password .", "npm install"):
+                self.assertIsNone(rtk.rewrite(unsafe, original, binary))
     def test_openspec_adapter_is_read_only_for_present_and_absent_projects(self) -> None:
         adapter = load_module("pala_openspec", "pala_openspec.py").OpenSpecAdapter()
         with tempfile.TemporaryDirectory() as temp:
@@ -732,6 +745,22 @@ class PalaStateTests(unittest.TestCase):
 
 
 class PalaHookTests(unittest.TestCase):
+    def test_rtk_hook_emits_no_rewrite_without_managed_binary(self) -> None:
+        hook = load_module("pala_rtk_hook", "pala_rtk_hook.py")
+        event = json.dumps({"tool_name": "shell_command", "tool_input": {"command": "git status"}})
+        output = io.StringIO()
+        with (
+            patch("sys.stdin", io.StringIO(event)),
+            patch("sys.stdout", output),
+            patch.object(hook, "managed_rtk", return_value=Path("missing-rtk.exe")),
+        ):
+            self.assertEqual(hook.main(), 0)
+        self.assertEqual(json.loads(output.getvalue()), {})
+
+    def test_hook_manifest_registers_rtk_only_for_shell_commands(self) -> None:
+        hooks = json.loads((SCRIPT_DIR.parent / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+        self.assertEqual(hooks["hooks"]["PreToolUse"][0]["matcher"], "shell_command")
+
     def test_hook_manifest_registers_session_end(self) -> None:
         hooks = json.loads((SCRIPT_DIR.parent / "hooks" / "hooks.json").read_text(encoding="utf-8"))
         self.assertIn("SessionEnd", hooks["hooks"])
