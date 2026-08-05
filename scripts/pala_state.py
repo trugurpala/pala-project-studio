@@ -128,7 +128,35 @@ def git_root(cwd: Path) -> Path:
 
 
 def relative(root: Path, path: Path) -> str:
-    return path.resolve().relative_to(root).as_posix()
+    root_path = root.resolve()
+    try:
+        return path.resolve().relative_to(root_path).as_posix()
+    except ValueError:
+        if os.name != "nt":
+            raise
+        root_parts = tuple(part.casefold() for part in root_path.parts)
+        path_parts = tuple(part.casefold() for part in path.resolve().parts)
+
+        def _segment_matches(left: str, right: str) -> bool:
+            if left == right:
+                return True
+            left_short, right_short = left.casefold(), right.casefold()
+            if "~" in left_short:
+                return right_short.startswith(left_short.split("~", 1)[0])
+            if "~" in right_short:
+                return left_short.startswith(right_short.split("~", 1)[0])
+            return False
+
+        if (
+            len(path_parts) >= len(root_parts)
+            and all(
+                _segment_matches(left, right)
+                for left, right in zip(root_parts, path_parts[: len(root_parts)])
+            )
+            and root_path.exists()
+        ):
+            return "/".join(path_parts[len(root_parts) :])
+        raise
 
 
 def instruction_report(
