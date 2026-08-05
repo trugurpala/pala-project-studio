@@ -482,10 +482,17 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertEqual(second["status"], "ready")
             self.assertFalse(second["changed"])
             self.assertEqual(len(calls) - calls_after_first, 2)
-            self.assertIn(
-                ("plugin", "marketplace", "add", str(install_root), "--json"),
-                calls,
+            marketplace_calls = [
+                command
+                for command in calls
+                if command[:3] == ("plugin", "marketplace", "add")
+            ]
+            self.assertEqual(len(marketplace_calls), 1)
+            self.assertEqual(
+                self.installer.comparable_path(marketplace_calls[0][3]),
+                self.installer.comparable_path(str(install_root)),
             )
+            self.assertEqual(marketplace_calls[0][4], "--json")
             self.assertIn(
                 (
                     "plugin",
