@@ -25,3 +25,16 @@ depolarında geçerlidir.
 
 Pala bu projenin kaynak kodunu içermez. Kurulum ve güncelleme yaşam döngüsü
 `code-review-graph` projesine aittir.
+
+PALA-045 yönetilen uzman adayları (kaynak kodları Pala paketine dahil edilmez):
+
+- Graphify `0.9.33` — Apache-2.0, https://github.com/Graphify-Labs/graphify
+- Serena `1.6.1` — MIT, https://github.com/oraios/serena
+- codebase-memory-mcp `0.9.0` — MIT,
+  https://github.com/DeusData/codebase-memory-mcp
+- Ollama `0.32.6` — MIT, https://github.com/ollama/ollama
+- Qwen3 4B Instruct — Apache-2.0, https://ollama.com/library/qwen3:4b-instruct
+
+Pala bunları yalnız kendi sabit sürüm/bütünlük kaydı üzerinden ve proje dışı
+izole veri alanında çalıştıracaktır; kendi Codex kurucuları, hook'ları, daemon
+veya kullanıcıya ait model alanları Pala tarafından çağrılmaz.

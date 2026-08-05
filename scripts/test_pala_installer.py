@@ -106,6 +106,11 @@ class InstallerCoreTests(unittest.TestCase):
 
         self.assertEqual(lock["rtk"]["version"], "0.44.2")
         self.assertEqual(lock["code-review-graph"]["version"], "2.3.7")
+        self.assertEqual(lock["graphify"]["version"], "0.9.33")
+        self.assertEqual(lock["serena"]["version"], "1.6.1")
+        self.assertEqual(lock["codebase-memory"]["version"], "0.9.0")
+        self.assertEqual(lock["ollama"]["version"], "0.32.6")
+        self.assertEqual(lock["qwen3-4b-instruct"]["integrity"], "ollama:0edcdef34593")
         self.assertEqual(lock["context7"]["version"], "3.2.5")
         self.assertEqual(lock["playwright-mcp"]["version"], "0.0.78")
         with self.assertRaises(ValueError):
