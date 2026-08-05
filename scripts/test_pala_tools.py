@@ -692,6 +692,36 @@ class PalaHookTests(unittest.TestCase):
         self.assertNotIn("docs/PRODUCT_DECISIONS.md", message)
         self.assertNotIn("docs/OPEN_SOURCE.md", message)
 
+    def test_session_context_reports_only_local_health(self) -> None:
+        result = pala_hook.session_context(
+            {"project": "PROJECT.md", "status": "STATUS.md"},
+            {"schema_version": 2, "active_ticket": "PALA-042", "dirty": True},
+            compacted=False,
+            project_kind="existing",
+            health={"plugin": "loaded", "python": "ready", "git": "ready", "hook": "running"},
+            reconciliation={"needed": False, "reasons": []},
+        )
+        message = result["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("Pala local health: plugin=loaded; python=ready; git=ready; hook=running.", message)
+        self.assertLessEqual(len(message), 800)
+
+    def test_new_workflow_does_not_require_reconciliation_before_first_checkpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            report = pala_state.reconciliation_report(
+                root,
+                {"documents": {}},
+                {
+                    "schema_version": 2,
+                    "active_ticket": "PALA-042",
+                    "dirty": True,
+                    "needs_reconcile": False,
+                    "checkpoint_basis": None,
+                },
+            )
+        self.assertFalse(report["needed"])
+        self.assertEqual(report["reasons"], [])
+
     def test_begin_rejects_dirty_workflow(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import importlib.util
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -88,6 +89,16 @@ def save_workflow(root: Path, payload: dict[str, object]) -> None:
     )
 
 
+def local_health(root: Path) -> dict[str, str]:
+    """Return only fast, local lifecycle facts for the startup context."""
+    return {
+        "plugin": "loaded",
+        "python": "ready" if Path(sys.executable).is_file() else "unknown",
+        "git": "ready" if shutil.which("git") and root.is_dir() else "unknown",
+        "hook": "running",
+    }
+
+
 def session_context(
     documents: dict[str, object],
     workflow: dict[str, object] | None,
@@ -95,6 +106,7 @@ def session_context(
     project_kind: object = None,
     profiles: object = None,
     reconciliation: dict[str, object] | None = None,
+    health: dict[str, str] | None = None,
 ) -> dict[str, object]:
     status = documents.get("status")
     plan = documents.get("plan")
@@ -108,8 +120,16 @@ def session_context(
     needs_reconcile = bool(reconciliation and reconciliation.get("needed"))
     reason_count = len(reconciliation.get("reasons", [])) if reconciliation else 0
     kind = project_kind if isinstance(project_kind, str) else "unknown"
+    health = health or {}
+    health_text = (
+        "Pala local health: "
+        f"plugin={health.get('plugin', 'loaded')}; "
+        f"python={health.get('python', 'unknown')}; "
+        f"git={health.get('git', 'unknown')}; "
+        f"hook={health.get('hook', 'running')}. "
+    )
     message = (
-        f"{prefix}Pala project kind={kind}. Read status first: status={status or project}; "
+        f"{prefix}{health_text}Pala project kind={kind}. Read status first: status={status or project}; "
         f"inspect only the active ticket section in plan={plan}. active={active or 'none'}; "
         f"next={next_action or 'reconcile first'}; dirty={str(dirty).lower()}; "
         f"blockers={blocker_count}; reconcile={str(needs_reconcile).lower()}"
@@ -162,6 +182,7 @@ def main() -> int:
                 payload.get("project_kind"),
                 payload.get("profiles"),
                 reconciliation,
+                local_health(root),
             )
         )
         return 0

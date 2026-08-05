@@ -27,7 +27,7 @@ güvenilir kılar.
 ## ADR-006 — Örtük Pala seçimi sınırlı kapsamda açılır
 
 Pala skill'i yazılım projesini denetleme, planlama, kurtarma, uygulama,
-çalıştırma ve tamamlama isteklerinde örtük seçilebilir olacaktır. Açıklama
+çalıştırma ve tamamlama isteklerinde örtük seçilebilir. Açıklama
 genel sohbeti veya yazılım dışı işleri kapsamamalıdır. Açık `$pala...` çağrısı
 her zaman desteklenir. Yeni plugin kurulumu veya güncellemesi mevcut sohbetin
 yüklenmiş becerilerini geriye dönük değiştirdiği varsayılmaz; kurucu doctor

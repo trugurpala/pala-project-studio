@@ -104,7 +104,7 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertEqual(entry["policy"]["authentication"], "ON_INSTALL")
         self.assertEqual(entry["category"], "Developer Tools")
 
-    def test_skill_metadata_uses_consistent_brand_and_explicit_invocation(self) -> None:
+    def test_skill_metadata_uses_consistent_brand_and_narrow_implicit_invocation(self) -> None:
         metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(
             encoding="utf-8"
         )
@@ -113,7 +113,10 @@ class UserExperienceContractTests(unittest.TestCase):
             'short_description: "Projeyi anlar, tamamlar ve doğrular"', metadata
         )
         self.assertIn("$pala-project-studio:pala-project-finisher", metadata)
-        self.assertIn("allow_implicit_invocation: false", metadata)
+        self.assertIn("allow_implicit_invocation: true", metadata)
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("software project", skill)
+        self.assertIn("ordinary chat", skill)
 
     def test_orchestrator_is_concise_and_declares_human_contract(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
@@ -223,6 +226,11 @@ class UserExperienceContractTests(unittest.TestCase):
 
     def test_single_command_verifier_exists(self) -> None:
         self.assertTrue((PLUGIN_ROOT / "scripts" / "verify.py").is_file())
+
+    def test_portable_package_includes_bounded_update_checker(self) -> None:
+        packager = load_packager()
+        files = packager.source_files(PLUGIN_ROOT)
+        self.assertIn(PLUGIN_ROOT / "scripts" / "pala_update.py", files)
 
     def test_windows_single_entry_delegates_to_atomic_installer_core(self) -> None:
         entry = (PLUGIN_ROOT / "Install-Pala.ps1").read_text(encoding="utf-8")

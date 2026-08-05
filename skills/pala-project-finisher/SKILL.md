@@ -1,6 +1,6 @@
 ---
 name: pala-project-finisher
-description: Use when the user explicitly invokes Pala Project Studio or Pala Project Finisher to audit, plan, rescue, implement, verify, run, continue, or finish a software project across Codex sessions.
+description: Use for a software project when the user asks to inspect, plan, rescue, implement, verify, run, continue, or finish it across Codex sessions. Do not use for ordinary chat or unrelated work.
 ---
 
 # Pala Project Finisher
@@ -40,6 +40,9 @@ external-action decisions; keep internal state terms out of user updates.
    only the active ticket section of the plan. Do not re-plan completed scope.
    Reconcile stale state, then run `begin` before the first edit. A ticket is
    one coherent, independently verifiable outcome, not each checkbox.
+Before the first implementation action, run `../../scripts/pala_update.py check`.
+It uses a 24-hour cache; report current/update/unavailable concisely.
+Never run it from a hook; unavailable checks never block work.
 4. Make reversible assumptions and continue safe in-scope local work. Stop only
    for a real material decision, unavailable external dependency, or unsafe
    boundary.

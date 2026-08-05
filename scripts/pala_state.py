@@ -673,7 +673,15 @@ def reconciliation_report(
 ) -> dict[str, object]:
     reasons: list[str] = []
     basis = workflow.get("checkpoint_basis")
-    if workflow.get("schema_version") != WORKFLOW_SCHEMA_VERSION or not isinstance(
+    fresh_active_ticket = (
+        workflow.get("schema_version") == WORKFLOW_SCHEMA_VERSION
+        and workflow.get("dirty") is True
+        and workflow.get("needs_reconcile") is False
+        and basis is None
+    )
+    if fresh_active_ticket:
+        pass
+    elif workflow.get("schema_version") != WORKFLOW_SCHEMA_VERSION or not isinstance(
         basis, dict
     ):
         reasons.append("legacy workflow has no checkpoint basis")

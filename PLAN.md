@@ -91,10 +91,10 @@
 
 ## M10 — Tek-kapı yönlendirme ve yönetilen araçlar
 
-- [ ] PALA-042: Pala skill'ini normal yazılım geliştirme, denetleme, kurtarma,
+- [x] PALA-042: Pala skill'ini normal yazılım geliştirme, denetleme, kurtarma,
   çalıştırma ve tamamlama isteklerinde örtük seçilebilir yap; salt sohbet ve
   ilgisiz görevlerde tetiklenmesini önle.
-- [ ] Her SessionStart'ta ağsız yerel sağlık/güncellik özeti yükle; Pala'nın ilk
+- [x] Her SessionStart'ta ağsız yerel sağlık/güncellik özeti yükle; Pala'nın ilk
   ilgili adımında 24 saatlik önbellekle uzak sürüm kontrolü yap.
 - [ ] RTK'yı Pala'nın sahip olduğu klasöre sabitlenmiş release + SHA-256 ile
   kur ve yalnız güvenli allowlist komutlarında çalışan Codex-native rewrite
