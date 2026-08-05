@@ -1,6 +1,6 @@
 ---
 name: pala-project-finisher
-description: Use for a software project when the user asks to inspect, plan, rescue, implement, verify, run, continue, or finish it across Codex sessions. Do not use for ordinary chat or unrelated work.
+description: "Use for end-to-end software projects across Codex sessions: inspect, plan, rescue, implement, verify, run, continue, or finish. Do not use for ordinary chat or when another specialist skill/plugin is explicitly invoked without Pala."
 ---
 
 # Pala Project Finisher

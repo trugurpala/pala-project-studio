@@ -117,6 +117,8 @@ class UserExperienceContractTests(unittest.TestCase):
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("software project", skill)
         self.assertIn("ordinary chat", skill)
+        self.assertIn("another specialist skill/plugin", skill)
+        self.assertIn("explicitly invoked without Pala", skill)
 
     def test_orchestrator_is_concise_and_declares_human_contract(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
