@@ -26,6 +26,47 @@ function Resolve-PalaPython {
     throw "Python bulunamadi. Pala icin Python 3.10 veya ustu gereklidir."
 }
 
+function Extract-PalaJson([string]$Text) {
+    $start = $Text.IndexOf("{")
+    if ($start -lt 0) { return $null }
+    $depth = 0
+    $inString = $false
+    $escaped = $false
+    for ($index = $start; $index -lt $Text.Length; $index++) {
+        $char = $Text[$index]
+        if ($escaped) {
+            $escaped = $false
+            continue
+        }
+        if ($inString) {
+            if ($char -eq '\') { $escaped = $true }
+            elseif ($char -eq '"') { $inString = $false }
+            continue
+        }
+        switch ($char) {
+            '"' { $inString = $true }
+            '{' { $depth += 1 }
+            '}' {
+                $depth -= 1
+                if ($depth -eq 0) {
+                    return $Text.Substring($start, $index - $start + 1)
+                }
+            }
+        }
+    }
+    return $null
+}
+
+function Parse-PalaJson([string]$RawText) {
+    $payloadText = Extract-PalaJson $RawText
+    if ($null -eq $payloadText) { throw "Pala JSON yükü bulunamadi." }
+    try {
+        return $payloadText | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        throw "Pala JSON yükü ayrıştırılamadi."
+    }
+}
+
 function Show-PalaResult([pscustomobject]$Payload) {
     if ($null -ne $Payload.healthy -and $null -ne $Payload.codex -and $null -ne $Payload.plugin) {
         $pluginStatus = $Payload.plugin.status
@@ -71,7 +112,7 @@ function Invoke-PalaExperts([string]$Action) {
     $expertRaw = (& $executable @expertArgs 2>&1 | Out-String).Trim()
     $expertExit = $LASTEXITCODE
     try {
-        $expertPayload = $expertRaw | ConvertFrom-Json
+        $expertPayload = Parse-PalaJson $expertRaw
     } catch {
         throw "Pala uzman isci sonucu okunamadi."
     }
@@ -115,7 +156,7 @@ Write-Host "[Pala] Islem: $Mode"
 $raw = (& $executable @arguments 2>&1 | Out-String).Trim()
 $exitCode = $LASTEXITCODE
 try {
-    $payload = $raw | ConvertFrom-Json
+    $payload = Parse-PalaJson $raw
 } catch {
     Write-Error "Pala kurulum sonucu okunamadi."
     exit 1
@@ -133,7 +174,12 @@ if ($Mode -in @("Install", "Update", "Repair")) {
     $doctorArgs += @($core, "doctor", "--source", $pluginRoot, "--project-root", (Get-Location).Path)
     $doctorRaw = (& $executable @doctorArgs 2>&1 | Out-String).Trim()
     $doctorExit = $LASTEXITCODE
-    $doctor = $doctorRaw | ConvertFrom-Json
+    try {
+        $doctor = Parse-PalaJson $doctorRaw
+    } catch {
+        Write-Error "Pala doktor sonucu okunamadi."
+        exit 1
+    }
     Show-PalaResult $doctor
     if ($doctorExit -ne 0) { exit $doctorExit }
     Invoke-PalaExperts "doctor"
