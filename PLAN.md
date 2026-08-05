@@ -163,5 +163,5 @@
   PowerShell dil sunucularını sabitle.
 - [x] codebase-memory'yi yalnız tek-atımlık CLI ve `CBM_ALLOWED_ROOT` sınırıyla
   çalıştır; UI, daemon, watcher ve hook kurma.
-- [ ] Standart kurulumda Pala sahipliğinde Ollama + Qwen3 4B hazırla; kullanıcı
+- [x] Standart kurulumda Pala sahipliğinde Ollama + Qwen3 4B hazırla; kullanıcı
   Ollama/model alanını değiştirme ve bütün dosyaları hash ile doğrula.

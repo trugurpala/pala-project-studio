@@ -1,6 +1,6 @@
 # Pala Project Studio Durumu
 
-- Aktif milestone: M14 — Pala güvenli uzman işçileri (`in progress`)
+- Aktif milestone: M14 — Pala güvenli uzman işçileri (`completed locally`)
 - Aktif ticket: PALA-045 — Pala tek otoriteyken Graphify, Serena ve
   codebase-memory'yi izole, kanıt döndüren uzman işçilere bağlama.
 - Son tamamlanan sonuç: Pala normal yazılım projesi isteklerinde örtük
@@ -38,8 +38,8 @@
   Pala-managed fingerprint'i değiştirmedi.
 - Engel: Yok. PALA-043 yerel workflow kaydı ana çalışma alanında eski kalmıştı;
   izole PALA-045 worktree'sinde yeni state ile uzlaştırıldı.
-- Tek sonraki iş: Standart kurulumun Pala-owned Ollama sürecini başlatıp Qwen3
-  modelini de aynı doğrulama zincirinde idempotent kurmasını tamamla.
+- Tek sonraki iş: Değişiklikleri GitHub'a push et, draft PR aç ve CI kanıtını
+  kaydet.
 - PALA-045 yerel kanıtı: Pala-owned Graphify, Serena, codebase-memory ve
   Ollama artifact'ları SHA-256 ile doğrulandı. Graphify `--code-only` smoke
   çalışması Pala veri kökünde 451 düğüm/909 kenar üretti; codebase-memory

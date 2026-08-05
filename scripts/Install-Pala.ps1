@@ -79,6 +79,27 @@ function Invoke-PalaExperts([string]$Action) {
     if ($expertExit -ne 0) { exit $expertExit }
 }
 
+function Invoke-PalaLocalModel {
+    $ollama = Join-Path $palaStateRoot "experts\ollama\0.32.6\expanded\ollama.exe"
+    if (-not (Test-Path -LiteralPath $ollama -PathType Leaf)) {
+        throw "Pala'ya ait Ollama ikilisi bulunamadi."
+    }
+    $env:OLLAMA_HOST = "127.0.0.1:11435"
+    $env:OLLAMA_MODELS = Join-Path $palaStateRoot "experts\ollama\0.32.6\models"
+    $env:OLLAMA_KEEP_ALIVE = "0"
+    $list = (& $ollama list 2>&1 | Out-String)
+    if ($LASTEXITCODE -ne 0) {
+        Start-Process -FilePath $ollama -ArgumentList "serve" -WindowStyle Hidden | Out-Null
+        Start-Sleep -Seconds 2
+        $list = (& $ollama list 2>&1 | Out-String)
+    }
+    if ($LASTEXITCODE -ne 0) { throw "Pala Ollama loopback sunucusu baslatilamadi." }
+    if ($list -notmatch "qwen3:4b-instruct\s+0edcdef34593") {
+        & $ollama pull "qwen3:4b-instruct"
+        if ($LASTEXITCODE -ne 0) { throw "Pala Qwen3 modeli indirilemedi." }
+    }
+}
+
 if (-not (Test-Path -LiteralPath $core -PathType Leaf)) {
     throw "Pala kurulum cekirdegi bulunamadi: $core"
 }
@@ -106,6 +127,7 @@ if ($exitCode -ne 0) { exit $exitCode }
 if ($Mode -in @("Install", "Update", "Repair")) {
     Invoke-PalaExperts "install"
     if (-not $WhatIfPreference) {
+    Invoke-PalaLocalModel
     $doctorArgs = @()
     if ($pythonCommand.Count -gt 1) { $doctorArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
     $doctorArgs += @($core, "doctor", "--source", $pluginRoot, "--project-root", (Get-Location).Path)
