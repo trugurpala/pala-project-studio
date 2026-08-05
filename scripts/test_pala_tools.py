@@ -28,6 +28,7 @@ REQUIRED_PROFILES = (
 )
 NEW_REQUIRED_REFERENCES = (
     "github-persistence.md",
+    "owner-demo-handoff.md",
     "token-efficient-context.md",
 )
 
@@ -58,6 +59,9 @@ class PalaStateTests(unittest.TestCase):
             (root / "reports" / "CURRENT_STATUS.md").write_text(
                 "# Status\n", encoding="utf-8"
             )
+            (root / "reports" / "OWNER_DEMO.md").write_text(
+                "# Owner demo\n", encoding="utf-8"
+            )
             (root / "docs" / "PRODUCT_DECISIONS.md").write_text(
                 "# Decisions\n", encoding="utf-8"
             )
@@ -83,6 +87,9 @@ class PalaStateTests(unittest.TestCase):
             )
             self.assertEqual(
                 result["documents"]["open_source"], "docs/OPEN_SOURCE.md"
+            )
+            self.assertEqual(
+                result["documents"]["demo"], "reports/OWNER_DEMO.md"
             )
             self.assertIn("backend-engineering", result["profiles"])
 
@@ -114,6 +121,7 @@ class PalaStateTests(unittest.TestCase):
                 status=None,
                 decisions=None,
                 open_source=None,
+                demo=None,
             )
             self.assertEqual(pala_state.register(args, root), 0)
             self.assertEqual(pala_state.validate(root), 0)

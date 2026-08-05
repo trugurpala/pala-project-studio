@@ -10,6 +10,7 @@ Prefer existing documents and register their real paths:
 | Status | `STATUS.md`, `PROGRESS.md`, `reports/CURRENT_STATUS.md` | `docs/codex/STATUS.md` |
 | Decisions | `DECISIONS.md`, `docs/PRODUCT_DECISIONS.md`, `docs/adr/` | `docs/codex/DECISIONS.md` |
 | Open source | `OPEN_SOURCE.md`, `docs/OPEN_SOURCE.md`, notices | `docs/codex/OPEN_SOURCE.md` |
+| Owner demo | `reports/OWNER_DEMO.md`, `DEMO.md` | `reports/OWNER_DEMO.md` |
 
 The product document owns users, outcome, scope, non-goals, architecture,
 trust boundaries, and definition of done. The plan owns ordered milestones and

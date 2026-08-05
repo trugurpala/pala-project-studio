@@ -48,5 +48,7 @@ Kullanıcı, AZR Reklam gibi çok fazlı bir projeyi her oturumda yeniden anlatm
 - SessionStart bağlamı kısa, secretsız ve aktif ticket odaklıdır.
 - Doğrulama katmanları dar/ticket/milestone/release olarak nettir.
 - Ölçülmemiş performans iddiası sözleşme testiyle engellenir.
+- Kullanıcıya gösterilebilir ticket'larda secretsız owner-demo handoff'u ve
+  yalnız gerçek tarayıcı kabulünden gelen görsel kanıt güncellenir.
 - Plugin ve skill doğrulayıcıları, birim testleri ve portable paket testi geçer.
 - Kişisel Codex eklentisi yeni sürümle kurulur ve yeni oturumda keşfedilir.

@@ -56,11 +56,16 @@ external-action decisions; keep internal state terms out of user updates.
 6. Follow [quality-gates.md](references/quality-gates.md): narrow checks during
    development, applicable ticket checks at checkpoint, and full gates only at
    planned milestone/release boundaries. Record exact evidence.
+   For large cross-module reviews, use
+   [code-intelligence.md](references/code-intelligence.md) only when it narrows
+   context; confirm graph output against source and tests.
 7. For remote persistence read
    [github-persistence.md](references/github-persistence.md). GitHub is
    optional and never a secret or transcript store.
 8. Before stopping, checkpoint completed work and apply
-   [runtime-delivery.md](references/runtime-delivery.md). Read-only and
+   [runtime-delivery.md](references/runtime-delivery.md). For user-facing work
+   or an explicitly requested ongoing demo, also apply
+   [owner-demo-handoff.md](references/owner-demo-handoff.md). Read-only and
    Plan-only modes stop at their requested evidence or plan.
 
 Never expose secrets, weaken tests, invent data, or misreport verification.

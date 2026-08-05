@@ -14,6 +14,8 @@ göre katmanlandırır.
   uzlaştırma gerektiğini bildirir.
 - Dar test, görev testi, kilometre taşı ve sürüm doğrulamasını birbirinden
   ayırır.
+- Kullanıcıya gösterilebilir işlerde ticket sonunda kısa bir owner-demo dosyası
+  ve varsa gerçek tarayıcı ekran kanıtı bırakır.
 - Hook içinde test, build, ağ veya GitHub işlemi çalıştırmaz.
 - Commit, push, PR, release ve deploy için ayrı kullanıcı yetkisini korur.
 
@@ -21,6 +23,23 @@ Pala daha fazla token veya daha geniş bir Codex bağlamı oluşturamaz. Katkıs
 gereksiz belgeleri her turda tekrar yüklemeyi ve ağır doğrulamayı yanlış yerde
 çalıştırmayı azaltmaktır. Ölçülmemiş hız ya da token tasarrufu yüzdesi vaat
 etmez.
+
+## Büyük repo kod zekâsı
+
+Pala, büyük ve çapraz modüllü incelemelerde isteğe bağlı
+[`code-review-graph`](https://github.com/tirth8205/code-review-graph)
+entegrasyonunu kullanabilir. Araç Pala'ya gömülmez; yerel graph üretir ve
+değişiklik etkisini daraltmaya yardımcı olur. Bulgular yine kaynak ve testlerle
+doğrulanır.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install_code_intelligence.ps1 -ProjectPath C:\proje
+```
+
+Komut, global `pip` yerine `uv` veya `pipx` ile izole kurulum yapar. Codex
+yapılandırması ve ilk graph varsayılan olarak değişmez; bunlar ancak sırasıyla
+`-ConfigureCodex` ve `-BuildGraph` bayrakları verilirse çalışır. Önizleme için
+`-DryRun` kullanın.
 
 Doğrulanmış Codex sınırları ve bunların tasarıma etkisi için
 [Codex kapsam ve limitleri](docs/CODEX_SCOPE_AND_LIMITS.md) belgesine bakın.
@@ -45,6 +64,11 @@ py -3 scripts/pala_state.py context --cwd C:\proje
 Komut seçeneklerinin güncel biçimi için `--help` kullanın. Projenin kendi
 durum ve plan belgeleri kaynak gerçektir; `.codex` altındaki Pala dosyaları
 küçük bir çalışma kontrol noktasıdır.
+
+Kullanıcıya gösterilebilir bir ürün üzerinde çalışılıyorsa mevcut demo belgesi
+yeniden kullanılır; yoksa uygun ticket sonunda `reports/OWNER_DEMO.md` şablonu
+oluşturulur. Hook kendi başına ekran görüntüsü almaz. Görsel kanıt ancak gerçek
+runtime tarayıcıda açılıp incelendiyse eklenir.
 
 ## Yerel doğrulama
 

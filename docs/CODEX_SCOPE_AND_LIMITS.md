@@ -39,6 +39,7 @@ Kaynaklar: [Build skills](https://learn.chatgpt.com/docs/build-skills),
 - Olmayan erişim, kimlik bilgisi, bütçe veya sağlayıcı yetkisi üretmek.
 - Kullanıcı kararı gerektiren ürün kapsamını güvenle tahmin edip kalıcılaştırmak.
 - Hook içinden gizlice test, ödeme, push, release veya deploy yapmak.
+- Runtime veya tarayıcı açılmadan gerçekmiş gibi ekran görüntüsü üretmek.
 
 ## Token ve süre yaklaşımı
 

@@ -32,7 +32,7 @@ class UserExperienceContractTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        self.assertTrue(manifest["version"].startswith("0.3.0+codex."))
+        self.assertTrue(manifest["version"].startswith("0.3.1+codex."))
         self.assertEqual(
             manifest["repository"],
             "https://github.com/trugurpala/pala-project-studio",
@@ -170,6 +170,29 @@ class UserExperienceContractTests(unittest.TestCase):
 
     def test_single_command_verifier_exists(self) -> None:
         self.assertTrue((PLUGIN_ROOT / "scripts" / "verify.py").is_file())
+
+    def test_owner_demo_handoff_is_conditional_and_secrets_safe(self) -> None:
+        reference = (REFERENCE_ROOT / "owner-demo-handoff.md").read_text(
+            encoding="utf-8"
+        )
+        normalized = " ".join(reference.casefold().split())
+        for required in (
+            "reports/owner_demo.md",
+            "register --demo reports/owner_demo.md",
+            "coherent ticket",
+            "real browser",
+            "not run",
+            "never include passwords",
+            "payment or identity data",
+        ):
+            self.assertIn(required, normalized)
+        self.assertIn(
+            "(references/owner-demo-handoff.md)",
+            (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8"),
+        )
+        self.assertTrue(
+            (SKILL_ROOT / "assets" / "OWNER_DEMO_TEMPLATE.md").is_file()
+        )
 
     def test_github_quality_workflow_is_small_and_pinned(self) -> None:
         workflow = (

@@ -64,13 +64,18 @@ def source_files(plugin_root: Path) -> list[Path]:
     candidates = [
         plugin_root / ".codex-plugin" / "plugin.json",
         plugin_root / "LICENSE",
+        plugin_root / "OPEN_SOURCE.md",
+        plugin_root / "THIRD_PARTY_NOTICES.md",
     ]
     for directory in ("hooks", "skills"):
         candidates.extend(
             path for path in (plugin_root / directory).rglob("*") if path.is_file()
         )
     candidates.extend(
-        path for path in (plugin_root / "scripts").glob("*.py") if path.is_file()
+        path
+        for pattern in ("*.py", "*.ps1")
+        for path in (plugin_root / "scripts").glob(pattern)
+        if path.is_file()
     )
 
     files: list[Path] = []

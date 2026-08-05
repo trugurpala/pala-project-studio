@@ -1,4 +1,4 @@
-# Pala Project Studio 0.3 Uygulama Planı
+# Pala Project Studio 0.3 / 0.3.1 Uygulama Planı
 
 ## M1 — Codex-native kapsam ve hafıza
 
@@ -33,5 +33,17 @@
 
 ## M5 — AZR'ye dönüş
 
-- [ ] AZR'nin eski Pala checkpoint'ini F2 uygulama durumuyla uzlaştır.
-- [ ] AZR'de yalnız aktif F2 ticket bağlamını yükleyerek uygulamaya dönüş noktasını kaydet.
+- [x] AZR'nin gerçek F2 durumunun ayrı `feat/f2-collection-requests` worktree'inde ilerlediğini salt okunur doğrula.
+- [x] Aktif Task 8 oturumuna dosya çakışması yaratmadan kesin dönüş noktasını ve bekleyen görsel kabul işini belirle.
+
+## M6 — Büyük repo kod zekâsı
+
+- [x] PALA-031: `code-review-graph` entegrasyonunu isteğe bağlı ve yerel-first olarak ekle.
+- [x] Graph bulunmadığında dürüst `git diff`/`rg` fallback'i sağla.
+- [x] Windows kurulumu, lisans kaydı, bağımsız testler ve portable paketi doğrula.
+
+## M7 — Owner demo ve 0.3.1 dağıtımı
+
+- [x] Kullanıcıya gösterilebilir ticket sonunda güncellenen secretsız `OWNER_DEMO.md` profilini ve şablonunu ekle.
+- [x] Demo belgesini keşif/kayıt/fingerprint akışına bağla; gerçek tarayıcı olmadan ekran kanıtı üretmeyi yasakla.
+- [ ] 0.3.1 cachebuster, portable ZIP, kişisel kurulum, private GitHub push ve CI kanıtını tamamla.

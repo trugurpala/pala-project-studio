@@ -53,6 +53,12 @@ CANDIDATES = {
         "THIRD_PARTY_NOTICES.md",
         "docs/codex/OPEN_SOURCE.md",
     ),
+    "demo": (
+        "reports/OWNER_DEMO.md",
+        "reports/PATRON_DEMO.md",
+        "DEMO.md",
+        "docs/DEMO.md",
+    ),
 }
 REQUIRED = ("project", "plan", "status")
 PROJECT_MARKERS = (
@@ -547,6 +553,7 @@ def discover(root: Path) -> dict[str, object]:
             "status": "docs/codex/STATUS.md",
             "decisions": "docs/codex/DECISIONS.md",
             "open_source": "docs/codex/OPEN_SOURCE.md",
+            "demo": "reports/OWNER_DEMO.md",
         },
     }
 
@@ -572,6 +579,9 @@ def register(args: argparse.Namespace, root: Path) -> int:
         "status": normalize_document(root, args.status or found["status"]),
         "decisions": normalize_document(root, args.decisions or found["decisions"]),
         "open_source": normalize_document(root, args.open_source or found["open_source"]),
+        "demo": normalize_document(
+            root, getattr(args, "demo", None) or found["demo"]
+        ),
     }
     missing = [name for name in REQUIRED if not documents[name]]
     if missing:
@@ -685,6 +695,7 @@ def parser() -> argparse.ArgumentParser:
     register_parser.add_argument("--status")
     register_parser.add_argument("--decisions")
     register_parser.add_argument("--open-source", dest="open_source")
+    register_parser.add_argument("--demo")
     begin_parser = subparsers.add_parser("begin")
     begin_parser.add_argument("--cwd", default=".")
     begin_parser.add_argument("--ticket", required=True)

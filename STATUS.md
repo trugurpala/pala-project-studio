@@ -1,10 +1,10 @@
 # Pala Project Studio Durumu
 
-- Aktif milestone: M5 — AZR'ye dönüş
-- Aktif ticket: PALA-030 — token-verimli durum ve doğrulama mimarisi
-- Son tamamlanan sonuç: Pala `0.3.0+codex.20260805165659` özel GitHub deposuna gönderildi, kişisel marketplace üzerinden kuruldu ve portable ZIP üretildi.
-- Çalışma ağacı: `main`, uzak depo `https://github.com/trugurpala/pala-project-studio` (private). Kurulu cache ile paket kapsamındaki 26 kaynak dosyanın hash'i eşit.
-- Doğrulama: `py -3 scripts/verify.py` — 42 test passed; sistem skill/plugin doğrulayıcıları geçti; GitHub Actions run `31012955428` başarılı. Kurulu SessionStart hook çıktısı 368 karakter. Portable SHA-256: `CB0735B09D80AF7FA88AB5E6225AF57E31ADCEDAED48D7A4A41856657363A5E2`.
+- Aktif milestone: M7 — Owner demo ve 0.3.1 dağıtımı
+- Aktif ticket: PALA-032 — 0.3.1 release kanıtı
+- Son tamamlanan sonuç: Pala `0.3.1+codex.20260805142013`, secretsız owner-demo handoff'u ve isteğe bağlı local-first Code Review Graph adaptörüyle temiz dağıtım kaynağından kişisel marketplace'e kuruldu. CRG, Codex/MCP ayarını veya graph build'ini varsayılan olarak değiştirmez.
+- Çalışma ağacı: `main`; 0.3.1 değişiklikleri henüz commit/push edilmedi. Etkin dağıtım kaynağı ve Codex cache'i 34/34 dosyada SHA-256 eşleşiyor; güncel skill yeni görevde yüklenir.
+- Doğrulama: `py -3 scripts/verify.py` — 50 test passed; skill/plugin doğrulayıcıları geçti; portable SHA-256 `178F0B5BD1A0BC772C51BD24A6F8F0BC46E63585169D3B83CFF2CF17B7D7D110`; kurulum/cache 34/34 hash eşleşti. `code-review-graph` 2.3.7 izole kuruldu, 77 paket uyumlu; gerçek Windows build 11 kaynak/126 düğüm/1.653 ilişki üretti ve UTF-8 brief review çalıştı. Graph'ın test-gap yanlış pozitifleri kaynak ve 50 testle karşılaştırıldı; tasarruf yüzdesi ürün vaadi olarak kullanılmadı.
 - Engel: Yok.
-- Tek sonraki iş: AZR'nin eski Pala checkpoint'ini gerçek F2 uygulama durumuyla uzlaştır ve yalnız aktif ticket bağlamını kaydet.
+- Tek sonraki iş: 0.3.1 değişikliklerini atomik commit/push et ve private GitHub CI sonucunu kaydet.
 - Güncelleme: 2026-08-05
