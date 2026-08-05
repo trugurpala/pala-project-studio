@@ -15,3 +15,45 @@ Dar test geliştirme iç döngüsüdür. Ticket kapısı değişen yüzeyi, mile
 ## ADR-004 — GitHub isteğe bağlı kalıcılıktır
 
 Plugin GitHub MCP veya tokenını paketlemez. Kaynak ve secretsız proje hafızası Git ile taşınabilir. Commit, push, PR, release ve görünürlük değişimi ayrı kullanıcı yetkileri olarak kalır.
+
+## ADR-005 — Kullanıcı için tek kapı, içeride izole bileşenler
+
+Pala 0.4 kullanıcıya tek kurulum ve tek doğal dil kapısı sunar. Üçüncü taraf
+araçların aynı klasöre kaynak olarak kopyalanması yerine Pala; sürüm, bütünlük,
+lisans ve sahiplik kaydı olan izole kurulumları yönetir. Bu ayrım kullanıcı
+deneyiminde görünmez, fakat update, repair, uninstall ve rollback işlemlerini
+güvenilir kılar.
+
+## ADR-006 — Örtük Pala seçimi sınırlı kapsamda açılır
+
+Pala skill'i yazılım projesini denetleme, planlama, kurtarma, uygulama,
+çalıştırma ve tamamlama isteklerinde örtük seçilebilir olacaktır. Açıklama
+genel sohbeti veya yazılım dışı işleri kapsamamalıdır. Açık `$pala...` çağrısı
+her zaman desteklenir. Yeni plugin kurulumu veya güncellemesi mevcut sohbetin
+yüklenmiş becerilerini geriye dönük değiştirdiği varsayılmaz; kurucu doctor
+sonunda yeni sohbet gereksinimini doğru raporlar.
+
+## ADR-007 — Hook içinde ağ yok, her oturumda yerel güncellik var
+
+SessionStart hızlı yerel sağlık ve önbellek durumunu okur; ağ, package install,
+test veya GitHub mutasyonu çalıştırmaz. Uzak release kontrolü Pala'nın ilk
+ilgili iş adımında, 24 saatlik atomik önbellekle yapılır. Böylece her oturum
+güncellik durumunu görür, ancak çevrimdışı başlangıç ve hook güveni bozulmaz.
+
+## ADR-008 — Yardımcı araç sahipliği
+
+RTK ve code-review-graph Pala'nın yönettiği CLI bağımlılıklarıdır; kendi Codex
+entegrasyon kurucuları çalıştırılmaz. Context7 ve Playwright desteklenen Codex
+MCP CLI'siyle keşfedilir ve yalnız eksikse eklenir. OpenSpec yalnız zaten
+kullanan projelerde uyumluluk yüzeyidir. planning-with-files ve Ruflo ayrı
+hook/hafıza/orkestrasyon sahibi oldukları için kurulmaz; yararlı ilkeleri Pala
+testlerine uyarlanır. developer-roadmap yalnız kapsam kontrol kaynağıdır.
+
+## ADR-009 — Otomatik RTK rewrite dar ve kanıtlıdır
+
+Codex `PreToolUse updatedInput` komut girdisini değiştirebilir. Pala adaptörü
+yalnız açık allowlist'teki güvenli, salt-okunur ve eşdeğerliği test edilmiş
+komutları RTK'ya yönlendirir. Bileşik shell ifadeleri, redirection, interaktif
+komutlar, secrets taşıyabilecek işlemler ve Git/deploy mutasyonları aynen
+bırakılır. RTK yoksa veya parser emin değilse başarısız olmak yerine orijinal
+komut çalışır.

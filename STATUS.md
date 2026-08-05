@@ -1,10 +1,27 @@
 # Pala Project Studio Durumu
 
-- Aktif milestone: M8 — Checkpoint commit öz-referansı ve 0.3.2 (`completed`)
-- Aktif ticket: Yok
-- Son tamamlanan sonuç: Pala `0.3.2+codex.20260805142731` kuruldu. Gerçek AZR checkpoint commit'iyle yeniden üretilen yanlış stale uyarısı test-first düzeltildi: yalnız checkpoint yol/içerik snapshot'ını eksiksiz taşıyan descendant commit aynı sonuç kabul edilir; sonraki veya farklı commit uzlaştırma ister.
-- Çalışma ağacı: `main`; düzeltme commit'i `256064c` private `trugurpala/pala-project-studio` deposuna gönderildi. Kişisel marketplace artık sabit `C:\Users\User\plugins\pala-project-studio` kaynağını kullanıyor; kaynak ve Codex cache'i 34/34 dosyada SHA-256 eşleşiyor. Eski 0.2 kaynak klasörü silinmeden legacy adıyla korundu.
-- Doğrulama: `py -3 scripts/verify.py` — 51 test passed; resmî skill/plugin validator'ları geçti. Portable `Pala-Project-Studio-Portable-0.3.2-codex-20260805142731.zip` SHA-256 `4FB70945E1DA75DEE83FB567F17FDFE6EA06AFEB5578386390023B6CF90F6C4F`; kurulum/cache 34/34 hash eşleşti; GitHub Actions `31015681920` başarılı. Hız veya token tasarruf yüzdesi ölçülmedi ve raporlanmadı.
+- Aktif milestone: M9 — 0.4 ürün sözleşmesi ve araç seçimi (`completed`)
+- Aktif ticket: PALA-040 — Tek-kapı, idempotent Windows kurulum ve büyük-iş
+  dayanıklılık sözleşmesi tamamlandı.
+- Son tamamlanan sonuç: 0.3.3 kaynak ve private GitHub release'i `742fb86`
+  üzerinde doğrulandı. Yerel `python scripts/verify.py` 54 testi ve tekrarlanabilir
+  portable SHA-256 kapısını geçti.
+- Gerçek kurulum farkı: Kaynak/release `0.3.3` olmasına rağmen Codex'te etkin
+  kişisel Pala hâlâ `0.3.2+codex.20260805142731`. Bu, oturum güncelleme
+  kontrolünün 0.3.3'te bulunmadığını kanıtlıyor.
+- Makine: Windows 11 Pro 64-bit; Ryzen 5 5500 (6C/12T), 15.9 GB RAM ve C:
+  üzerinde yaklaşık 111 GB boş alan. Codex, Git, GitHub CLI, Python 3.12,
+  `uv`, Node 24, npm, pnpm, ripgrep ve PowerShell 7 hazır.
+- Araç durumu: `code-review-graph` 2.3.7 `uv` altında ve bu repo için yerel
+  graph mevcut; doğrudan PowerShell keşfi ile Pala adaptörü arasında PATH farkı
+  var. RTK kurulu değil. Context7 ve Playwright MCP kayıtları etkin, ancak
+  sürüm/sahiplikleri Pala tarafından yönetilmiyor.
+- Doğrulama: `python scripts/verify.py` — 54 test passed;
+  `reproducible_zip_sha256=625350E412F16ECC48296115CE7B83B5C1894A12C34B6B9B67CDDC62233E4383`.
+  GitHub Actions `31021033644` Windows ve Ubuntu için başarılı.
+- PALA-040 kanıtı: `python -m unittest` ile tek-kapı ve çakışan orkestratör
+  kararlarını koruyan 2 yeni sözleşme testi geçti; `git diff --check` temiz.
 - Engel: Yok.
-- Tek sonraki iş: AZR'nin gelişmiş `feat/f2-collection-requests` worktree'indeki korunmuş değişiklikleri uzlaştırıp F2 Task 8'e güvenli geçiş yap.
+- Tek sonraki iş: PALA-041 idempotent tek komut Windows kurucu çekirdeğini
+  test-first uygula.
 - Güncelleme: 2026-08-05

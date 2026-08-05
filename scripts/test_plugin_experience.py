@@ -26,6 +26,45 @@ def load_packager():
 
 
 class UserExperienceContractTests(unittest.TestCase):
+    def test_04_single_door_plan_is_opinionated_and_codex_safe(self) -> None:
+        project = (PLUGIN_ROOT / "PROJECT.md").read_text(encoding="utf-8")
+        decisions = (PLUGIN_ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+        design = (
+            PLUGIN_ROOT / "docs" / "PALA_0_4_SINGLE_DOOR.md"
+        ).read_text(encoding="utf-8")
+        normalized = " ".join((project + decisions + design).casefold().split())
+
+        for required in (
+            "tek-kapı",
+            "örtük",
+            "zaten hazır",
+            "external-conflict",
+            "atomik",
+            "rollback",
+            "yeni sohbet",
+            "24 saat",
+            "hook içinde ağ yok",
+            "50 ardışık",
+        ):
+            self.assertIn(required, normalized)
+
+        self.assertIn("updatedInput", decisions)
+        self.assertIn("rtk", normalized)
+        self.assertIn("code-review-graph", normalized)
+        self.assertIn("context7", normalized)
+        self.assertIn("playwright", normalized)
+
+    def test_04_rejects_duplicate_orchestration_owners(self) -> None:
+        decisions = (PLUGIN_ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+        open_source = (PLUGIN_ROOT / "OPEN_SOURCE.md").read_text(encoding="utf-8")
+        normalized = " ".join((decisions + open_source).casefold().split())
+
+        self.assertIn("openspec yalnız zaten kullanan projelerde", normalized)
+        self.assertIn("planning-with-files", normalized)
+        self.assertIn("ruflo", normalized)
+        self.assertIn("kurulmaz", normalized)
+        self.assertIn("0.4 dışında", normalized)
+
     def test_manifest_presents_three_natural_turkish_starters(self) -> None:
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(
