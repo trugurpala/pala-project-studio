@@ -530,8 +530,13 @@ def doctor_report(
         status["hook_discovery"]["active_ticket"] = (
             workflow.get("active_ticket") if isinstance(workflow, dict) else None
         )
+        reconciliation = (
+            reconciliation_report(root, manifest, workflow)
+            if isinstance(workflow, dict)
+            else None
+        )
         status["hook_discovery"]["needs_reconcile"] = (
-            bool(workflow and workflow.get("needs_reconcile")) if workflow else None
+            reconciliation["needed"] if reconciliation is not None else None
         )
         status["hook_discovery"]["dirty"] = (
             bool(workflow and workflow.get("dirty")) if workflow else None
@@ -952,10 +957,13 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
         owned_ticket = WorkflowStore(root).active_for_session(session)
         if owned_ticket is not None:
             workflow = {
+                "schema_version": WORKFLOW_SCHEMA_VERSION,
                 "active_ticket": owned_ticket.get("ticket"),
                 "goal": owned_ticket.get("goal"),
                 "next_action": owned_ticket.get("next_action"),
                 "dirty": owned_ticket.get("dirty"),
+                "needs_reconcile": False,
+                "checkpoint_basis": None,
                 "verification_tier": "not-run",
                 "blockers": [],
             }

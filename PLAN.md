@@ -175,3 +175,10 @@
 - [x] Yayın sonrası release asset SHA-256 değerini GitHub API'den karşılaştır;
   ana dal, etiketi, CI ve indirme bağlantısı doğrulanmadan release'i tamamlandı
   sayma.
+
+## M16 — Doktor uzlaştırma doğruluğu
+
+- [x] PALA-046: `doctor` raporunun checkpoint belge/Git farklarını
+  `context` ile aynı uzlaştırma hesabından göstermesini sağla; belge sürüklenmesi
+  için regresyon testi ekle. Yeni v3 oturum ticket'larının checkpoint öncesi
+  yanlışlıkla eski workflow sayılmamasını kapsa ve tam yerel kapıyı çalıştır.

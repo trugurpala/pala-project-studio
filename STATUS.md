@@ -1,12 +1,12 @@
 # Pala Project Studio Durumu
 
-- Aktif milestone: M14 — Pala güvenli uzman işçileri (`completed`)
-- Aktif ticket: PALA-045 — Pala tek otoriteyken Graphify, Serena ve
-  codebase-memory'yi izole, kanıt döndüren uzman işçilere bağlama.
-- Son tamamlanan sonuç: Pala normal yazılım projesi isteklerinde örtük
-  seçilebilir, salt sohbet kapsam dışı. SessionStart yalnız yerel plugin/Python/Git/
-  hook durumunu özetler. İlk uygulama adımındaki sürüm kontrolü 24 saatlik atomik
-  önbellek kullanır; ağ hatası engel üretmez ve sır saklamaz.
+- Aktif milestone: M16 — Doktor uzlaştırma doğruluğu (`completed`)
+- Aktif ticket: PALA-046 — `doctor` ile `context` arasındaki checkpoint
+  uzlaştırma raporlama farkını kaldırma.
+- Son tamamlanan sonuç: `doctor`, artık workflow'daki eski bayrağı yansıtmak
+  yerine `context` ile aynı checkpoint belge/Git karşılaştırmasını hesaplar.
+  Böylece Pala, gerçek uzlaştırma gereksinimini sağlık denetiminde de gösterir.
+  Yeni v3 oturum ticket'ları da checkpoint öncesinde doğru biçimde temiz kabul edilir.
 - Bulunan ürün açığı: Geliştirme ortamındaki etkin Pala sürümü kaynak sürümünün
   gerisinde kalabildi. Bu, global kurucuda desteklenen Codex CLI üzerinden
   kurulum keşfi, update ve doctor kapılarının zorunlu olduğunu kanıtlıyor.
@@ -78,3 +78,10 @@
   (SHA-256: `7CB222E89B8694924A200220E324E55F12F1B39FADC1464C89C7A1BBAF1FF9A3`).
   Release `v0.4.1` güncellendi: `pala-project-studio-0.4.1.zip` asset'i bu SHA-256 ile
   tekrar yüklenmiştir.
+- PALA-046 kanıtı: Yeni belge sürüklenmesi regresyon testi önce beklenen
+  `needs_reconcile=false` hatasıyla kırmızı oldu; dar test düzeltme sonrası geçti.
+  Yeni v3 oturum ticket'ı da checkpoint öncesi yanlış legacy uyarısıyla kırmızı
+  oldu ve düzeltme sonrası geçti. Tam kapı portable paketin iki üretimde aynı
+  SHA-256 değerini verdiğini doğruladı; paket çıktısı kaynak belgeleri değiştiğinde
+  değişebileceği için bu durum belgesinde sabit hash tutulmaz.
+- Tek sonraki iş: Yeni kullanıcı isteğini bekle.

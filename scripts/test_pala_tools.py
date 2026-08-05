@@ -299,6 +299,7 @@ class PalaStateTests(unittest.TestCase):
 
             self.assertEqual(report["active_ticket"], "PALA-043")
             self.assertTrue(report["dirty"])
+            self.assertFalse(report["reconciliation"]["needed"])
 
     def test_session_parser_options_are_available_without_changing_legacy_flags(self) -> None:
         args = pala_state.parser().parse_args(
@@ -519,6 +520,38 @@ class PalaStateTests(unittest.TestCase):
             self.assertIn("hook_safety", report)
             self.assertIn("recommendation", report["hook_safety"])
             self.assertEqual(report["hook_safety"]["status"], "blocked")
+
+    def test_doctor_reports_checkpoint_reconciliation_when_documents_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            for name in ("PROJECT.md", "PLAN.md", "STATUS.md"):
+                (root / name).write_text(f"# {name}\n", encoding="utf-8")
+            manifest = {
+                "schema_version": 1,
+                "managed_by": "pala-project-finisher",
+                "documents": {
+                    "project": "PROJECT.md",
+                    "plan": "PLAN.md",
+                    "status": "STATUS.md",
+                },
+            }
+            (root / pala_state.MANIFEST).write_text(
+                json.dumps(manifest), encoding="utf-8"
+            )
+            pala_state.begin_work(root, "T-001", "Verify doctor reconciliation")
+            pala_state.checkpoint_work(
+                root,
+                next_action="Continue",
+                verification=["unit: passed"],
+                blockers=[],
+                tier="ticket",
+            )
+            (root / "PLAN.md").write_text("# Changed plan\n", encoding="utf-8")
+
+            report = pala_state.doctor_report(root)
+
+            self.assertTrue(report["hook_discovery"]["needs_reconcile"])
 
     def test_checkpoint_command_requires_verification_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
