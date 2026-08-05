@@ -26,6 +26,22 @@ def load_packager():
 
 
 class UserExperienceContractTests(unittest.TestCase):
+    def test_readme_exposes_current_release_and_expert_worker_boundary(self) -> None:
+        readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
+        normalized = " ".join(readme.casefold().split())
+
+        self.assertIn("releases/latest", readme)
+        self.assertIn("pala-project-studio-0.4.1.zip", readme)
+        for required in (
+            "güvenli uzman işçileri",
+            "graphify",
+            "serena",
+            "codebase-memory",
+            "ollama",
+            "divan",
+        ):
+            self.assertIn(required, normalized)
+
     def test_04_single_door_plan_is_opinionated_and_codex_safe(self) -> None:
         project = (PLUGIN_ROOT / "PROJECT.md").read_text(encoding="utf-8")
         decisions = (PLUGIN_ROOT / "DECISIONS.md").read_text(encoding="utf-8")

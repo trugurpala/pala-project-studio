@@ -46,6 +46,9 @@
   tek-atımlık index 844 düğüm/3298 kenarla tamamlandı. Ayrı loopback Ollama
   deposunda `qwen3:4b-instruct` kimliği `0edcdef34593` olarak doğrulandı.
 - Güncelleme: 2026-08-05
+- GitHub sayfa standardı: Her release'te README hızlı başlangıç, güncel indirme
+  bağlantısı, uzman işçi güvenlik sınırları, Divan açıklaması ve GitHub release
+  asset bütünlüğü güncellenecek; bu kontrol M15 altında takip edilir.
 - 0.4 teslim hazırlığı: session-safe state, adapter sözleşmeleri, fail-closed
   RTK hook'u, graph eşiği ve GitHub routing private release dalında birleşti.
   Repo görünürlüğü değiştirilmeden private PR/CI/release kanıtı bekleniyor.

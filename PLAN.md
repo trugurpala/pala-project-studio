@@ -165,3 +165,14 @@
   çalıştır; UI, daemon, watcher ve hook kurma.
 - [x] Standart kurulumda Pala sahipliğinde Ollama + Qwen3 4B hazırla; kullanıcı
   Ollama/model alanını değiştirme ve bütün dosyaları hash ile doğrula.
+
+## M15 — GitHub ana sayfa ve yayın standardı
+
+- [ ] Her release öncesi README'nin güncel sürüm indirme bağlantısını, kısa
+  değer önerisini, güvenlik sınırlarını ve Divan'ın ortak altyapı rolünü
+  doğrula.
+- [ ] GitHub depo açıklamasını, release başlığını ve taşınabilir ZIP adını aynı
+  sürümle uyumlu tut; eski etiketi yeni kodu gösterecek biçimde değiştirme.
+- [ ] Yayın sonrası release asset SHA-256 değerini GitHub API'den karşılaştır;
+  ana dal, etiketi, CI ve indirme bağlantısı doğrulanmadan release'i tamamlandı
+  sayma.
