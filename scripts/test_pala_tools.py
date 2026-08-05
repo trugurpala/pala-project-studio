@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import hashlib
 import json
 import subprocess
 import tempfile
@@ -15,6 +16,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 SKILL_DIR = SCRIPT_DIR.parent / "skills" / "pala-project-finisher"
 REFERENCE_DIR = SKILL_DIR / "references"
 REQUIRED_PROFILES = (
@@ -39,16 +42,247 @@ def load_module(name: str, filename: str):
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {filename}")
     module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
 
 pala_state = load_module("pala_state", "pala_state.py")
+pala_store = load_module("pala_store", "pala_store.py")
 pala_hook = load_module("pala_hook", "pala_hook.py")
 
 
 class PalaStateTests(unittest.TestCase):
-    def test_discover_recognizes_azr_style_documents_and_laravel_backend(self) -> None:
+    def test_rtk_rewrites_only_simple_read_only_commands(self) -> None:
+        rtk = load_module("pala_rtk", "pala_rtk.py")
+        with tempfile.TemporaryDirectory() as temp:
+            binary = Path(temp) / "rtk.exe"
+            binary.write_text("", encoding="utf-8")
+            original = {"command": "git status", "timeout_ms": 10, "cwd": "C:/project"}
+            result = rtk.rewrite("git status", original, binary)
+
+            self.assertEqual(result["timeout_ms"], 10)
+            self.assertEqual(result["cwd"], "C:/project")
+            self.assertIn("RTK_TELEMETRY_DISABLED", result["env"])
+            for unsafe in ("git commit -m x", "rg x | sort", "grep password .", "npm install"):
+                self.assertIsNone(rtk.rewrite(unsafe, original, binary))
+    def test_openspec_adapter_is_read_only_for_present_and_absent_projects(self) -> None:
+        adapter = load_module("pala_openspec", "pala_openspec.py").OpenSpecAdapter()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.assertEqual(adapter.inspect(root).state, "missing")
+            (root / "openspec" / "specs").mkdir(parents=True)
+            result = adapter.inspect(root)
+
+            self.assertEqual(result.state, "ready")
+            self.assertFalse(result.changed)
+            self.assertFalse((root / "openspec" / "changes").exists())
+    def test_ticket_record_serializes_bounded_safe_session_state(self) -> None:
+        models = load_module("pala_models", "pala_models.py")
+        record = models.TicketRecord.new("PALA-043", "A" * 900, "session-alpha")
+
+        payload = record.to_dict()
+
+        self.assertEqual(payload["schema_version"], 3)
+        self.assertEqual(len(payload["goal"]), 500)
+        self.assertNotIn("session-alpha", json.dumps(payload))
+        self.assertEqual(payload["verification"], [])
+
+    def test_ticket_store_records_failure_fingerprint_and_blocks_second_repeat(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            store = pala_store.WorkflowStore(Path(temp))
+            store.claim("PALA-043", "Verify state", "session-alpha")
+
+            first = store.record_verification(
+                "PALA-043", "session-alpha", "failed", "py -3 scripts/verify.py", "ValueError: bad state"
+            )
+            second = store.record_verification(
+                "PALA-043", "session-alpha", "failed", "py -3 scripts/verify.py", "ValueError: bad state"
+            )
+
+            self.assertEqual(first.status, "recorded")
+            self.assertEqual(second.status, "blocked")
+            self.assertEqual(second.record["blockers"], ["verification repeated twice"])
+
+    def test_ticket_store_complete_requires_passed_evidence_and_no_blockers(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            store = pala_store.WorkflowStore(Path(temp))
+            store.claim("PALA-043", "Complete safely", "session-alpha")
+
+            refused = store.complete("PALA-043", "session-alpha")
+            store.record_verification(
+                "PALA-043", "session-alpha", "passed", "py -3 scripts/verify.py"
+            )
+            completed = store.complete("PALA-043", "session-alpha")
+
+            self.assertEqual(refused.status, "verification_required")
+            self.assertEqual(completed.status, "completed")
+            self.assertEqual(completed.record["lifecycle"], "completed")
+            self.assertFalse(completed.record["dirty"])
+
+    def test_ticket_store_recovery_does_not_take_over_dirty_record(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            store = pala_store.WorkflowStore(Path(temp))
+            store.claim("PALA-043", "Recover safely", "session-alpha")
+
+            result = store.recover("PALA-043", "session-beta")
+
+            self.assertEqual(result.status, "dirty_takeover_refused")
+
+    def test_v2_migration_writes_marker_without_modifying_legacy_workflow(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            legacy = root / ".codex" / "pala-workflow.json"
+            legacy.parent.mkdir()
+            legacy.write_text(json.dumps({"schema_version": 2, "active_ticket": "PALA-042"}), encoding="utf-8")
+
+            result = pala_store.WorkflowStore(root).migrate_v2()
+
+            self.assertEqual(result.status, "migrated")
+            self.assertTrue((root / ".codex" / "plugin-data" / "pala" / "v3" / "migration-v2.json").is_file())
+            self.assertEqual(json.loads(legacy.read_text(encoding="utf-8"))["active_ticket"], "PALA-042")
+    def test_session_key_is_stable_and_does_not_expose_raw_session_id(self) -> None:
+        raw_session_id = "session-alpha"
+
+        self.assertTrue(hasattr(pala_state, "session_key"))
+        key = pala_state.session_key(raw_session_id)
+
+        self.assertEqual(key, hashlib.sha256(raw_session_id.encode()).hexdigest()[:24])
+        self.assertNotIn(raw_session_id, key)
+
+    def test_ticket_store_rejects_second_session_claim(self) -> None:
+        store_path = SCRIPT_DIR / "pala_store.py"
+        self.assertTrue(store_path.is_file())
+        pala_store = load_module("pala_store", "pala_store.py")
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            first = pala_store.WorkflowStore(root).claim(
+                ticket="PALA-043", goal="Session ownership", session="first-session"
+            )
+            second = pala_store.WorkflowStore(root).claim(
+                ticket="PALA-043", goal="Session ownership", session="second-session"
+            )
+
+            self.assertEqual(first.status, "claimed")
+            self.assertEqual(second.status, "owned_by_other")
+            self.assertEqual(second.record["owner"], pala_state.session_key("first-session"))
+
+    def test_ticket_store_does_not_overwrite_when_ticket_lock_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            store = load_module("pala_store_lock", "pala_store.py").WorkflowStore(root)
+            ticket_path = store._ticket_path("PALA-043")
+            lock_path = ticket_path.with_suffix(".lock")
+            lock_path.parent.mkdir(parents=True)
+            lock_path.mkdir()
+
+            result = store.claim("PALA-043", "Concurrent claim", "session-alpha")
+
+            self.assertEqual(result.status, "busy")
+            self.assertFalse(ticket_path.exists())
+
+    def test_ticket_checkpoint_releases_clean_ownership_for_next_session(self) -> None:
+        store_path = SCRIPT_DIR / "pala_store.py"
+        self.assertTrue(store_path.is_file())
+        pala_store = load_module("pala_store_checkpoint", "pala_store.py")
+
+        with tempfile.TemporaryDirectory() as temp:
+            store = pala_store.WorkflowStore(Path(temp))
+            store.claim("PALA-043", "Session ownership", "first-session")
+
+            checkpoint = store.checkpoint(
+                ticket="PALA-043", session="first-session", next_action="Resume safely"
+            )
+            resumed = store.claim(
+                ticket="PALA-043", goal="Session ownership", session="second-session"
+            )
+
+            self.assertEqual(checkpoint.status, "checkpointed")
+            self.assertIsNone(checkpoint.record["owner"])
+            self.assertFalse(checkpoint.record["dirty"])
+            self.assertEqual(resumed.status, "claimed")
+
+    def test_begin_with_session_key_claims_v3_ticket_without_changing_v2_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+
+            pala_state.begin_work(
+                root,
+                "PALA-043",
+                "Session ownership",
+                session="first-session",
+            )
+
+            store = load_module("pala_store_facade", "pala_store.py").WorkflowStore(root)
+            record = store._read(store._ticket_path("PALA-043"))
+            self.assertEqual(record["owner"], pala_state.session_key("first-session"))
+            self.assertFalse((root / pala_state.WORKFLOW).exists())
+
+    def test_begin_parser_accepts_optional_session_key(self) -> None:
+        args = pala_state.parser().parse_args(
+            ["begin", "--ticket", "PALA-043", "--goal", "Session ownership", "--session-key", "abc123"]
+        )
+
+        self.assertEqual(args.session_key, "abc123")
+
+    def test_session_context_reads_only_its_owned_ticket(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            (root / pala_state.MANIFEST).write_text(
+                json.dumps(
+                    {
+                        "schema_version": pala_state.SCHEMA_VERSION,
+                        "managed_by": "pala-project-finisher",
+                        "documents": {"status": "STATUS.md", "plan": "PLAN.md"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            store = pala_store.WorkflowStore(root)
+            store.claim("PALA-043", "Owned work", "session-alpha")
+
+            report = pala_state.context_report(root, session="session-alpha")
+
+            self.assertEqual(report["active_ticket"], "PALA-043")
+            self.assertTrue(report["dirty"])
+
+    def test_session_parser_options_are_available_without_changing_legacy_flags(self) -> None:
+        args = pala_state.parser().parse_args(
+            ["checkpoint", "--next-action", "Continue", "--session-key", "abc123"]
+        )
+        self.assertEqual(args.session_key, "abc123")
+        args = pala_state.parser().parse_args(["context", "--session-key", "abc123"])
+        self.assertEqual(args.session_key, "abc123")
+
+    def test_v3_lifecycle_commands_require_explicit_session_key(self) -> None:
+        parser = pala_state.parser()
+        args = parser.parse_args(
+            ["record-verification", "--ticket", "PALA-043", "--session-key", "abc123", "--status", "passed", "--command", "py -3 scripts/verify.py"]
+        )
+        self.assertEqual(args.command, "record-verification")
+        self.assertEqual(
+            parser.parse_args(["complete", "--ticket", "PALA-043", "--session-key", "abc123"]).command,
+            "complete",
+        )
+        self.assertEqual(
+            parser.parse_args(["recover", "--ticket", "PALA-043", "--session-key", "abc123"]).command,
+            "recover",
+        )
+
+    def test_session_doctor_reports_only_owned_v3_ticket(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            pala_store.WorkflowStore(root).claim("PALA-043", "Doctor session", "session-alpha")
+
+            report = pala_state.doctor_report(root, session="session-alpha")
+
+            self.assertEqual(report["session_ticket"]["ticket"], "PALA-043")
+            self.assertNotIn("session-alpha", json.dumps(report))
+
+    def test_discover_recognizes_alternative_documents_and_laravel_backend(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "docs").mkdir()
@@ -511,6 +745,88 @@ class PalaStateTests(unittest.TestCase):
 
 
 class PalaHookTests(unittest.TestCase):
+    def test_rtk_hook_emits_no_rewrite_without_managed_binary(self) -> None:
+        hook = load_module("pala_rtk_hook", "pala_rtk_hook.py")
+        event = json.dumps({"tool_name": "shell_command", "tool_input": {"command": "git status"}})
+        output = io.StringIO()
+        with (
+            patch("sys.stdin", io.StringIO(event)),
+            patch("sys.stdout", output),
+            patch.object(hook, "managed_rtk", return_value=Path("missing-rtk.exe")),
+        ):
+            self.assertEqual(hook.main(), 0)
+        self.assertEqual(json.loads(output.getvalue()), {})
+
+    def test_hook_manifest_registers_rtk_only_for_shell_commands(self) -> None:
+        hooks = json.loads((SCRIPT_DIR.parent / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+        self.assertEqual(hooks["hooks"]["PreToolUse"][0]["matcher"], "shell_command")
+
+    def test_hook_manifest_registers_session_end(self) -> None:
+        hooks = json.loads((SCRIPT_DIR.parent / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+        self.assertIn("SessionEnd", hooks["hooks"])
+
+    def test_session_end_uses_event_session_without_emitting_its_raw_value(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            (root / pala_hook.MANIFEST).write_text(
+                json.dumps(
+                    {
+                        "managed_by": "pala-project-finisher",
+                        "documents": {"status": "STATUS.md"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            store = pala_store.WorkflowStore(root)
+            store.claim("PALA-043", "Session ownership", "session-alpha")
+            event = json.dumps(
+                {"cwd": temp, "hook_event_name": "SessionEnd", "session_id": "session-alpha"}
+            )
+            output = io.StringIO()
+            with (
+                patch("sys.stdin", io.StringIO(event)),
+                patch("sys.stdout", output),
+                patch.object(pala_hook, "git_root", return_value=root),
+            ):
+                self.assertEqual(pala_hook.main(), 0)
+            self.assertNotIn("session-alpha", output.getvalue())
+            record = store._read(store._ticket_path("PALA-043"))
+            self.assertEqual(record["last_event"], "session_end")
+
+    def test_session_start_prefers_ticket_owned_by_event_session(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            (root / pala_hook.MANIFEST).write_text(
+                json.dumps(
+                    {
+                        "managed_by": "pala-project-finisher",
+                        "documents": {"status": "STATUS.md", "plan": "PLAN.md"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            store = pala_store.WorkflowStore(root)
+            store.claim("PALA-043", "Session ownership", "session-alpha")
+            event = json.dumps(
+                {
+                    "cwd": temp,
+                    "hook_event_name": "SessionStart",
+                    "session_id": "session-alpha",
+                }
+            )
+            output = io.StringIO()
+            with (
+                patch("sys.stdin", io.StringIO(event)),
+                patch("sys.stdout", output),
+                patch.object(pala_hook, "git_root", return_value=root),
+            ):
+                self.assertEqual(pala_hook.main(), 0)
+            message = json.loads(output.getvalue())["hookSpecificOutput"]["additionalContext"]
+            self.assertIn("active=PALA-043", message)
+            self.assertIn("dirty=true", message)
+
     def test_unregistered_project_has_no_hook_output(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             event = json.dumps({"cwd": temp, "hook_event_name": "SessionStart"})
@@ -691,6 +1007,36 @@ class PalaHookTests(unittest.TestCase):
         self.assertIn("Read status first", message)
         self.assertNotIn("docs/PRODUCT_DECISIONS.md", message)
         self.assertNotIn("docs/OPEN_SOURCE.md", message)
+
+    def test_session_context_reports_only_local_health(self) -> None:
+        result = pala_hook.session_context(
+            {"project": "PROJECT.md", "status": "STATUS.md"},
+            {"schema_version": 2, "active_ticket": "PALA-042", "dirty": True},
+            compacted=False,
+            project_kind="existing",
+            health={"plugin": "loaded", "python": "ready", "git": "ready", "hook": "running"},
+            reconciliation={"needed": False, "reasons": []},
+        )
+        message = result["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("Pala local health: plugin=loaded; python=ready; git=ready; hook=running.", message)
+        self.assertLessEqual(len(message), 800)
+
+    def test_new_workflow_does_not_require_reconciliation_before_first_checkpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            report = pala_state.reconciliation_report(
+                root,
+                {"documents": {}},
+                {
+                    "schema_version": 2,
+                    "active_ticket": "PALA-042",
+                    "dirty": True,
+                    "needs_reconcile": False,
+                    "checkpoint_basis": None,
+                },
+            )
+        self.assertFalse(report["needed"])
+        self.assertEqual(report["reasons"], [])
 
     def test_begin_rejects_dirty_workflow(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

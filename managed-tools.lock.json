@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "tools": {
+    "rtk": {
+      "version": "0.44.2",
+      "source_url": "https://github.com/rtk-ai/rtk/releases/download/v0.44.2/rtk-x86_64-pc-windows-msvc.exe",
+      "license": "MIT",
+      "sha256": "3a1e114edce9080f8a10663e9c87488363a82f14a5ca8aab2ad416817f89d47c",
+      "platform": "windows-x86_64"
+    },
+    "code-review-graph": {
+      "version": "2.3.7",
+      "source_url": "https://files.pythonhosted.org/packages/code_review_graph-2.3.7-py3-none-any.whl",
+      "license": "MIT",
+      "sha256": "12196dce3e673bdec7fba97ae5c4dff7589adee73a721374f62efae76e0fdd88",
+      "platform": "any"
+    },
+    "context7": {
+      "version": "3.2.5",
+      "source_url": "https://www.npmjs.com/package/@upstash/context7-mcp",
+      "license": "MIT",
+      "integrity": "npm-package-version:3.2.5",
+      "platform": "node"
+    },
+    "playwright-mcp": {
+      "version": "0.0.78",
+      "source_url": "https://www.npmjs.com/package/@playwright/mcp",
+      "license": "Apache-2.0",
+      "integrity": "npm-package-version:0.0.78",
+      "platform": "node"
+    }
+  }
+}

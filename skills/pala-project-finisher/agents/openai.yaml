@@ -4,4 +4,4 @@ interface:
   default_prompt: "$pala-project-studio:pala-project-finisher ile isteğimi anla, doğru görev modunu seç, önce salt okunur incele ve yalnız yetkilendirdiğim sonucu tamamla."
 
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

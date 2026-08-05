@@ -18,6 +18,7 @@ SCHEMA_VERSION = 1
 MANIFEST = Path(".codex/pala-project.json")
 WORKFLOW = Path(".codex/pala-workflow.json")
 WORKFLOW_SCHEMA_VERSION = 2
+SESSION_KEY_LENGTH = 24
 DEFAULT_INSTRUCTION_LIMIT = 32_768
 VERIFICATION_TIERS = ("narrow", "ticket", "milestone", "release", "not-run")
 CANDIDATES = {
@@ -112,6 +113,13 @@ IGNORED_DISCOVERY_DIRS = {
     "node_modules",
     "target",
 }
+
+
+def session_key(session_id: str) -> str:
+    """Return a bounded stable key without persisting the raw Codex session id."""
+    from pala_models import SessionKey
+
+    return SessionKey.from_session_id(session_id)
 
 
 def git_root(cwd: Path) -> Path:
@@ -464,7 +472,9 @@ def hook_safety_report(root: Path) -> dict[str, object]:
     }
 
 
-def doctor_report(root: Path, manifest: dict[str, object] | None = None) -> dict[str, object]:
+def doctor_report(
+    root: Path, manifest: dict[str, object] | None = None, session: str | None = None
+) -> dict[str, object]:
     python_info = {
         "executable": os.environ.get("PYTHON", sys.executable),
         "version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
@@ -511,8 +521,8 @@ def doctor_report(root: Path, manifest: dict[str, object] | None = None) -> dict
             status["project_registration"]["registered"] = True
             status["project_registration"]["document_mapping"] = manifest.get("documents")
 
+    workflow = None
     if status["project_registration"]["registered"]:
-        workflow = None
         try:
             workflow = load_workflow(root)
         except (OSError, ValueError, json.JSONDecodeError):
@@ -525,6 +535,19 @@ def doctor_report(root: Path, manifest: dict[str, object] | None = None) -> dict
         )
         status["hook_discovery"]["dirty"] = (
             bool(workflow and workflow.get("dirty")) if workflow else None
+        )
+    if session is not None:
+        from pala_store import WorkflowStore
+
+        owned = WorkflowStore(root).active_for_session(session)
+        status["session_ticket"] = (
+            {
+                "ticket": owned.get("ticket"),
+                "lifecycle": owned.get("lifecycle"),
+                "dirty": bool(owned.get("dirty")),
+            }
+            if owned is not None
+            else None
         )
 
     status["healthy"] = (
@@ -673,7 +696,15 @@ def reconciliation_report(
 ) -> dict[str, object]:
     reasons: list[str] = []
     basis = workflow.get("checkpoint_basis")
-    if workflow.get("schema_version") != WORKFLOW_SCHEMA_VERSION or not isinstance(
+    fresh_active_ticket = (
+        workflow.get("schema_version") == WORKFLOW_SCHEMA_VERSION
+        and workflow.get("dirty") is True
+        and workflow.get("needs_reconcile") is False
+        and basis is None
+    )
+    if fresh_active_ticket:
+        pass
+    elif workflow.get("schema_version") != WORKFLOW_SCHEMA_VERSION or not isinstance(
         basis, dict
     ):
         reasons.append("legacy workflow has no checkpoint basis")
@@ -719,9 +750,16 @@ def load_workflow(root: Path) -> dict[str, object]:
     return payload
 
 
-def begin_work(root: Path, ticket: str, goal: str) -> None:
+def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -> None:
     if not ticket.strip() or not goal.strip():
         raise ValueError("ticket and goal must be non-empty")
+    if session is not None:
+        from pala_store import WorkflowStore
+
+        result = WorkflowStore(root).claim(ticket=ticket, goal=goal, session=session)
+        if result.status == "owned_by_other":
+            raise ValueError("ticket is owned by another active session")
+        return
     if (root / WORKFLOW).is_file():
         existing = load_workflow(root)
         if existing.get("dirty"):
@@ -896,12 +934,25 @@ def validate(root: Path) -> int:
         return 2
 
 
-def context_report(root: Path) -> dict[str, object]:
+def context_report(root: Path, session: str | None = None) -> dict[str, object]:
     manifest = load_manifest(root)
     try:
         workflow = load_workflow(root)
     except (OSError, ValueError, json.JSONDecodeError):
         workflow = {}
+    if session is not None:
+        from pala_store import WorkflowStore
+
+        owned_ticket = WorkflowStore(root).active_for_session(session)
+        if owned_ticket is not None:
+            workflow = {
+                "active_ticket": owned_ticket.get("ticket"),
+                "goal": owned_ticket.get("goal"),
+                "next_action": owned_ticket.get("next_action"),
+                "dirty": owned_ticket.get("dirty"),
+                "verification_tier": "not-run",
+                "blockers": [],
+            }
     documents = manifest.get("documents")
     safe_documents = documents if isinstance(documents, dict) else {}
     reconciliation = (
@@ -929,6 +980,8 @@ def parser() -> argparse.ArgumentParser:
     for command in ("discover", "validate", "instructions", "context"):
         child = subparsers.add_parser(command)
         child.add_argument("--cwd", default=".")
+        if command == "context":
+            child.add_argument("--session-key")
     register_parser = subparsers.add_parser("register")
     register_parser.add_argument("--cwd", default=".")
     register_parser.add_argument("--instructions")
@@ -942,16 +995,32 @@ def parser() -> argparse.ArgumentParser:
     begin_parser.add_argument("--cwd", default=".")
     begin_parser.add_argument("--ticket", required=True)
     begin_parser.add_argument("--goal", required=True)
+    begin_parser.add_argument("--session-key")
     checkpoint_parser = subparsers.add_parser("checkpoint")
     checkpoint_parser.add_argument("--cwd", default=".")
     checkpoint_parser.add_argument("--next-action", required=True)
     checkpoint_parser.add_argument("--verification", action="append", default=[])
     checkpoint_parser.add_argument("--blocker", action="append", default=[])
+    checkpoint_parser.add_argument("--session-key")
+    checkpoint_parser.add_argument("--ticket")
     checkpoint_parser.add_argument(
         "--tier", choices=VERIFICATION_TIERS, default="ticket"
     )
     doctor_parser = subparsers.add_parser("doctor")
     doctor_parser.add_argument("--cwd", default=".")
+    doctor_parser.add_argument("--session-key")
+    verification_parser = subparsers.add_parser("record-verification")
+    verification_parser.add_argument("--cwd", default=".")
+    verification_parser.add_argument("--ticket", required=True)
+    verification_parser.add_argument("--session-key", required=True)
+    verification_parser.add_argument("--status", required=True)
+    verification_parser.add_argument("--command", dest="verification_command", required=True)
+    verification_parser.add_argument("--error", default="")
+    for command in ("recover", "complete"):
+        child = subparsers.add_parser(command)
+        child.add_argument("--cwd", default=".")
+        child.add_argument("--ticket", required=True)
+        child.add_argument("--session-key", required=True)
     return result
 
 
@@ -974,20 +1043,35 @@ def main() -> int:
         return register(args, root)
     if args.command == "context":
         try:
-            print(json.dumps(context_report(root), ensure_ascii=False, indent=2))
+            print(
+                json.dumps(
+                    context_report(root, args.session_key), ensure_ascii=False, indent=2
+                )
+            )
             return 0
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             print(str(exc), file=sys.stderr)
             return 2
     if args.command == "begin":
         try:
-            begin_work(root, args.ticket, args.goal)
+            begin_work(root, args.ticket, args.goal, args.session_key)
         except ValueError as exc:
             print(str(exc), file=sys.stderr)
             return 2
         print(str(root / WORKFLOW))
         return 0
     if args.command == "checkpoint":
+        if args.session_key:
+            if not args.ticket:
+                print("ticket is required with --session-key", file=sys.stderr)
+                return 2
+            from pala_store import WorkflowStore
+
+            result = WorkflowStore(root).checkpoint(
+                args.ticket, args.session_key, args.next_action
+            )
+            print(json.dumps({"status": result.status, "record": result.record}, ensure_ascii=False))
+            return 0 if result.status == "checkpointed" else 2
         try:
             manifest = load_manifest(root)
         except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -1011,8 +1095,30 @@ def main() -> int:
         )
         print(str(root / WORKFLOW))
         return 0
+    if args.command == "record-verification":
+        from pala_store import WorkflowStore
+
+        try:
+            result = WorkflowStore(root).record_verification(
+                args.ticket, args.session_key, args.status, args.verification_command, args.error
+            )
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        print(json.dumps({"status": result.status, "record": result.record}, ensure_ascii=False))
+        return 0 if result.status in {"recorded", "blocked"} else 2
+    if args.command in {"recover", "complete"}:
+        from pala_store import WorkflowStore
+
+        try:
+            result = getattr(WorkflowStore(root), args.command)(args.ticket, args.session_key)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        print(json.dumps({"status": result.status, "record": result.record}, ensure_ascii=False))
+        return 0 if result.status in {"recovered", "completed"} else 2
     if args.command == "doctor":
-        payload = doctor_report(root)
+        payload = doctor_report(root, session=args.session_key)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0 if payload["healthy"] else 2
     return validate(root)

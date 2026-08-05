@@ -19,11 +19,11 @@ project independence, Vibe Coder completion, and reference size so future edits
 cannot silently weaken the workflow.
 
 **Tech Stack:** Markdown Agent Skills, Python `unittest`, Codex command hooks,
-personal Codex plugin marketplace.
+and a local development marketplace.
 
 ## Global Constraints
 
-- Modify only the selected personal plugin source and its installed cache.
+- Modify only the selected plugin source and its local development cache.
 - Do not modify the active application repository.
 - Do not commit, push, release, or deploy.
 - Keep `SKILL.md` concise and load technology profiles conditionally.
@@ -80,7 +80,7 @@ personal Codex plugin marketplace.
 
 **Files:**
 - Modify: `.codex-plugin/plugin.json` through the cachebuster helper.
-- Verify: installed personal-plugin cache.
+- Verify: installed local development cache.
 
 **Interfaces:**
 - Consumes: completed source plugin.
@@ -92,5 +92,5 @@ personal Codex plugin marketplace.
       Next.js SaaS dashboard, separate-backend React dashboard, and backend-only
       API.
 - [x] Replace the Codex cachebuster with the official helper.
-- [x] Reinstall `pala-project-studio@personal`.
+- [x] Reinstall the local development build of `pala-project-studio`.
 - [x] Compare source and installed files by SHA-256 and report the new version.

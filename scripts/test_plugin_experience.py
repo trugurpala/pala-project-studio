@@ -26,13 +26,52 @@ def load_packager():
 
 
 class UserExperienceContractTests(unittest.TestCase):
+    def test_04_single_door_plan_is_opinionated_and_codex_safe(self) -> None:
+        project = (PLUGIN_ROOT / "PROJECT.md").read_text(encoding="utf-8")
+        decisions = (PLUGIN_ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+        design = (
+            PLUGIN_ROOT / "docs" / "PALA_0_4_SINGLE_DOOR.md"
+        ).read_text(encoding="utf-8")
+        normalized = " ".join((project + decisions + design).casefold().split())
+
+        for required in (
+            "tek-kapı",
+            "örtük",
+            "zaten hazır",
+            "external-conflict",
+            "atomik",
+            "rollback",
+            "yeni sohbet",
+            "24 saat",
+            "hook içinde ağ yok",
+            "50 ardışık",
+        ):
+            self.assertIn(required, normalized)
+
+        self.assertIn("updatedInput", decisions)
+        self.assertIn("rtk", normalized)
+        self.assertIn("code-review-graph", normalized)
+        self.assertIn("context7", normalized)
+        self.assertIn("playwright", normalized)
+
+    def test_04_rejects_duplicate_orchestration_owners(self) -> None:
+        decisions = (PLUGIN_ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+        open_source = (PLUGIN_ROOT / "OPEN_SOURCE.md").read_text(encoding="utf-8")
+        normalized = " ".join((decisions + open_source).casefold().split())
+
+        self.assertIn("openspec yalnız zaten kullanan projelerde", normalized)
+        self.assertIn("planning-with-files", normalized)
+        self.assertIn("ruflo", normalized)
+        self.assertIn("kurulmaz", normalized)
+        self.assertIn("0.4 dışında", normalized)
+
     def test_manifest_presents_three_natural_turkish_starters(self) -> None:
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(
                 encoding="utf-8"
             )
         )
-        self.assertTrue(manifest["version"].startswith("0.3.3+codex."))
+        self.assertTrue(manifest["version"].startswith("0.4.0+codex."))
         self.assertEqual(
             manifest["repository"],
             "https://github.com/trugurpala/pala-project-studio",
@@ -51,7 +90,21 @@ class UserExperienceContractTests(unittest.TestCase):
             self.assertNotIn("$", prompt)
         self.assertIn("Türkçe", manifest["interface"]["longDescription"])
 
-    def test_skill_metadata_uses_consistent_brand_and_explicit_invocation(self) -> None:
+    def test_repo_marketplace_exposes_pala_without_personal_profile_assumption(self) -> None:
+        path = PLUGIN_ROOT / ".agents" / "plugins" / "marketplace.json"
+        marketplace = json.loads(path.read_text(encoding="utf-8"))
+
+        self.assertEqual(marketplace["name"], "pala-project-studio")
+        self.assertEqual(marketplace["interface"]["displayName"], "Pala Project Studio")
+        self.assertEqual(len(marketplace["plugins"]), 1)
+        entry = marketplace["plugins"][0]
+        self.assertEqual(entry["name"], "pala-project-studio")
+        self.assertEqual(entry["source"], {"source": "local", "path": "./"})
+        self.assertEqual(entry["policy"]["installation"], "AVAILABLE")
+        self.assertEqual(entry["policy"]["authentication"], "ON_INSTALL")
+        self.assertEqual(entry["category"], "Developer Tools")
+
+    def test_skill_metadata_uses_consistent_brand_and_narrow_implicit_invocation(self) -> None:
         metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(
             encoding="utf-8"
         )
@@ -60,7 +113,12 @@ class UserExperienceContractTests(unittest.TestCase):
             'short_description: "Projeyi anlar, tamamlar ve doğrular"', metadata
         )
         self.assertIn("$pala-project-studio:pala-project-finisher", metadata)
-        self.assertIn("allow_implicit_invocation: false", metadata)
+        self.assertIn("allow_implicit_invocation: true", metadata)
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("software project", skill)
+        self.assertIn("ordinary chat", skill)
+        self.assertIn("another specialist skill/plugin", skill)
+        self.assertIn("explicitly invoked without Pala", skill)
 
     def test_orchestrator_is_concise_and_declares_human_contract(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
@@ -149,7 +207,9 @@ class UserExperienceContractTests(unittest.TestCase):
             status_messages,
             [
                 "Proje durumu yükleniyor",
+                "Güvenli komut optimizasyonu kontrol ediliyor",
                 "Çalışma bağlamı kaydediliyor",
+                "Oturum sahipliği kapatılıyor",
                 "İlerleme kaydı kontrol ediliyor",
             ],
         )
@@ -170,6 +230,26 @@ class UserExperienceContractTests(unittest.TestCase):
 
     def test_single_command_verifier_exists(self) -> None:
         self.assertTrue((PLUGIN_ROOT / "scripts" / "verify.py").is_file())
+
+    def test_portable_package_includes_bounded_update_checker(self) -> None:
+        packager = load_packager()
+        files = packager.source_files(PLUGIN_ROOT)
+        self.assertIn(PLUGIN_ROOT / "scripts" / "pala_update.py", files)
+        self.assertIn(PLUGIN_ROOT / "managed-tools.lock.json", files)
+
+    def test_windows_single_entry_delegates_to_atomic_installer_core(self) -> None:
+        entry = (PLUGIN_ROOT / "Install-Pala.ps1").read_text(encoding="utf-8")
+        wrapper = (PLUGIN_ROOT / "scripts" / "Install-Pala.ps1").read_text(
+            encoding="utf-8"
+        )
+        compact = "".join(wrapper.split())
+
+        self.assertIn("scripts\\Install-Pala.ps1", entry)
+        self.assertIn('ValidateSet("Install","Doctor","Repair","Update","Uninstall")', compact)
+        self.assertIn("pala_installer.py", wrapper)
+        self.assertIn("--dry-run", wrapper)
+        self.assertNotIn("Remove-Item -Path $installRoot -Recurse", wrapper)
+        self.assertNotIn("Copy-Item -Path (Join-Path $pluginRoot", wrapper)
 
     def test_owner_demo_handoff_is_conditional_and_secrets_safe(self) -> None:
         reference = (REFERENCE_ROOT / "owner-demo-handoff.md").read_text(
@@ -234,6 +314,10 @@ class PortablePackageContractTests(unittest.TestCase):
 
             self.assertEqual(names, entries)
             self.assertIn(
+                "pala-project-studio/.agents/plugins/marketplace.json",
+                names,
+            )
+            self.assertIn(
                 "pala-project-studio/.codex-plugin/plugin.json",
                 names,
             )
@@ -245,6 +329,14 @@ class PortablePackageContractTests(unittest.TestCase):
                 "pala-project-studio/scripts/test_plugin_experience.py",
                 names,
             )
+            self.assertIn("pala-project-studio/Install-Pala.ps1", names)
+            self.assertIn("pala-project-studio/scripts/pala_installer.py", names)
+            self.assertIn("pala-project-studio/README.md", names)
+            self.assertIn("pala-project-studio/PROJECT.md", names)
+            self.assertIn("pala-project-studio/DECISIONS.md", names)
+            self.assertIn(
+                "pala-project-studio/docs/PALA_0_4_SINGLE_DOOR.md", names
+            )
             self.assertIn("pala-project-studio/LICENSE", names)
             for name in names:
                 path = PurePosixPath(name)
@@ -252,7 +344,7 @@ class PortablePackageContractTests(unittest.TestCase):
                 self.assertNotIn("..", path.parts)
                 self.assertNotIn("__pycache__", path.parts)
                 self.assertNotIn(".ruff_cache", path.parts)
-                self.assertNotIn("docs", path.parts)
+                self.assertNotIn("superpowers", path.parts)
                 self.assertFalse(name.endswith((".pyc", ".pem", ".key")))
 
             with self.assertRaises(FileExistsError):

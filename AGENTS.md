@@ -4,7 +4,8 @@
 
 - Codex için küçük, güvenli ve token-verimli bir proje yürütme eklentisi geliştir.
 - Eklenti bağlam penceresini veya kullanım kotasını artırdığını iddia etmez; yalnız gerekli bağlamı seçerek israfı azaltır.
-- AZR Reklam gibi uzun soluklu projelerde plan, durum, karar, doğrulama ve tek sonraki işi oturumlar arasında sürdürülebilir tut.
+- Büyük ve uzun soluklu projelerde plan, durum, karar, doğrulama ve tek sonraki
+  işi oturumlar arasında sürdürülebilir tut.
 
 ## Kaynak gerçek ve kapsam
 
@@ -23,7 +24,8 @@
 - Yeni davranışta önce sözleşme testi yaz ve doğru nedenle kırmızı sonucu gör.
 - Geliştirme döngüsünde dar testi; ticket sonunda ilgili kapıyı; milestone/release sonunda tam kapıyı çalıştır.
 - Bir kapı çalıştırılmadıysa `passed` yazma.
-- Secret, token, transcript, gerçek proje verisi veya kişisel plugin verisini kaynak pakete, Git'e ya da hook çıktısına yazma.
+- Secret, token, transcript, gerçek proje verisi veya kullanıcıya ait plugin
+  verisini kaynak pakete, Git'e ya da hook çıktısına yazma.
 - Commit, push, PR, release, görünürlük değişimi ve deploy ayrı yetkilerdir.
 
 ## Doğrulama komutları

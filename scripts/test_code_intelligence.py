@@ -28,6 +28,19 @@ packager = load_module("pala_build_portable", SCRIPTS / "build_portable.py")
 
 
 class CodeIntelligenceTests(unittest.TestCase):
+    def test_github_router_prefers_connector_then_gh_then_redacted_git(self) -> None:
+        github = load_module("pala_github", SCRIPTS / "pala_github.py")
+        self.assertEqual(github.GitHubRouter(connector_available=True, gh_path="gh").inspect(ROOT)["route"], "connector")
+        self.assertEqual(github.GitHubRouter(gh_path="gh").inspect(ROOT)["route"], "gh")
+        self.assertEqual(
+            github.GitHubRouter._redact("https://token@example.com/owner/repo.git"),
+            "https://[redacted]@example.com/owner/repo.git",
+        )
+    def test_graph_thresholds_only_enable_large_or_cross_module_work(self) -> None:
+        self.assertFalse(code_intel.graph_eligible(999, 49, 3))
+        self.assertTrue(code_intel.graph_eligible(1000, 1, 1))
+        self.assertTrue(code_intel.graph_eligible(1, 50, 1))
+        self.assertTrue(code_intel.graph_eligible(1, 1, 4))
     def test_missing_graph_tool_has_honest_local_fallback(self) -> None:
         with patch.object(code_intel.shutil, "which", return_value=None):
             result = code_intel.status(None)
