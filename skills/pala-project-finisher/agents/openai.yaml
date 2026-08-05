@@ -1,0 +1,7 @@
+interface:
+  display_name: "Pala Project Studio · Finisher"
+  short_description: "Projeyi anlar, tamamlar ve doğrular"
+  default_prompt: "$pala-project-studio:pala-project-finisher ile isteğimi anla, doğru görev modunu seç, önce salt okunur incele ve yalnız yetkilendirdiğim sonucu tamamla."
+
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,36 @@
+{
+  "name": "pala-project-studio",
+  "version": "0.3.0+codex.20260805165659",
+  "description": "Codex i\u00e7in kal\u0131c\u0131, token-verimli proje y\u00fcr\u00fctme ve katmanl\u0131 do\u011frulama i\u015f ak\u0131\u015f\u0131.",
+  "author": {
+    "name": "Pala",
+    "url": "https://github.com/trugurpala"
+  },
+  "homepage": "https://github.com/trugurpala/pala-project-studio",
+  "repository": "https://github.com/trugurpala/pala-project-studio",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "project-management",
+    "verification",
+    "turkish"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Pala Project Studio",
+    "shortDescription": "Projeyi anlar, planlar, uygular ve do\u011frular.",
+    "longDescription": "T\u00fcrk\u00e7e \u00e7al\u0131\u015fan proje y\u00fcr\u00fctme deneyimiyle aktif i\u015fi k\u0131sa ba\u011flamda tutar, plan ve durum kaymas\u0131n\u0131 fark eder, do\u011frulamay\u0131 de\u011fi\u015fiklik riskine g\u00f6re katmanland\u0131r\u0131r ve Codex'in yetkilendirilmi\u015f yerel i\u015fi ba\u015ftan sona s\u00fcrd\u00fcrmesine yard\u0131m eder.",
+    "developerName": "Pala",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Bu projeyi anlay\u0131p g\u00fcvenli bi\u00e7imde tamamla.",
+      "Bu projeyi denetle, eksikleri d\u00fczelt ve \u00e7al\u0131\u015ft\u0131r.",
+      "Bu fikri do\u011fru mimariyle \u00e7al\u0131\u015fan bir projeye d\u00f6n\u00fc\u015ft\u00fcr."
+    ]
+  }
+}

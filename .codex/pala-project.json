@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "managed_by": "pala-project-finisher",
+  "registered_at": "2026-08-05T13:58:28.567415+00:00",
+  "project_kind": "existing",
+  "profiles": [
+    "project-intake",
+    "reuse-or-build",
+    "architecture-selection",
+    "modularity-budgets",
+    "runtime-delivery"
+  ],
+  "documents": {
+    "instructions": "AGENTS.md",
+    "project": "PROJECT.md",
+    "plan": "PLAN.md",
+    "status": "STATUS.md",
+    "decisions": "DECISIONS.md",
+    "open_source": "OPEN_SOURCE.md"
+  }
+}

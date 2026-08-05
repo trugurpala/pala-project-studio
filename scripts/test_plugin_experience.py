@@ -1,0 +1,250 @@
+#!/usr/bin/env python3
+"""Contract tests for the Pala Project Studio user experience and package."""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import tempfile
+import unittest
+import zipfile
+from pathlib import Path, PurePosixPath
+
+PLUGIN_ROOT = Path(__file__).resolve().parent.parent
+SKILL_ROOT = PLUGIN_ROOT / "skills" / "pala-project-finisher"
+REFERENCE_ROOT = SKILL_ROOT / "references"
+PACKAGER_PATH = PLUGIN_ROOT / "scripts" / "build_portable.py"
+
+
+def load_packager():
+    spec = importlib.util.spec_from_file_location("build_portable", PACKAGER_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load build_portable.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class UserExperienceContractTests(unittest.TestCase):
+    def test_manifest_presents_three_natural_turkish_starters(self) -> None:
+        manifest = json.loads(
+            (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertTrue(manifest["version"].startswith("0.3.0+codex."))
+        self.assertEqual(
+            manifest["repository"],
+            "https://github.com/trugurpala/pala-project-studio",
+        )
+        self.assertEqual(manifest["license"], "MIT")
+        self.assertEqual(
+            manifest["interface"]["defaultPrompt"],
+            [
+                "Bu projeyi anlayıp güvenli biçimde tamamla.",
+                "Bu projeyi denetle, eksikleri düzelt ve çalıştır.",
+                "Bu fikri doğru mimariyle çalışan bir projeye dönüştür.",
+            ],
+        )
+        for prompt in manifest["interface"]["defaultPrompt"]:
+            self.assertLessEqual(len(prompt), 128)
+            self.assertNotIn("$", prompt)
+        self.assertIn("Türkçe", manifest["interface"]["longDescription"])
+
+    def test_skill_metadata_uses_consistent_brand_and_explicit_invocation(self) -> None:
+        metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('display_name: "Pala Project Studio · Finisher"', metadata)
+        self.assertIn(
+            'short_description: "Projeyi anlar, tamamlar ve doğrular"', metadata
+        )
+        self.assertIn("$pala-project-studio:pala-project-finisher", metadata)
+        self.assertIn("allow_implicit_invocation: false", metadata)
+
+    def test_orchestrator_is_concise_and_declares_human_contract(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.assertLessEqual(len(skill.split()), 450)
+        for principle in (
+            "Understand before changing.",
+            "Choose the smallest correct and sustainable path.",
+            "Touch only the necessary scope.",
+            "Do not call it complete without evidence.",
+        ):
+            self.assertIn(principle, skill)
+        self.assertIn("(references/specialist-routing.md)", skill)
+        self.assertIn("1–3 short lines", skill)
+        self.assertIn("user's language", skill)
+
+    def test_task_modes_prevent_unrequested_writes_and_runtime_work(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        normalized = " ".join(skill.split())
+        self.assertIn("Read-only audit/report", skill)
+        self.assertIn("Plan-only", skill)
+        self.assertIn("Implementation", skill)
+        self.assertIn(
+            "do not register, begin, edit, or write state",
+            normalized,
+        )
+        self.assertIn(
+            "do not implement or run the completion gate",
+            normalized,
+        )
+
+    def test_specialist_routing_is_conditional_and_current(self) -> None:
+        path = REFERENCE_ROOT / "specialist-routing.md"
+        if not path.is_file():
+            self.fail("specialist-routing.md is missing")
+        routing = path.read_text(encoding="utf-8")
+        normalized = " ".join(routing.split())
+        for required in (
+            "supabase:supabase",
+            "supabase:supabase-postgres-best-practices",
+            "github:github",
+            "superpowers:",
+            "The user does not need to provide external links",
+            "Local Git work alone does not trigger GitHub",
+            "stage, commit, push, pull request, tag, release, and deployment",
+        ):
+            self.assertIn(required, normalized)
+        self.assertNotIn("user_metadata", routing)
+        self.assertNotIn("security_invoker", routing)
+
+    def test_safety_rules_separate_authorizable_actions_from_absolute_bans(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        normalized = " ".join(skill.split())
+        self.assertIn(
+            "Never expose secrets, weaken tests, invent data, or misreport "
+            "verification.",
+            normalized,
+        )
+        self.assertIn(
+            "Require separate explicit authority for commit, push, pull "
+            "request, tag, release, and deployment.",
+            normalized,
+        )
+
+    def test_time_sensitive_codex_and_framework_defaults_are_not_frozen(self) -> None:
+        memory = (REFERENCE_ROOT / "project-memory.md").read_text(encoding="utf-8")
+        frontend = (REFERENCE_ROOT / "frontend-engineering.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("32 KiB", memory)
+        self.assertNotIn("codex --ask-for-approval never", memory)
+        self.assertNotIn("server components as the default", frontend)
+        self.assertIn("current official guidance", memory)
+        self.assertIn("installed framework version", " ".join(frontend.split()))
+
+    def test_hook_status_messages_are_natural_turkish(self) -> None:
+        hooks = json.loads(
+            (PLUGIN_ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8")
+        )
+        status_messages = [
+            hook["statusMessage"]
+            for groups in hooks["hooks"].values()
+            for group in groups
+            for hook in group["hooks"]
+        ]
+        self.assertEqual(
+            status_messages,
+            [
+                "Proje durumu yükleniyor",
+                "Çalışma bağlamı kaydediliyor",
+                "İlerleme kaydı kontrol ediliyor",
+            ],
+        )
+
+    def test_github_reference_excludes_secrets_and_requires_separate_authority(self) -> None:
+        text = (REFERENCE_ROOT / "github-persistence.md").read_text(
+            encoding="utf-8"
+        )
+        normalized = " ".join(text.casefold().split())
+        for required in (
+            "never store tokens",
+            "transcripts",
+            "commit, push, pull request, release, deployment, and visibility",
+            "separate authority",
+            "private repository",
+        ):
+            self.assertIn(required, normalized)
+
+    def test_single_command_verifier_exists(self) -> None:
+        self.assertTrue((PLUGIN_ROOT / "scripts" / "verify.py").is_file())
+
+    def test_github_quality_workflow_is_small_and_pinned(self) -> None:
+        workflow = (
+            PLUGIN_ROOT / ".github" / "workflows" / "quality.yml"
+        ).read_text(encoding="utf-8")
+        normalized = " ".join(workflow.split())
+        self.assertIn("permissions: contents: read", normalized)
+        self.assertIn("cancel-in-progress: true", workflow)
+        self.assertIn(
+            "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            workflow,
+        )
+        self.assertIn(
+            "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            workflow,
+        )
+        self.assertIn("python scripts/verify.py", workflow)
+        self.assertNotIn("write-all", workflow)
+        self.assertNotIn("strategy:", workflow)
+
+
+class PortablePackageContractTests(unittest.TestCase):
+    def test_packager_exists(self) -> None:
+        self.assertTrue(PACKAGER_PATH.is_file())
+
+    @unittest.skipUnless(PACKAGER_PATH.is_file(), "packager not implemented")
+    def test_packager_creates_safe_allowlisted_archive_without_overwrite(
+        self,
+    ) -> None:
+        packager = load_packager()
+        with tempfile.TemporaryDirectory(prefix="Pala package test ") as temp:
+            output = Path(temp) / "pala.zip"
+            entries = packager.build_archive(output, PLUGIN_ROOT)
+            self.assertTrue(output.is_file())
+            self.assertEqual(entries, sorted(entries, key=str.casefold))
+
+            with zipfile.ZipFile(output) as archive:
+                names = archive.namelist()
+
+            self.assertEqual(names, entries)
+            self.assertIn(
+                "pala-project-studio/.codex-plugin/plugin.json",
+                names,
+            )
+            self.assertIn(
+                "pala-project-studio/skills/pala-project-finisher/SKILL.md",
+                names,
+            )
+            self.assertIn(
+                "pala-project-studio/scripts/test_plugin_experience.py",
+                names,
+            )
+            self.assertIn("pala-project-studio/LICENSE", names)
+            for name in names:
+                path = PurePosixPath(name)
+                self.assertFalse(path.is_absolute())
+                self.assertNotIn("..", path.parts)
+                self.assertNotIn("__pycache__", path.parts)
+                self.assertNotIn(".ruff_cache", path.parts)
+                self.assertNotIn("docs", path.parts)
+                self.assertFalse(name.endswith((".pyc", ".pem", ".key")))
+
+            with self.assertRaises(FileExistsError):
+                packager.build_archive(output, PLUGIN_ROOT)
+
+    @unittest.skipUnless(PACKAGER_PATH.is_file(), "packager not implemented")
+    def test_packager_rejects_unsafe_and_case_colliding_names(self) -> None:
+        packager = load_packager()
+        for value in ("/absolute/file", "../escape", "C:/drive/file"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    packager.validate_archive_name(value)
+        with self.assertRaises(ValueError):
+            packager.ensure_unique_names(["Root/File.py", "root/file.py"])
+
+
+if __name__ == "__main__":
+    unittest.main()

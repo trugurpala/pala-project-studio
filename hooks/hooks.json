@@ -1,0 +1,47 @@
+{
+  "description": "Durable project-state reminders for projects registered by Pala Project Finisher.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${PLUGIN_ROOT}/scripts/pala_hook.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pala_hook.py\"",
+            "timeout": 10,
+            "statusMessage": "Proje durumu yükleniyor",
+            "additionalContextLimit": 800
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${PLUGIN_ROOT}/scripts/pala_hook.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pala_hook.py\"",
+            "timeout": 10,
+            "statusMessage": "Çalışma bağlamı kaydediliyor"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${PLUGIN_ROOT}/scripts/pala_hook.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pala_hook.py\"",
+            "timeout": 10,
+            "statusMessage": "İlerleme kaydı kontrol ediliyor"
+          }
+        ]
+      }
+    ]
+  }
+}
