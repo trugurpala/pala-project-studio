@@ -7,10 +7,15 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import urllib.request
 import uuid
 from pathlib import Path
+from pathlib import PurePosixPath
+import stat
+import zipfile
 
 
 def _safe_part(value: str) -> str:
@@ -30,6 +35,41 @@ def _read_json(path: Path) -> dict[str, object] | None:
     except (OSError, ValueError):
         return None
     return value if isinstance(value, dict) else None
+
+
+def _file_hash(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _archive_path(name: str) -> PurePosixPath:
+    candidate = PurePosixPath(name.replace("\\", "/"))
+    if not name or candidate.is_absolute() or any(part in {"", ".", ".."} for part in candidate.parts):
+        raise ValueError("unsafe ZIP member path")
+    return candidate
+
+
+def _expanded_zip_status(target: Path, executable: PurePosixPath) -> dict[str, object] | None:
+    expanded = target / "expanded"
+    marker = _read_json(expanded / "install.json")
+    if marker is None or not expanded.is_dir():
+        return None
+    files = marker.get("files")
+    if not isinstance(files, dict):
+        return None
+    for relative, expected in files.items():
+        if not isinstance(relative, str) or not isinstance(expected, str):
+            return None
+        path = expanded.joinpath(*_archive_path(relative).parts)
+        if not path.is_file() or _file_hash(path) != expected:
+            return None
+    executable_path = expanded.joinpath(*executable.parts)
+    if not executable_path.is_file():
+        return None
+    return {"state": "ready", "changed": False, "path": str(expanded), "executable": str(executable_path)}
 
 
 def inspect_binary(name: str, spec: dict[str, str], state_root: Path) -> dict[str, object]:
@@ -95,3 +135,121 @@ def install_binary(
         shutil.rmtree(staging, ignore_errors=True)
         raise
     return {"state": "ready", "changed": True, "path": str(target)}
+
+
+def expand_verified_zip(
+    name: str, spec: dict[str, str], state_root: Path, executable: str
+) -> dict[str, object]:
+    """Expand a verified Pala-owned ZIP without trusting archive paths or links."""
+    name = _safe_part(name)
+    version = _safe_part(spec.get("version", ""))
+    executable_path = _archive_path(executable)
+    inspected = inspect_binary(name, spec, state_root)
+    if inspected["state"] != "ready":
+        raise ValueError("verified ZIP artifact is required before expansion")
+    target = state_root.resolve() / "experts" / name / version
+    expanded = target / "expanded"
+    if expanded.exists():
+        existing = _expanded_zip_status(target, executable_path)
+        if existing is not None:
+            return existing
+        return {"state": "external_conflict", "changed": False, "path": str(expanded)}
+    staging = Path(tempfile.mkdtemp(prefix=".expanded-", dir=target))
+    try:
+        files: dict[str, str] = {}
+        with zipfile.ZipFile(target / "payload.bin") as archive:
+            for member in archive.infolist():
+                relative = _archive_path(member.filename)
+                if stat.S_ISLNK(member.external_attr >> 16):
+                    raise ValueError("ZIP symbolic links are not allowed")
+                destination = staging.joinpath(*relative.parts)
+                if member.is_dir():
+                    destination.mkdir(parents=True, exist_ok=True)
+                    continue
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                with archive.open(member, "r") as source, destination.open("xb") as output:
+                    shutil.copyfileobj(source, output)
+                files[relative.as_posix()] = _file_hash(destination)
+        target_executable = staging.joinpath(*executable_path.parts)
+        if not target_executable.is_file():
+            raise ValueError("verified ZIP does not contain the required executable")
+        (staging / "install.json").write_text(
+            json.dumps({"files": files}, ensure_ascii=True, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.replace(staging, expanded)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    return {"state": "ready", "changed": True, "path": str(expanded), "executable": str(expanded.joinpath(*executable_path.parts))}
+
+
+def install_python_tool(
+    name: str,
+    spec: dict[str, str],
+    state_root: Path,
+    *,
+    uv: str = "uv",
+    run=None,
+) -> dict[str, object]:
+    """Install a verified wheel in Pala's uv tool and binary roots only."""
+    inspected = inspect_binary(name, spec, state_root)
+    if inspected["state"] != "ready":
+        raise ValueError("verified Python wheel is required before installation")
+    root = state_root.resolve() / "experts"
+    tool_dir = root / "python-tools"
+    bin_dir = root / "python-bin"
+    cache_dir = root / "python-cache"
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "UV_TOOL_DIR": str(tool_dir),
+            "UV_TOOL_BIN_DIR": str(bin_dir),
+            "UV_CACHE_DIR": str(cache_dir),
+            "UV_PYTHON_DOWNLOADS": "never",
+        }
+    )
+    version = _safe_part(spec.get("version", ""))
+    expected_hash = spec.get("sha256", "").casefold()
+    source_payload = root / name / version / "payload.bin"
+    wheel = root / "python-wheels" / f"{name}-{version}.whl"
+    if wheel.exists() and _file_hash(wheel) != expected_hash:
+        return {"state": "external_conflict", "changed": False, "path": str(wheel)}
+    if not wheel.exists():
+        wheel.parent.mkdir(parents=True, exist_ok=True)
+        staging = wheel.with_name(f".{wheel.name}.{uuid.uuid4().hex}")
+        try:
+            shutil.copyfile(source_payload, staging)
+            if _file_hash(staging) != expected_hash:
+                raise ValueError("verified wheel copy hash mismatch")
+            os.replace(staging, wheel)
+        except Exception:
+            staging.unlink(missing_ok=True)
+            raise
+    command = (
+        uv,
+        "tool",
+        "install",
+        "--force",
+        "--python",
+        sys.executable,
+        "--no-python-downloads",
+        "--no-build",
+        "--link-mode",
+        "copy",
+        str(wheel),
+    )
+    if run is None:
+        completed = subprocess.run(command, check=False, env=environment, timeout=600)
+        code = completed.returncode
+    else:
+        result = run(command, environment)
+        code = result.returncode if hasattr(result, "returncode") else int(result)
+    if code != 0:
+        raise RuntimeError(f"Pala-owned Python tool installation failed: {name}")
+    return {
+        "state": "ready",
+        "changed": True,
+        "path": str(tool_dir),
+        "bin_dir": str(bin_dir),
+    }
