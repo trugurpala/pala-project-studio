@@ -33,4 +33,6 @@ jobs:
           python-version: "3.12"
 
       - name: Verify plugin
+        env:
+          PYTHONIOENCODING: utf-8
         run: python scripts/verify.py
