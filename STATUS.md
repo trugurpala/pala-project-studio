@@ -1,12 +1,12 @@
 # Pala Project Studio Durumu
 
 - Aktif milestone: M16 — Doktor uzlaştırma doğruluğu (`completed`)
-- Aktif ticket: PALA-046 — `doctor` ile `context` arasındaki checkpoint
-  uzlaştırma raporlama farkını kaldırma.
-- Son tamamlanan sonuç: `doctor`, artık workflow'daki eski bayrağı yansıtmak
-  yerine `context` ile aynı checkpoint belge/Git karşılaştırmasını hesaplar.
-  Böylece Pala, gerçek uzlaştırma gereksinimini sağlık denetiminde de gösterir.
-  Yeni v3 oturum ticket'ları da checkpoint öncesinde doğru biçimde temiz kabul edilir.
+- Aktif ticket: PALA-047 — CI kurulum/doctor/update çevrim testini host
+  araçlarından bağımsızlaştırma.
+- Son tamamlanan sonuç: CI başarısızlığı, üretim kodunda değil testin CI
+  ana makinesinde bulunmayan `codex`, `node` ve `uv` yollarını gerçek ortamdan
+  okumasındaydı. Test artık gerekli araç keşfini deterministik olarak mock'lar
+  ve yönetilen kurulum döngüsünün kendi sözleşmesine odaklanır.
 - Bulunan ürün açığı: Geliştirme ortamındaki etkin Pala sürümü kaynak sürümünün
   gerisinde kalabildi. Bu, global kurucuda desteklenen Codex CLI üzerinden
   kurulum keşfi, update ve doctor kapılarının zorunlu olduğunu kanıtlıyor.
@@ -85,3 +85,6 @@
   SHA-256 değerini verdiğini doğruladı; paket çıktısı kaynak belgeleri değiştiğinde
   değişebileceği için bu durum belgesinde sabit hash tutulmaz.
 - Tek sonraki iş: Yeni kullanıcı isteğini bekle.
+- PALA-047 kanıtı: CI'daki Ubuntu ve Windows doğrulama hatası
+  `test_install_doctor_update_cycles_are_dry` içinde yeniden üretildi; hedef test
+  ve `py -3 scripts/verify.py` 151 test ile yerelde geçti.

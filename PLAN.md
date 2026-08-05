@@ -182,3 +182,6 @@
   `context` ile aynı uzlaştırma hesabından göstermesini sağla; belge sürüklenmesi
   için regresyon testi ekle. Yeni v3 oturum ticket'larının checkpoint öncesi
   yanlışlıkla eski workflow sayılmamasını kapsa ve tam yerel kapıyı çalıştır.
+- [x] PALA-047: Kurulum/doctor/update çevrim testini CI ana makinesindeki
+  `codex`, `node` ve `uv` kurulumundan bağımsızlaştır; testin sözleşmesi olan
+  yönetilen kurulum döngüsünü deterministik araç keşfiyle doğrula.

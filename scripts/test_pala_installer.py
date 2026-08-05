@@ -295,7 +295,14 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertTrue(update["changed"])
             fingerprint = self.installer.tree_fingerprint(install_root)
 
-            with patch.object(self.installer, "project_doctor", return_value={"available": True}):
+            with (
+                patch.object(self.installer, "project_doctor", return_value={"available": True}),
+                patch.object(
+                    self.installer.shutil,
+                    "which",
+                    side_effect=lambda tool: f"/tools/{tool}",
+                ),
+            ):
                 for _ in range(50):
                     doctor = self.installer.doctor_installation(
                         source,
