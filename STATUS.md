@@ -38,8 +38,13 @@
   Pala-managed fingerprint'i değiştirmedi.
 - Engel: Yok. PALA-043 yerel workflow kaydı ana çalışma alanında eski kalmıştı;
   izole PALA-045 worktree'sinde yeni state ile uzlaştırıldı.
-- Tek sonraki iş: Pala sahiplikli uzman kurucusunu ve Doctor bütünlük
-  denetimini TDD ile bağla.
+- Tek sonraki iş: Standart kurulumun Pala-owned Ollama sürecini başlatıp Qwen3
+  modelini de aynı doğrulama zincirinde idempotent kurmasını tamamla.
+- PALA-045 yerel kanıtı: Pala-owned Graphify, Serena, codebase-memory ve
+  Ollama artifact'ları SHA-256 ile doğrulandı. Graphify `--code-only` smoke
+  çalışması Pala veri kökünde 451 düğüm/909 kenar üretti; codebase-memory
+  tek-atımlık index 844 düğüm/3298 kenarla tamamlandı. Ayrı loopback Ollama
+  deposunda `qwen3:4b-instruct` kimliği `0edcdef34593` olarak doğrulandı.
 - Güncelleme: 2026-08-05
 - 0.4 teslim hazırlığı: session-safe state, adapter sözleşmeleri, fail-closed
   RTK hook'u, graph eşiği ve GitHub routing private release dalında birleşti.

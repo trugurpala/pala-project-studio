@@ -154,6 +154,20 @@ class ExpertInstallerTests(unittest.TestCase):
             self.installer.install_python_tool("serena", spec, state, uv="uv.exe", allow_build=True, run=lambda args, _env: calls.append(args) or 0)
             self.assertNotIn("--no-build", calls[0])
 
+    def test_model_inspection_requires_pala_host_and_pinned_identifier(self) -> None:
+        spec = {"version": "qwen3:4b-instruct", "integrity": "ollama:0edcdef34593"}
+        with tempfile.TemporaryDirectory() as temp:
+            state = Path(temp) / "Pala"
+            executable = state / "experts" / "ollama" / "0.32.6" / "expanded" / "ollama.exe"
+            executable.parent.mkdir(parents=True)
+            executable.touch()
+            result = self.installer.inspect_ollama_model(
+                spec, state,
+                run=lambda args, env: (args, env, 0, "qwen3:4b-instruct    0edcdef34593    2.5 GB\n"),
+            )
+            self.assertEqual(result["state"], "ready")
+            self.assertEqual(result["environment"]["OLLAMA_HOST"], "127.0.0.1:11435")
+
 
 if __name__ == "__main__":
     unittest.main()

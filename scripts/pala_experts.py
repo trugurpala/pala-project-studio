@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import asdict, dataclass
 from pathlib import Path, PurePath
 from typing import Literal
@@ -64,33 +65,62 @@ class ExpertCommand:
     environment: dict[str, str]
 
 
-def graphify_command(root: Path, data_root: Path, *, semantic: bool) -> ExpertCommand:
+def pala_state_root() -> Path:
+    profile = Path(os.environ.get("USERPROFILE", Path.home()))
+    return Path(os.environ.get("LOCALAPPDATA", profile / "AppData" / "Local")) / "Pala"
+
+
+def expert_executable(name: str, state_root: Path | None = None) -> Path:
+    root = (state_root or pala_state_root()).resolve() / "experts"
+    locations = {
+        "graphify": root / "python-bin" / "graphify.exe",
+        "serena": root / "python-bin" / "serena.exe",
+        "codebase-memory": root / "codebase-memory" / "0.9.0" / "expanded" / "codebase-memory-mcp.exe",
+        "ollama": root / "ollama" / "0.32.6" / "expanded" / "ollama.exe",
+    }
+    try:
+        return locations[name]
+    except KeyError as error:
+        raise ValueError("unsupported expert executable") from error
+
+
+def ollama_environment(state_root: Path | None = None) -> dict[str, str]:
+    root = (state_root or pala_state_root()).resolve()
+    return {
+        "OLLAMA_HOST": "127.0.0.1:11435",
+        "OLLAMA_MODELS": str(root / "experts" / "ollama" / "0.32.6" / "models"),
+        "OLLAMA_KEEP_ALIVE": "0",
+    }
+
+
+def graphify_command(root: Path, data_root: Path, *, semantic: bool, state_root: Path | None = None) -> ExpertCommand:
     root = root.resolve()
     output = data_root.resolve()
-    args = ["graphify", "extract", str(root), "--out", str(output)]
+    args = [str(expert_executable("graphify", state_root)), "extract", str(root), "--out", str(output)]
     environment = {"GRAPHIFY_QUERY_LOG_DISABLE": "1"}
     if semantic:
         args.extend(["--backend", "ollama", "--model", "qwen3:4b-instruct", "--max-concurrency", "1"])
+        environment.update(ollama_environment(state_root))
         environment.update({"OLLAMA_MODEL": "qwen3:4b-instruct", "GRAPHIFY_OLLAMA_KEEP_ALIVE": "0"})
     else:
         args.append("--code-only")
     return ExpertCommand(tuple(args), environment)
 
 
-def serena_command(root: Path, home: Path) -> ExpertCommand:
+def serena_command(root: Path, home: Path, *, state_root: Path | None = None) -> ExpertCommand:
     del root
     return ExpertCommand(
-        ("serena", "start-mcp-server", "--project-from-cwd", "--context", "codex", "--mode", "no-memories", "--open-web-dashboard", "false"),
+        (str(expert_executable("serena", state_root)), "start-mcp-server", "--project-from-cwd", "--context", "codex", "--mode", "no-memories", "--mode", "planning", "--open-web-dashboard", "false"),
         {"SERENA_HOME": str(home.resolve())},
     )
 
 
-def codebase_memory_command(root: Path, action: str) -> ExpertCommand:
+def codebase_memory_command(root: Path, action: str, *, state_root: Path | None = None) -> ExpertCommand:
     if action not in {"index_repository", "search_graph", "trace_path", "detect_changes", "get_architecture"}:
         raise ValueError("unsupported codebase-memory action")
     resolved = root.resolve()
     return ExpertCommand(
-        ("codebase-memory-mcp", "cli", action, "--repo-path", str(resolved)),
+        (str(expert_executable("codebase-memory", state_root)), "cli", action, "--repo-path", str(resolved)),
         {"CBM_ALLOWED_ROOT": str(resolved)},
     )
 

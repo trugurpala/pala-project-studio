@@ -153,15 +153,15 @@
 
 ## M14 — Pala güvenli uzman işçileri
 
-- [ ] PALA-045: `code-review-graph` varsayılanını koruyan deterministik uzman
+- [x] PALA-045: `code-review-graph` varsayılanını koruyan deterministik uzman
   yönlendiricisini; Graphify, Serena ve codebase-memory için ortak kanıt
   sözleşmesini ekle.
-- [ ] Graphify'nin tüm çıktısını Pala veri köküne yönlendir; kodda `--code-only`,
+- [x] Graphify'nin tüm çıktısını Pala veri köküne yönlendir; kodda `--code-only`,
   belge/PDF işinde yalnız görev ömürlü yerel Ollama backend'i kullan.
-- [ ] Serena'yı Pala sahipliğinde, salt-okunur, dashboard/bellek/shell/edit
+- [x] Serena'yı Pala sahipliğinde, salt-okunur, dashboard/bellek/shell/edit
   araçları kapalı stdio MCP sarmalayıcısı olarak kur; Python, JS/TS, PHP ve
   PowerShell dil sunucularını sabitle.
-- [ ] codebase-memory'yi yalnız tek-atımlık CLI ve `CBM_ALLOWED_ROOT` sınırıyla
+- [x] codebase-memory'yi yalnız tek-atımlık CLI ve `CBM_ALLOWED_ROOT` sınırıyla
   çalıştır; UI, daemon, watcher ve hook kurma.
 - [ ] Standart kurulumda Pala sahipliğinde Ollama + Qwen3 4B hazırla; kullanıcı
   Ollama/model alanını değiştirme ve bütün dosyaları hash ile doğrula.

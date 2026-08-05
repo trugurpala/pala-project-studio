@@ -311,6 +311,37 @@ def _load_lock(path: Path) -> dict[str, dict[str, str]]:
     return result
 
 
+def ollama_environment(state_root: Path) -> dict[str, str]:
+    return {
+        "OLLAMA_HOST": "127.0.0.1:11435",
+        "OLLAMA_MODELS": str(state_root.resolve() / "experts" / "ollama" / "0.32.6" / "models"),
+        "OLLAMA_KEEP_ALIVE": "0",
+    }
+
+
+def inspect_ollama_model(
+    spec: dict[str, str], state_root: Path, *, run=None
+) -> dict[str, object]:
+    """Validate that the pinned model is served only from Pala's loopback runtime."""
+    model = spec.get("version", "")
+    expected = spec.get("integrity", "").removeprefix("ollama:")
+    environment = {**os.environ, **ollama_environment(state_root)}
+    executable = state_root.resolve() / "experts" / "ollama" / "0.32.6" / "expanded" / "ollama.exe"
+    if not executable.is_file() or not model or not expected:
+        return {"state": "missing", "changed": False, "environment": ollama_environment(state_root)}
+    command = (str(executable), "list")
+    if run is None:
+        completed = subprocess.run(command, check=False, capture_output=True, text=True, encoding="utf-8", errors="replace", env=environment, timeout=15)
+        code, output = completed.returncode, completed.stdout
+    else:
+        result = run(command, environment)
+        if not isinstance(result, tuple) or len(result) != 4:
+            raise ValueError("model inspection runner returned an invalid result")
+        _, _, code, output = result
+    found = any(line.split()[:2] == [model, expected[:12]] for line in str(output).splitlines())
+    return {"state": "ready" if code == 0 and found else "missing", "changed": False, "environment": ollama_environment(state_root)}
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("action", choices=("install", "doctor"))
@@ -327,6 +358,9 @@ def main() -> int:
         lock = _load_lock(args.lock)
         if args.action == "doctor":
             payload = {name: inspect_binary(name, lock[name], args.state_root) for name in sorted(PYTHON_EXPERTS | set(ZIP_EXPERTS))}
+            model_spec = lock.get("qwen3-4b-instruct")
+            if isinstance(model_spec, dict):
+                payload["qwen3-4b-instruct"] = inspect_ollama_model(model_spec, args.state_root)
             report: dict[str, object] = {"state": "ready" if all(item["state"] == "ready" for item in payload.values()) else "attention_required", "experts": payload}
         else:
             report = install_expert_suite(lock, args.state_root, dry_run=args.dry_run, uv=args.uv)
