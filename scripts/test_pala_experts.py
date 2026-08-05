@@ -100,7 +100,7 @@ class ExpertCommandTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             state = Path(temp) / "Pala"
             command = self.experts.graphify_command(ROOT, ROOT.parent / "expert-data", semantic=False, state_root=state)
-        self.assertEqual(command.args[:2], (str(state / "experts" / "python-bin" / "graphify.exe"), "extract"))
+        self.assertEqual(command.args[:2], (str((state / "experts" / "python-bin" / "graphify.exe").resolve()), "extract"))
         self.assertIn("--code-only", command.args)
         self.assertIn("--out", command.args)
         self.assertNotIn("install", command.args)
