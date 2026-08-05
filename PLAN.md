@@ -83,7 +83,7 @@
 - [x] Repo kapsamlı `.agents/plugins/marketplace.json` kataloğunu doğrula;
   GitHub checkout veya portable ZIP kökünü desteklenen `codex plugin
   marketplace add` ve `codex plugin add` akışına bağla.
-- [ ] Temiz Windows kullanıcı profilinde kurulu Pala yok, güncel Pala var,
+- [x] Temiz Windows kullanıcı profilinde kurulu Pala yok, güncel Pala var,
   eski Pala var ve aynı adlı yabancı kayıt var senaryolarını ayır; kullanıcıya
   ait katalog veya ayarı sessizce değiştirme.
 - [ ] Pala'ya ait kurulum envanteri, güncelleme önbelleği ve logları atomik,

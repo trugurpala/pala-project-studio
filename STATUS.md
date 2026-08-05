@@ -12,8 +12,8 @@
 - Ortam önkoşulu: Kurucu temiz Windows kullanıcı profillerinde çalışacak;
   geliştirici bilgisayarının donanımına, mutlak yollarına veya önceden kurulmuş
   yardımcı araçlarına güvenmeyecek.
-- Doğrulama: kaynak ve portable içinden `python scripts/verify.py` — 73 test
-  passed; güncel ara `reproducible_zip_sha256=784EAFE31797FF8FC12AB3FC389E1254A6B94F7B1FBC6B146AE047C2EBA74A66`.
+- Doğrulama: kaynak ve portable içinden `python scripts/verify.py` — 76 test
+  passed; güncel ara `reproducible_zip_sha256=DC62D04ECE4BC2DA30B08CCFEDFF89E073E4CFFC32CBA1CACFCB1D2AD8933FD0`.
   Bu SHA yalnız PALA-041 ara paketi içindir; 0.4 release kanıtı değildir.
   Son yayımlanmış 0.3.3 için GitHub Actions `31021033644` Windows ve Ubuntu'da
   başarılıydı.
@@ -26,9 +26,11 @@
   ZIP içinden de geçti. Yönetilen dosya bozularak doctor'ın `drifted` raporu ve
   `Repair` sonrası yeniden `ready` durumu gerçek akışta doğrulandı. Uzun Windows
   yollarında Codex marketplace temizliğiyle yarışan uninstall güvenli biçimde
-  düzeltildi.
+  düzeltildi. Eski resmî Pala gerçek Codex CLI ile kaynak hash'i değişmeden
+  global kimliğe taşındı. Yabancı aynı adlı eklenti sıfır yazmayla korundu.
+  Codex CLI güncelleme hata enjeksiyonunda önceki bundle ve atomik durum kaydı
+  geri yüklendi.
 - Engel: Yok.
-- Tek sonraki iş: Eski doğrulanmış Pala kurulumu için veri kaybetmeyen geçişi
-  ve aynı adlı yabancı kayıt için sıfır-yazma davranışını doğrula; Codex CLI
-  güncelleme hatasında önceki çalışan sürüme dönüşü tamamla.
+- Tek sonraki iş: Kurulum envanteri, güncelleme önbelleği ve log sınırlarını
+  tamamla; PALA-041'in kalan kapısını kapatıp milestone checkpoint'i üret.
 - Güncelleme: 2026-08-05

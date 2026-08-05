@@ -199,6 +199,61 @@ class InstallerCoreTests(unittest.TestCase):
             )
             self.assertEqual(installed["version"], "0.3.3+codex.test")
 
+    def test_codex_failure_rolls_back_previous_managed_bundle(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            first_source = make_bundle(root / "v1", "0.3.3+codex.test")
+            second_source = make_bundle(root / "v2", "0.4.0+codex.test")
+            (second_source / "scripts" / "pala_state.py").write_text(
+                "VALUE = 2\n", encoding="utf-8"
+            )
+            install_root = root / "local" / "Pala" / "marketplace"
+            state_root = root / "local" / "Pala"
+            self.installer.install_bundle(first_source, install_root, state_root)
+            old_fingerprint = self.installer.tree_fingerprint(install_root)
+
+            def invoke(arguments: list[str]) -> dict[str, object]:
+                command = tuple(arguments)
+                if command == ("plugin", "marketplace", "list", "--json"):
+                    return {
+                        "marketplaces": [
+                            {"name": "pala-project-studio", "root": str(install_root)}
+                        ]
+                    }
+                if command == ("plugin", "list", "--json"):
+                    return {
+                        "installed": [
+                            {
+                                "pluginId": self.installer.PLUGIN_ID,
+                                "name": "pala-project-studio",
+                                "marketplaceName": "pala-project-studio",
+                                "version": "0.3.3+codex.test",
+                                "installed": True,
+                                "enabled": True,
+                            }
+                        ],
+                        "available": [],
+                    }
+                if command == ("plugin", "add", self.installer.PLUGIN_ID, "--json"):
+                    raise RuntimeError("simulated Codex update failure")
+                raise AssertionError(f"unexpected Codex command: {command}")
+
+            with self.assertRaisesRegex(RuntimeError, "simulated Codex"):
+                self.installer.install_all(
+                    second_source,
+                    install_root,
+                    state_root,
+                    invoke=invoke,
+                )
+
+            self.assertEqual(
+                self.installer.tree_fingerprint(install_root), old_fingerprint
+            )
+            state = json.loads(
+                (state_root / "install-state.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(state["version"], "0.3.3+codex.test")
+
     def test_codex_install_uses_supported_cli_and_becomes_idempotent(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
             root = Path(temp)
@@ -299,6 +354,133 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertEqual(report["status"], "external_conflict")
             self.assertFalse(report["changed"])
             self.assertEqual(len(calls), 2)
+
+    def test_foreign_same_named_plugin_is_never_overwritten(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            install_root = root / "local" / "Pala" / "marketplace"
+            calls: list[tuple[str, ...]] = []
+
+            def invoke(arguments: list[str]) -> dict[str, object]:
+                command = tuple(arguments)
+                calls.append(command)
+                if command == ("plugin", "marketplace", "list", "--json"):
+                    return {"marketplaces": []}
+                if command == ("plugin", "list", "--json"):
+                    return {
+                        "installed": [
+                            {
+                                "pluginId": "pala-project-studio@foreign",
+                                "name": "pala-project-studio",
+                                "version": "9.9.9",
+                                "installed": True,
+                                "enabled": True,
+                                "source": {
+                                    "source": "local",
+                                    "path": str(root / "foreign"),
+                                },
+                            }
+                        ],
+                        "available": [],
+                    }
+                raise AssertionError("foreign plugin must not be changed")
+
+            report = self.installer.ensure_codex_install(
+                install_root, "0.4.0+codex.test", invoke=invoke
+            )
+
+            self.assertEqual(report["status"], "external_conflict")
+            self.assertFalse(report["changed"])
+            self.assertEqual(report["conflicting_plugins"], ["pala-project-studio@foreign"])
+            self.assertEqual(len(calls), 2)
+
+    def test_verified_legacy_pala_is_migrated_without_changing_its_source(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            legacy_source = make_bundle(root / "legacy", "0.3.2+codex.legacy")
+            legacy_manifest_path = legacy_source / ".codex-plugin" / "plugin.json"
+            legacy_manifest = json.loads(legacy_manifest_path.read_text(encoding="utf-8"))
+            legacy_manifest["repository"] = self.installer.OFFICIAL_REPOSITORY
+            legacy_manifest["author"] = {
+                "name": "Pala",
+                "url": self.installer.OFFICIAL_AUTHOR,
+            }
+            legacy_manifest_path.write_text(
+                json.dumps(legacy_manifest), encoding="utf-8"
+            )
+            legacy_fingerprint = self.installer.tree_fingerprint(legacy_source)
+            install_root = root / "local" / "Pala" / "marketplace"
+            version = "0.4.0+codex.test"
+            marketplaces: list[dict[str, object]] = []
+            installed: list[dict[str, object]] = [
+                {
+                    "pluginId": "pala-project-studio@legacy",
+                    "name": "pala-project-studio",
+                    "marketplaceName": "legacy",
+                    "version": "0.3.2+codex.legacy",
+                    "installed": True,
+                    "enabled": True,
+                    "source": {"source": "local", "path": str(legacy_source)},
+                }
+            ]
+            calls: list[tuple[str, ...]] = []
+
+            def invoke(arguments: list[str]) -> dict[str, object]:
+                command = tuple(arguments)
+                calls.append(command)
+                if command == ("plugin", "marketplace", "list", "--json"):
+                    return {"marketplaces": list(marketplaces)}
+                if command == ("plugin", "list", "--json"):
+                    return {"installed": list(installed), "available": []}
+                if command[:3] == ("plugin", "marketplace", "add"):
+                    marketplaces.append(
+                        {"name": "pala-project-studio", "root": str(install_root)}
+                    )
+                    return {"marketplaceName": "pala-project-studio"}
+                if command == ("plugin", "add", self.installer.PLUGIN_ID, "--json"):
+                    installed.append(
+                        {
+                            "pluginId": self.installer.PLUGIN_ID,
+                            "name": "pala-project-studio",
+                            "marketplaceName": "pala-project-studio",
+                            "version": version,
+                            "installed": True,
+                            "enabled": True,
+                        }
+                    )
+                    return {"pluginId": self.installer.PLUGIN_ID}
+                if command == (
+                    "plugin",
+                    "remove",
+                    "pala-project-studio@legacy",
+                    "--json",
+                ):
+                    installed[:] = [
+                        entry
+                        for entry in installed
+                        if entry.get("pluginId") != "pala-project-studio@legacy"
+                    ]
+                    return {"pluginId": "pala-project-studio@legacy"}
+                raise AssertionError(f"unexpected Codex command: {command}")
+
+            report = self.installer.ensure_codex_install(
+                install_root, version, invoke=invoke
+            )
+
+            self.assertEqual(report["status"], "migrated")
+            self.assertTrue(report["changed"])
+            self.assertEqual(
+                self.installer.tree_fingerprint(legacy_source), legacy_fingerprint
+            )
+            self.assertIn(
+                (
+                    "plugin",
+                    "remove",
+                    "pala-project-studio@legacy",
+                    "--json",
+                ),
+                calls,
+            )
 
     def test_codex_dry_run_performs_only_inventory_reads(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:

@@ -19,6 +19,8 @@ from pathlib import Path
 SCHEMA_VERSION = 1
 OWNER = "pala-project-studio"
 PLUGIN_ID = f"{OWNER}@{OWNER}"
+OFFICIAL_REPOSITORY = "https://github.com/trugurpala/pala-project-studio"
+OFFICIAL_AUTHOR = "https://github.com/trugurpala"
 STATE_NAME = "install-state.json"
 REQUIRED_FILES = (
     Path(".agents/plugins/marketplace.json"),
@@ -110,6 +112,25 @@ def comparable_path(value: object) -> str | None:
         return os.path.normcase(os.path.abspath(normalized))
 
 
+def trusted_legacy_pala(entry: dict[str, object]) -> bool:
+    source = entry.get("source")
+    if not isinstance(source, dict) or source.get("source") != "local":
+        return False
+    path_value = source.get("path")
+    if not isinstance(path_value, str):
+        return False
+    value = read_json(Path(path_value) / ".codex-plugin" / "plugin.json")
+    if value is None:
+        return False
+    author = value.get("author")
+    return bool(
+        value.get("name") == OWNER
+        and value.get("repository") == OFFICIAL_REPOSITORY
+        and isinstance(author, dict)
+        and author.get("url") == OFFICIAL_AUTHOR
+    )
+
+
 def codex_status(
     install_root: Path,
     expected_version: str,
@@ -159,20 +180,33 @@ def codex_status(
         ),
         None,
     )
-    duplicates = [
-        str(entry.get("pluginId"))
+    duplicate_entries = [
+        entry
         for entry in installed
         if isinstance(entry, dict)
         and entry.get("name") == OWNER
         and entry.get("pluginId") != PLUGIN_ID
     ]
-    if duplicates:
+    untrusted_duplicates = [
+        str(entry.get("pluginId"))
+        for entry in duplicate_entries
+        if not trusted_legacy_pala(entry)
+    ]
+    if untrusted_duplicates:
         return {
             "status": "external_conflict",
             "healthy": False,
-            "conflicting_plugins": duplicates,
+            "conflicting_plugins": untrusted_duplicates,
         }
-    if marketplace is None:
+    legacy_plugins = [str(entry.get("pluginId")) for entry in duplicate_entries]
+    target_ready = bool(
+        target
+        and target.get("version") == expected_version
+        and target.get("enabled")
+    )
+    if legacy_plugins:
+        status = "legacy_pala"
+    elif marketplace is None:
         status = "missing"
     elif target is None:
         status = "missing"
@@ -189,6 +223,8 @@ def codex_status(
         "installed_version": target.get("version") if target else None,
         "expected_version": expected_version,
         "enabled": bool(target and target.get("enabled")),
+        "target_ready": target_ready,
+        "legacy_plugins": legacy_plugins,
     }
 
 
@@ -207,10 +243,12 @@ def ensure_codex_install(
     if status in {"external_conflict", "unavailable"}:
         return {**before, "changed": False}
     if dry_run:
-        action = "update" if status == "outdated" else "install"
+        action = "update" if status in {"outdated", "legacy_pala"} else "install"
         return {**before, "status": f"would_{action}", "changed": False}
 
     marketplace_added = False
+    target_was_present = bool(before.get("plugin_id") == PLUGIN_ID)
+    removed_legacy: list[str] = []
     try:
         if not before.get("marketplace_registered"):
             invoke(
@@ -224,17 +262,38 @@ def ensure_codex_install(
             )
             marketplace_added = True
         invoke(["plugin", "add", PLUGIN_ID, "--json"])
+        after_add = codex_status(install_root, expected_version, invoke=invoke)
+        if not after_add.get("target_ready"):
+            raise RuntimeError("Codex did not install the target Pala plugin")
+        for legacy_plugin in before.get("legacy_plugins", []):
+            if not isinstance(legacy_plugin, str):
+                continue
+            invoke(["plugin", "remove", legacy_plugin, "--json"])
+            removed_legacy.append(legacy_plugin)
         after = codex_status(install_root, expected_version, invoke=invoke)
         if after.get("status") != "ready":
             raise RuntimeError("Codex did not report Pala as installed and enabled")
     except Exception:
+        for legacy_plugin in removed_legacy:
+            try:
+                invoke(["plugin", "add", legacy_plugin, "--json"])
+            except Exception:
+                pass
+        if not target_was_present:
+            try:
+                invoke(["plugin", "remove", PLUGIN_ID, "--json"])
+            except Exception:
+                pass
         if marketplace_added:
             try:
                 invoke(["plugin", "marketplace", "remove", OWNER, "--json"])
             except Exception:
                 pass
         raise
-    result_status = "updated" if status == "outdated" else "installed"
+    if status == "legacy_pala":
+        result_status = "migrated"
+    else:
+        result_status = "updated" if status == "outdated" else "installed"
     return {**after, "status": result_status, "changed": True}
 
 
@@ -654,28 +713,55 @@ def install_all(
             "codex": codex_before,
         }
 
-    bundle = install_bundle(
-        source,
-        install_root,
-        state_root,
-        dry_run=dry_run,
-        repair=repair,
-    )
-    if bundle.get("status") in {"external_conflict", "modified"}:
-        return {**bundle, "bundle": bundle, "codex": codex_before}
-    codex = ensure_codex_install(
-        install_root,
-        expected_version,
-        dry_run=dry_run,
-        invoke=invoke,
-    )
-    if codex.get("status") in {"external_conflict", "unavailable"}:
+    bundle_before = plugin_status(source, install_root, state_root)
+    if bundle_before.get("status") == "external_conflict":
         return {
-            "status": codex["status"],
-            "changed": bool(bundle.get("changed")),
-            "bundle": bundle,
-            "codex": codex,
+            "status": "external_conflict",
+            "changed": False,
+            "bundle": bundle_before,
+            "codex": codex_before,
         }
+
+    snapshot: Path | None = None
+    previous_state = read_json(state_path(state_root))
+    if not dry_run and install_root.exists():
+        snapshot = install_root.parent / f".{OWNER}.snapshot-{uuid.uuid4().hex}"
+        shutil.copytree(install_root, snapshot)
+
+    try:
+        bundle = install_bundle(
+            source,
+            install_root,
+            state_root,
+            dry_run=dry_run,
+            repair=repair,
+        )
+        if bundle.get("status") in {"external_conflict", "modified"}:
+            return {**bundle, "bundle": bundle, "codex": codex_before}
+        codex = ensure_codex_install(
+            install_root,
+            expected_version,
+            dry_run=dry_run,
+            invoke=invoke,
+        )
+        if codex.get("status") in {"external_conflict", "unavailable"}:
+            raise RuntimeError(
+                f"Codex installation did not complete: {codex.get('status')}"
+            )
+    except Exception:
+        if not dry_run:
+            if install_root.exists():
+                remove_tree_resilient(install_root)
+            if snapshot is not None and snapshot.exists():
+                os.replace(snapshot, install_root)
+            if previous_state is None:
+                state_path(state_root).unlink(missing_ok=True)
+            else:
+                atomic_write_json(state_path(state_root), previous_state)
+        raise
+    finally:
+        if snapshot is not None and snapshot.exists():
+            remove_tree_resilient(snapshot)
     changed = bool(bundle.get("changed") or codex.get("changed"))
     if dry_run:
         statuses = {str(bundle.get("status")), str(codex.get("status"))}
