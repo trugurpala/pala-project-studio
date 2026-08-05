@@ -53,4 +53,4 @@
 - [x] Temiz AZR ağacında checkpoint commit'inden sonra oluşan yanlış stale uyarısını gerçek kullanımda yeniden üret.
 - [x] Değişen yol sayısı + birleşik içerik özetiyle yalnız aynı snapshot'ı taşıyan descendant commit'i kabul et.
 - [x] Aynı checkpoint'ten sonraki ek/farklı commit'in uzlaştırma gerektirmeye devam ettiğini sözleşme testiyle koru.
-- [ ] 0.3.2 tam doğrulama, portable ZIP, kişisel kurulum, private GitHub push ve CI kanıtını tamamla.
+- [x] 0.3.2 tam doğrulama, portable ZIP, kişisel kurulum, private GitHub push ve CI kanıtını tamamla.
