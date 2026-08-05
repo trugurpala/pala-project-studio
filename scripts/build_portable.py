@@ -68,6 +68,7 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "DECISIONS.md",
         plugin_root / "Install-Pala.ps1",
         plugin_root / "LICENSE",
+        plugin_root / "managed-tools.lock.json",
         plugin_root / "OPEN_SOURCE.md",
         plugin_root / "PROJECT.md",
         plugin_root / "README.md",

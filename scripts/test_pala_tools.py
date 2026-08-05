@@ -53,6 +53,17 @@ pala_hook = load_module("pala_hook", "pala_hook.py")
 
 
 class PalaStateTests(unittest.TestCase):
+    def test_openspec_adapter_is_read_only_for_present_and_absent_projects(self) -> None:
+        adapter = load_module("pala_openspec", "pala_openspec.py").OpenSpecAdapter()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.assertEqual(adapter.inspect(root).state, "missing")
+            (root / "openspec" / "specs").mkdir(parents=True)
+            result = adapter.inspect(root)
+
+            self.assertEqual(result.state, "ready")
+            self.assertFalse(result.changed)
+            self.assertFalse((root / "openspec" / "changes").exists())
     def test_ticket_record_serializes_bounded_safe_session_state(self) -> None:
         models = load_module("pala_models", "pala_models.py")
         record = models.TicketRecord.new("PALA-043", "A" * 900, "session-alpha")

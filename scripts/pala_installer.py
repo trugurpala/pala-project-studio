@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import shutil
@@ -38,6 +39,7 @@ PACKAGE_FILES = (
     "LICENSE",
     "OPEN_SOURCE.md",
     "THIRD_PARTY_NOTICES.md",
+    "managed-tools.lock.json",
 )
 FORBIDDEN_PARTS = {".git", ".codex", "__pycache__", ".pytest_cache", ".ruff_cache"}
 FORBIDDEN_SUFFIXES = {".pyc", ".pyo", ".pem", ".key"}
@@ -582,7 +584,32 @@ def doctor_bundle(source: Path, install_root: Path, state_root: Path) -> dict[st
         "schema_version": SCHEMA_VERSION,
         "healthy": plugin["status"] == "ready",
         "plugin": plugin,
+        "adapters": adapter_inventory(source),
         "state_file": str(state_path(state_root).resolve()),
+    }
+
+
+def adapter_inventory(source: Path) -> dict[str, dict[str, object]]:
+    """Report optional tools without probing, installing, or changing user configuration."""
+    try:
+        adapter_path = Path(__file__).with_name("pala_adapters.py")
+        spec = importlib.util.spec_from_file_location("pala_installer_adapters", adapter_path)
+        if spec is None or spec.loader is None:
+            raise ValueError("adapter module unavailable")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["pala_installer_adapters"] = module
+        spec.loader.exec_module(module)
+        lock = module.load_managed_tools_lock(source / "managed-tools.lock.json")
+    except (OSError, ValueError, ImportError):
+        return {"lock": {"state": "failed", "detail": "managed tools lock unavailable"}}
+    return {
+        name: {
+            "state": "missing",
+            "changed": False,
+            "detail": "optional adapter is not installed",
+            "version": entry["version"],
+        }
+        for name, entry in lock.items()
     }
 
 

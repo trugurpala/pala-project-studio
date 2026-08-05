@@ -5,13 +5,17 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT / "scripts") not in sys.path:
+    sys.path.insert(0, str(ROOT / "scripts"))
 INSTALLER_PATH = ROOT / "scripts" / "pala_installer.py"
+ADAPTERS_PATH = ROOT / "scripts" / "pala_adapters.py"
 
 
 def load_installer():
@@ -19,6 +23,26 @@ def load_installer():
     if spec is None or spec.loader is None:
         raise RuntimeError("cannot load pala_installer.py")
     module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_adapters():
+    spec = importlib.util.spec_from_file_location("pala_adapters", ADAPTERS_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load pala_adapters.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["pala_adapters"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_script(name: str, filename: str):
+    spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / filename)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {filename}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -75,6 +99,55 @@ class InstallerCoreTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.installer = load_installer()
+
+    def test_managed_adapter_contracts_and_pins_are_valid(self) -> None:
+        adapters = load_adapters()
+        lock = adapters.load_managed_tools_lock(ROOT / "managed-tools.lock.json")
+
+        self.assertEqual(lock["rtk"]["version"], "0.44.2")
+        self.assertEqual(lock["code-review-graph"]["version"], "2.3.7")
+        self.assertEqual(lock["context7"]["version"], "3.2.5")
+        self.assertEqual(lock["playwright-mcp"]["version"], "0.0.78")
+        with self.assertRaises(ValueError):
+            adapters.AdapterResult("rtk", "unknown", False, "invalid")
+
+    def test_doctor_reports_missing_optional_adapters_without_breaking_core_health(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-adapters-") as temp:
+            root = Path(temp)
+            source = make_bundle(root)
+            (source / "managed-tools.lock.json").write_text(
+                (ROOT / "managed-tools.lock.json").read_text(encoding="utf-8"), encoding="utf-8"
+            )
+            install_root = root / "installed"
+            state_root = root / "state"
+            self.installer.install_bundle(source, install_root, state_root)
+
+            doctor = self.installer.doctor_bundle(source, install_root, state_root)
+
+            self.assertTrue(doctor["healthy"])
+            self.assertEqual(doctor["adapters"]["rtk"]["state"], "missing")
+
+    def test_mcp_adapter_distinguishes_exact_missing_and_foreign_records(self) -> None:
+        spec = {
+            "name": "context7",
+            "command": "npx",
+            "args": ["-y", "@upstash/context7-mcp@3.2.5"],
+        }
+        mcp = load_script("pala_mcp", "pala_mcp.py").CodexMcpAdapter(
+            lambda: {"mcpServers": {"context7": {"command": "npx", "args": spec["args"]}}}
+        )
+        self.assertEqual(mcp.inspect(spec).state, "ready")
+        missing = load_script("pala_mcp_missing", "pala_mcp.py").CodexMcpAdapter(lambda: {"mcpServers": {}})
+        self.assertEqual(missing.inspect(spec).state, "missing")
+        foreign = load_script("pala_mcp_foreign", "pala_mcp.py").CodexMcpAdapter(
+            lambda: {"mcpServers": {"context7": {"command": "node", "args": []}}}
+        )
+        self.assertEqual(foreign.inspect(spec).state, "external_conflict")
+
+    def test_mcp_specs_match_managed_lock_versions(self) -> None:
+        mcp = load_script("pala_mcp_specs", "pala_mcp.py")
+        self.assertIn("3.2.5", " ".join(mcp.MCP_SPECS["context7"]["args"]))
+        self.assertIn("0.0.78", " ".join(mcp.MCP_SPECS["playwright-mcp"]["args"]))
 
     def test_install_is_idempotent_for_fifty_runs(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:

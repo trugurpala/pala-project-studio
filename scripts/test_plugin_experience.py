@@ -234,6 +234,7 @@ class UserExperienceContractTests(unittest.TestCase):
         packager = load_packager()
         files = packager.source_files(PLUGIN_ROOT)
         self.assertIn(PLUGIN_ROOT / "scripts" / "pala_update.py", files)
+        self.assertIn(PLUGIN_ROOT / "managed-tools.lock.json", files)
 
     def test_windows_single_entry_delegates_to_atomic_installer_core(self) -> None:
         entry = (PLUGIN_ROOT / "Install-Pala.ps1").read_text(encoding="utf-8")
