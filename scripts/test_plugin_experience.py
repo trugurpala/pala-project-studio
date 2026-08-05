@@ -29,9 +29,18 @@ class UserExperienceContractTests(unittest.TestCase):
     def test_readme_exposes_current_release_and_expert_worker_boundary(self) -> None:
         readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
         normalized = " ".join(readme.casefold().split())
+        manifest = json.loads(
+            (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        release_version = manifest["version"].split("+", maxsplit=1)[0]
 
-        self.assertIn("releases/latest", readme)
-        self.assertIn("pala-project-studio-0.4.1.zip", readme)
+        self.assertIn(
+            "releases/latest/download/"
+            f"pala-project-studio-{release_version}.zip",
+            readme,
+        )
         for required in (
             "güvenli uzman işçileri",
             "graphify",
