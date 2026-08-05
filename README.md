@@ -6,6 +6,21 @@ eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bul
 aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
 göre katmanlandırır.
 
+## Hızlı başlangıç
+
+En güncel, taşınabilir sürümü indir:
+
+[Pala Project Studio 0.4.1'i indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.4.1.zip)
+
+ZIP'i açtıktan sonra içindeki klasörde şu komutu çalıştır:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
+```
+
+Pala kurulum sırasında ne yapacağını açıkça gösterir. `-WhatIf` ile önce
+önizleyebilir, `-Mode Doctor` ile kurulumun sağlığını kontrol edebilirsin.
+
 ## Ne sağlar?
 
 - Mevcut `AGENTS.md`, ürün, plan, durum ve karar belgelerini yeniden kullanır.
@@ -56,6 +71,26 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Uni
 Kurulum aynı oturumda doğrulanır. Yeni skill ve hook'ların güvenilir biçimde
 yüklenmesi için kurulumdan sonra yeni bir Codex sohbeti açılır. Hook güveni
 eksikse kurucu güvenlik kontrolünü atlamaz; Codex'te `/hooks` komutunu gösterir.
+
+## Güvenli uzman işçileri
+
+Pala tek karar verici olarak kalır. Aşağıdaki araçlar Pala'nın kendi doğrulanmış
+alanında, yalnız gerektiğinde çalışan uzman yardımcılarıdır:
+
+- **Graphify:** Kod ve doküman ilişkilerini yerelde çıkarır. Kod analizi
+  `--code-only` çalışır; anlamsal doküman işi yalnız Pala'nın yerel Ollama'sına
+  gider.
+- **Serena:** Python, JavaScript/TypeScript, PHP ve PowerShell sembol
+  gezinmesi için salt-okunur yardımcıdır. Bellek, dashboard, shell ve düzenleme
+  araçları kapalıdır.
+- **codebase-memory:** Çok büyük veya çok dilli projelerde yalnız tek seferlik
+  yerel mimari/kod grafiği komutları çalıştırır.
+- **Ollama + Qwen3 4B:** Pala'nın ayrı model klasöründe ve yalnız bilgisayarın
+  içinde çalışır; mevcut Ollama modellerini değiştirmez.
+
+Bu işçiler Pala'nın yerine karar vermez, GitHub'a veya bulut servislerine proje
+kodunu göndermez. Her indirilen araç kilitli sürüm ve SHA-256 doğrulamasıyla
+kontrol edilir.
 
 ## Büyük repo kod zekâsı
 
