@@ -872,7 +872,7 @@ def validate(root: Path) -> int:
                 continue
             path = (root / value).resolve()
             try:
-                path.relative_to(root)
+                relative(root, path)
             except ValueError:
                 errors.append(f"{purpose}: outside project root")
                 continue
