@@ -674,9 +674,20 @@ def doctor_installation(
     bundle = doctor_bundle(source, install_root, state_root)
     expected_version = str(manifest(source)["version"])
     codex = codex_status(install_root, expected_version, invoke=invoke)
-    python_ready = sys.version_info >= (3, 10)
+    version_info = sys.version_info
+    if hasattr(version_info, "__iter__"):
+        major, minor, micro = list(version_info)[:3]
+    else:
+        major, minor, micro = (
+            version_info.major,
+            version_info.minor,
+            version_info.micro,
+        )
+    python_ready = (major, minor) >= (3, 10)
     git_path = shutil.which("git")
     codex_path = shutil.which("codex")
+    node_path = shutil.which("node")
+    uv_path = shutil.which("uv")
     project = project_doctor(install_root, project_root)
     healthy = bool(
         bundle["healthy"]
@@ -684,6 +695,8 @@ def doctor_installation(
         and python_ready
         and git_path
         and codex_path
+        and node_path
+        and uv_path
     )
     return {
         "schema_version": SCHEMA_VERSION,
@@ -693,11 +706,13 @@ def doctor_installation(
         "codex": codex,
         "python": {
             "ready": python_ready,
-            "version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+            "version": f"{major}.{minor}.{micro}",
             "executable": sys.executable,
         },
         "git": {"ready": bool(git_path), "executable": git_path},
         "codex_cli": {"ready": bool(codex_path), "executable": codex_path},
+        "node": {"ready": bool(node_path), "executable": node_path},
+        "uv": {"ready": bool(uv_path), "executable": uv_path},
         "project": project,
         "update_cache": read_json(update_cache_path(state_root)),
         "state_file": bundle["state_file"],

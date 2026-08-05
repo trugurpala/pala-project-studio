@@ -1,6 +1,6 @@
 # Pala Project Studio Durumu
 
-- Aktif milestone: M14 — Pala güvenli uzman işçileri (`completed locally`)
+- Aktif milestone: M14 — Pala güvenli uzman işçileri (`completed`)
 - Aktif ticket: PALA-045 — Pala tek otoriteyken Graphify, Serena ve
   codebase-memory'yi izole, kanıt döndüren uzman işçilere bağlama.
 - Son tamamlanan sonuç: Pala normal yazılım projesi isteklerinde örtük
@@ -13,9 +13,11 @@
 - Ortam önkoşulu: Kurucu temiz Windows kullanıcı profillerinde çalışacak;
   geliştirici bilgisayarının donanımına, mutlak yollarına veya önceden kurulmuş
   yardımcı araçlarına güvenmeyecek.
-- Doğrulama: PALA-043 state/hook yüzeyinde `py -3 -m unittest
-  scripts.test_pala_tools -v` — 52 test passed. Tam kaynak kapısı, bu ticket'ın
-  sonraki checkpoint'inde yeniden çalıştırılacak.
+- Doğrulama: M11 PALA-043 için `python -m unittest discover -s scripts -p
+  "test_*.py"` — 128 test passed (11.3 sn). `verification required` durumundan
+  `completed` lifecycle'a
+  geçiş başarıyla çalıştı; paralel oturum izolasyonu, yeniden deneme-bütçesi,
+  graph eşiği ve kapanış kapısı sözleşmesi test kapsamına alındı.
   Taşınabilir ZIP SHA-256 değeri yalnız üretim artifact'ı için ayrıca raporlanır;
   bu durum belgesi kendi paketini değiştirdiği için buraya sabitlenmez.
   Son yayımlanmış 0.3.3 için GitHub Actions `31021033644` Windows ve Ubuntu'da
@@ -36,6 +38,22 @@
   güncelleme önbelleği atomik JSON olarak ve olay logu yalnız izinli alanlarla
   en fazla 256 KB olacak biçimde doğrulandı. İdempotent Update + Doctor
   Pala-managed fingerprint'i değiştirmedi.
+- Doğrudan M12 ara kanıtı: `test_install_doctor_update_cycles_are_dry` ve
+  `test_doctor_installation_reports_missing_required_tools` testleri ile PALA-044'ün
+  ilk madde seti ve PATH/özel araç bağımlılığı denetimi doğrulandı.
+- Doğrudan ikinci aşama kanıtı: `test_install_all_current_version_is_noop_for_ready_codex`,
+  `test_install_all_reports_unavailable_when_codex_is_offline`,
+  `test_install_all_restores_previous_state_after_mid_install_exception`,
+  `test_doctor_installation_blocks_if_project_hook_safety_fails` ile eski/güncel
+  Pala, çevrimdışı durum, yarım-staging rollback ve güvenilmemiş hook senaryoları da
+  tamamlandı.
+- Doğrudan üçüncü aşama kanıtı: `test_rtk_hook_rewrites_supported_command_with_managed_binary`
+  ve `test_rtk_hook_falls_back_to_no_update_for_disallowed_command` testleri ile RTK
+  rewrite fallback/safe argüman davranışı doğrulandı.
+- Dördüncü aşama kanıtı: `test_source_root_install_repair_uninstall_in_clean_profile`
+  ve `test_portable_zip_source_install_repair_uninstall_and_rollback` ile kaynak modda ve
+  portable ZIP’den temiz profil kurulum, `repair`, `uninstall` ve `rollback` kapıları
+  geçti.
 - Engel: Yok. PALA-043 yerel workflow kaydı ana çalışma alanında eski kalmıştı;
   izole PALA-045 worktree'sinde yeni state ile uzlaştırıldı.
 - Tek sonraki iş: Değişiklikleri GitHub'a push et, draft PR aç ve CI kanıtını
@@ -52,3 +70,11 @@
 - 0.4 teslim hazırlığı: session-safe state, adapter sözleşmeleri, fail-closed
   RTK hook'u, graph eşiği ve GitHub routing private release dalında birleşti.
   Repo görünürlüğü değiştirilmeden private PR/CI/release kanıtı bekleniyor.
+- 0.4.1 için son durum: M13 tüm kapıları toplu doğrulandı ve yayın
+  manifesti senkronize edildi.
+- M13 kanıt özeti: `py -3 scripts/verify.py` (128 test geçti, OK),
+  GH Actions `Quality` çalışma `31048474907` (windows-latest + ubuntu-latest,
+  sonuçlar: `success`), `py -3 scripts/build_portable.py --output dist/pala-project-studio-0.4.1+codex.20260806090000.zip`
+  (SHA-256: `0FEAA1BCF55227492ED859EBAD453B544F1C6EB52B90669ABB905CE7714F7091`).
+  Release `v0.4.1` güncellendi: `pala-project-studio-0.4.1.zip` asset'i bu SHA-256 ile
+  tekrar yüklenmiştir.

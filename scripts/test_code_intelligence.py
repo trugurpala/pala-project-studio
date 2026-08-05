@@ -41,6 +41,10 @@ class CodeIntelligenceTests(unittest.TestCase):
         self.assertTrue(code_intel.graph_eligible(1000, 1, 1))
         self.assertTrue(code_intel.graph_eligible(1, 50, 1))
         self.assertTrue(code_intel.graph_eligible(1, 1, 4))
+
+    def test_graph_can_be_disabled_when_working_off_budget(self) -> None:
+        self.assertFalse(code_intel.graph_eligible(2_000, 2_000, 8, use_graph=False))
+
     def test_missing_graph_tool_has_honest_local_fallback(self) -> None:
         with patch.object(code_intel.shutil, "which", return_value=None):
             result = code_intel.status(None)

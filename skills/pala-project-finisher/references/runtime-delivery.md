@@ -32,8 +32,9 @@ Ask these questions before the final response:
    no avoidable monolith?
 4. Does the real core workflow work end to end rather than only rendering a
    shell?
-5. Did I run the applicable lint, typecheck, tests, and build plus runtime or
-   browser checks?
+5. Did I run the applicable lint, typecheck, tests, build, dependency, and
+   secret checks plus runtime or browser checks, and only for gates that already
+   exist in this repository?
 6. Can the owner open and use it now? If not, is the exact external blocker and
    honest runnable fallback visible?
 

@@ -31,7 +31,7 @@ function Show-PalaResult([pscustomobject]$Payload) {
         $pluginStatus = $Payload.plugin.status
         $codexStatus = $Payload.codex.status
         Write-Host "[Pala] Doctor: healthy=$($Payload.healthy), plugin=$pluginStatus, codex=$codexStatus"
-        Write-Host "[Pala] Python=$($Payload.python.ready), Git=$($Payload.git.ready), Codex CLI=$($Payload.codex_cli.ready)"
+        Write-Host "[Pala] Python=$($Payload.python.ready), Git=$($Payload.git.ready), Codex CLI=$($Payload.codex_cli.ready), Node=$($Payload.node.ready), uv=$($Payload.uv.ready)"
         if ($null -ne $Payload.project.project_registration) {
             Write-Host "[Pala] Proje kaydi=$($Payload.project.project_registration.registered), hook=$($Payload.project.hook_safety.status)"
             if ($Payload.project.hook_safety.status -ne "passed") {

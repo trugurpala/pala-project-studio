@@ -102,7 +102,49 @@ class PalaStateTests(unittest.TestCase):
 
             self.assertEqual(first.status, "recorded")
             self.assertEqual(second.status, "blocked")
-            self.assertEqual(second.record["blockers"], ["verification repeated twice"])
+            self.assertEqual(
+                second.record["blockers"], ["verification repeated twice", "verification budget exhausted"]
+            )
+
+    def test_ticket_store_records_first_causal_error_and_blocks_timeout_after_budget(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            store = pala_store.WorkflowStore(Path(temp))
+            store.claim("PALA-043", "Verify state", "session-alpha")
+
+            first = store.record_verification(
+                "PALA-043",
+                "session-alpha",
+                "timeout",
+                "py -3 scripts/verify.py",
+                "Timed out after 5s",
+            )
+            second = store.record_verification(
+                "PALA-043",
+                "session-alpha",
+                "timeout",
+                "py -3 scripts/verify.py",
+                "Timed out after 5s",
+            )
+
+            self.assertEqual(first.status, "recorded")
+            self.assertEqual(second.status, "blocked")
+            self.assertIn("verification budget exhausted", second.record["blockers"])
+            failure = second.record["first_verification_failure"]
+            self.assertIsInstance(failure, dict)
+            self.assertEqual(failure["status"], "timeout")
+            self.assertEqual(failure["command"], "py -3 scripts/verify.py")
+
+    def test_ticket_store_treats_not_run_as_incomplete(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            store = pala_store.WorkflowStore(Path(temp))
+            store.claim("PALA-043", "Incomplete safely", "session-alpha")
+            store.record_verification(
+                "PALA-043", "session-alpha", "not-run", "py -3 scripts/verify.py"
+            )
+
+            completed = store.complete("PALA-043", "session-alpha")
+
+            self.assertEqual(completed.status, "verification_required")
 
     def test_ticket_store_complete_requires_passed_evidence_and_no_blockers(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -219,6 +261,15 @@ class PalaStateTests(unittest.TestCase):
             record = store._read(store._ticket_path("PALA-043"))
             self.assertEqual(record["owner"], pala_state.session_key("first-session"))
             self.assertFalse((root / pala_state.WORKFLOW).exists())
+
+    def test_begin_without_session_key_respects_active_parallel_v3_work(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            pala_state.begin_work(root, "PALA-043", "Parallel session work", session="session-alpha")
+            with self.assertRaises(ValueError) as context:
+                pala_state.begin_work(root, "PALA-044", "Independent ticket")
+            self.assertIn("session-key", str(context.exception))
 
     def test_begin_parser_accepts_optional_session_key(self) -> None:
         args = pala_state.parser().parse_args(
@@ -745,6 +796,53 @@ class PalaStateTests(unittest.TestCase):
 
 
 class PalaHookTests(unittest.TestCase):
+    def test_rtk_hook_rewrites_supported_command_with_managed_binary(self) -> None:
+        hook = load_module("pala_rtk_hook", "pala_rtk_hook.py")
+        event = json.dumps(
+            {
+                "tool_name": "shell_command",
+                "tool_input": {
+                    "command": "git status",
+                    "timeout_ms": 2500,
+                    "cwd": "C:/project",
+                },
+            }
+        )
+        binary = Path(tempfile.gettempdir()) / "rtk-test.exe"
+        binary.write_text("", encoding="utf-8")
+        output = io.StringIO()
+
+        with (
+            patch("sys.stdin", io.StringIO(event)),
+            patch("sys.stdout", output),
+            patch.object(hook, "managed_rtk", return_value=binary),
+        ):
+            self.assertEqual(hook.main(), 0)
+
+        payload = json.loads(output.getvalue())
+        self.assertEqual(payload["permissionDecision"], "allow")
+        updated = payload["updatedInput"]
+        self.assertIn('rewrite -- git status', updated["command"])
+        self.assertIn("RTK_TELEMETRY_DISABLED", updated["env"])
+        self.assertEqual(updated["env"]["RTK_TELEMETRY_DISABLED"], "1")
+        self.assertEqual(updated["cwd"], "C:/project")
+        self.assertEqual(updated["timeout_ms"], 2500)
+
+    def test_rtk_hook_falls_back_to_no_update_for_disallowed_command(self) -> None:
+        hook = load_module("pala_rtk_hook", "pala_rtk_hook.py")
+        event = json.dumps(
+            {"tool_name": "shell_command", "tool_input": {"command": "npm install"}}
+        )
+        output = io.StringIO()
+        with (
+            patch("sys.stdin", io.StringIO(event)),
+            patch("sys.stdout", output),
+            patch.object(hook, "managed_rtk", return_value=Path(tempfile.gettempdir()) / "rtk-test.exe"),
+        ):
+            self.assertEqual(hook.main(), 0)
+
+        self.assertEqual(json.loads(output.getvalue()), {})
+
     def test_rtk_hook_emits_no_rewrite_without_managed_binary(self) -> None:
         hook = load_module("pala_rtk_hook", "pala_rtk_hook.py")
         event = json.dumps({"tool_name": "shell_command", "tool_input": {"command": "git status"}})
@@ -1106,7 +1204,9 @@ class PluginContractTests(unittest.TestCase):
             "smallest maintained reusable foundation",
             "clean and low-duplication",
             "real core workflow",
-            "applicable lint, typecheck, tests, and build",
+            "applicable lint, typecheck, tests, build, dependency",
+            "dependency",
+            "secret checks",
             "open and use it now",
         )
         lowered = text.casefold()

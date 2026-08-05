@@ -760,6 +760,12 @@ def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -
         if result.status == "owned_by_other":
             raise ValueError("ticket is owned by another active session")
         return
+    from pala_store import WorkflowStore
+
+    if WorkflowStore(root).has_dirty_record():
+        raise ValueError(
+            "active ticket work exists for another session; use --session-key for parallel-safe ownership"
+        )
     if (root / WORKFLOW).is_file():
         existing = load_workflow(root)
         if existing.get("dirty"):

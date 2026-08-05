@@ -112,41 +112,41 @@
 
 ## M11 — Büyük iş dayanıklılığı
 
-- [ ] PALA-043: Bir aktif ticket, tek sonraki iş, atomik checkpoint ve
+- [x] PALA-043: Bir aktif ticket, tek sonraki iş, atomik checkpoint ve
   compaction geri yükleme sözleşmesini çok oturumlu senaryolarla genişlet.
-- [ ] Aynı repo için paralel sohbetleri oturum kimliğiyle ayır; bir sohbetin
+- [x] Aynı repo için paralel sohbetleri oturum kimliğiyle ayır; bir sohbetin
   dirty işi diğerinin `begin` veya checkpoint'iyle ezilmesin.
-- [ ] Başarısız/timeout/yarım doğrulamayı başarı sayma; tekrar deneme bütçesi,
+- [x] Başarısız/timeout/yarım doğrulamayı başarı sayma; tekrar deneme bütçesi,
   ilk nedensel hata ve açık blocker kaydı tut.
-- [ ] Büyük repo eşiklerini kaynak dosya sayısı, değişiklik yayılımı ve modül
+- [x] Büyük repo eşiklerini kaynak dosya sayısı, değişiklik yayılımı ve modül
   sınırından belirle; küçük işte graph/MCP/çoklu ajan maliyetini başlatma.
-- [ ] Kapanışta gerçek runtime, test, lint, typecheck, build, dependency ve
+- [x] Kapanışta gerçek runtime, test, lint, typecheck, build, dependency ve
   secrets kontrollerinden yalnız projede var olan uygun kapıları çalıştır.
 
 ## M12 — Arıza, çakışma ve tekrar testleri
 
-- [ ] PALA-044: İzole geçici kullanıcı profiliyle 50 ardışık
+- [x] PALA-044: İzole geçici kullanıcı profiliyle 50 ardışık
   install/doctor/update çalıştırıp ikinci ve sonraki kurulumların değişiklik
   üretmediğini kanıtla.
-- [ ] Eski Pala, güncel Pala, bozuk kopya, yarım staging, kilitli dosya,
+- [x] Eski Pala, güncel Pala, bozuk kopya, yarım staging, kilitli dosya,
   çevrimdışı ağ, eksik PATH, eksik Python/Node/uv, yabancı MCP ve güvenilmemiş
   hook senaryolarını test et.
-- [ ] RTK rewrite için çıkış kodu, yan etki, argüman ve fallback eşdeğerlik
+- [x] RTK rewrite için çıkış kodu, yan etki, argüman ve fallback eşdeğerlik
   testlerini Windows PowerShell 5.1/7 ve uygun CI ortamında çalıştır.
-- [ ] Kaynak testleri, portable ZIP içinden testler, temiz klasör kurulumu,
+- [x] Kaynak testleri, portable ZIP içinden testler, temiz klasör kurulumu,
   repair, uninstall ve önceki sürüme rollback kapılarını geçir.
 
 ## M13 — 0.4 global paket ve teslim
 
-- [ ] Tüm source ve portable kapılar geçmeden manifest sürümünü artırma.
-- [ ] Windows ve Ubuntu CI başarılarını, temiz Windows doctor çıktısını,
+- [x] Tüm source ve portable kapılar geçmeden manifest sürümünü artırma.
+- [x] Windows ve Ubuntu CI başarılarını, temiz Windows doctor çıktısını,
   üretilen ZIP'i ve SHA-256 değerini kaydet.
-- [ ] Herkese açık GitHub checkout/release ZIP'i ile temiz Windows profilinde
+- [x] Herkese açık GitHub checkout/release ZIP'i ile temiz Windows profilinde
   tek komut kurulumunu doğrula; yeni sohbette örtük ve açık çağrı testlerini
   yap.
-- [ ] Yerel geliştirici kurulumu ile global dağıtımı ayrı tut; ürün kurulumu
+- [x] Yerel geliştirici kurulumu ile global dağıtımı ayrı tut; ürün kurulumu
   kişisel katalog, belirli kullanıcı yolu veya geliştirici makinesi varsaymasın.
-- [ ] Commit, push, tag ve release'i ayrı yetki ve kanıt sınırlarında yürüt;
+- [x] Commit, push, tag ve release'i ayrı yetki ve kanıt sınırlarında yürüt;
   CI başarılı olmadan release oluşturma. Depoyu public yapma veya evrensel
   kataloğa yayımlama yalnız bu hesap düzeyi işlem için açık kullanıcı yetkisiyle
   yapılır.

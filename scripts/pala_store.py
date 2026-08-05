@@ -12,6 +12,9 @@ from pathlib import Path
 
 from pala_models import SessionKey, VERIFICATION_STATUSES
 
+VERIFICATION_BUDGET = 2
+VERIFICATION_FAILURE_STATUSES = {"failed", "timeout", "not-run", "blocked"}
+
 
 def session_key(session: str) -> str:
     return SessionKey.from_session_id(session)
@@ -140,6 +143,19 @@ class WorkflowStore:
                 return record
         return None
 
+    def has_dirty_record(self) -> bool:
+        tickets = self.root / ".codex" / "plugin-data" / "pala" / "v3" / "tickets"
+        if not tickets.is_dir():
+            return False
+        for path in tickets.glob("*.json"):
+            try:
+                record = self._read(path)
+            except (OSError, json.JSONDecodeError):
+                continue
+            if record and record.get("dirty") is True:
+                return True
+        return False
+
     def heartbeat(self, session: str, event: str) -> ClaimResult:
         if event not in {"session_start", "session_end", "pre_compact"}:
             raise ValueError("unsupported lifecycle event")
@@ -193,22 +209,38 @@ class WorkflowStore:
                 )[:240]
             verification.append(entry)
             record["verification"] = verification[-8:]
-            if status == "failed":
-                repeats = sum(
-                    item.get("fingerprint") == fingerprint and item.get("status") == "failed"
+            if status in VERIFICATION_FAILURE_STATUSES:
+                failures = [
+                    item
                     for item in verification
                     if isinstance(item, dict)
-                )
-                if repeats >= 2:
+                    and item.get("fingerprint") == fingerprint
+                    and item.get("status") in VERIFICATION_FAILURE_STATUSES
+                ]
+                first_failure = record.get("first_verification_failure")
+                if not isinstance(first_failure, dict):
+                    record["first_verification_failure"] = {
+                        "status": status,
+                        "command": entry["command"],
+                        "fingerprint": fingerprint,
+                    }
+                    if entry.get("error"):
+                        record["first_verification_failure"]["error"] = entry["error"]
+                record["verification_attempts"] = len(failures)
+                if len(failures) >= VERIFICATION_BUDGET:
                     blockers = record.get("blockers", [])
                     if not isinstance(blockers, list):
                         blockers = []
                     if "verification repeated twice" not in blockers:
                         blockers.append("verification repeated twice")
+                    if "verification budget exhausted" not in blockers:
+                        blockers.append("verification budget exhausted")
                     record["blockers"] = blockers[-5:]
                     record["updated_at"] = datetime.now(timezone.utc).isoformat()
                     self._write(path, record)
                     return ClaimResult("blocked", record)
+            else:
+                record["verification_attempts"] = 0
             record["updated_at"] = datetime.now(timezone.utc).isoformat()
             self._write(path, record)
             return ClaimResult("recorded", record)
@@ -232,7 +264,7 @@ class WorkflowStore:
                 for item in verification
             )
             failed = any(
-                isinstance(item, dict) and item.get("status") in {"failed", "blocked", "timeout"}
+                isinstance(item, dict) and item.get("status") in VERIFICATION_FAILURE_STATUSES
                 for item in verification
             )
             blockers = record.get("blockers", [])

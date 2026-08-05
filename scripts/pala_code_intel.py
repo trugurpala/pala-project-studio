@@ -11,10 +11,21 @@ import subprocess
 import sys
 from pathlib import Path
 
+SOURCE_FILE_THRESHOLD = 1000
+CHANGED_FILE_THRESHOLD = 50
+MODULE_ROOT_THRESHOLD = 4
 
-def graph_eligible(source_files: int, changed_files: int, module_roots: int) -> bool:
+def graph_eligible(
+    source_files: int, changed_files: int, module_roots: int, *, use_graph: bool = True
+) -> bool:
     """Keep graph startup for work large enough to justify its cost."""
-    return source_files >= 1000 or changed_files >= 50 or module_roots >= 4
+    if not use_graph:
+        return False
+    return (
+        source_files >= SOURCE_FILE_THRESHOLD
+        or changed_files >= CHANGED_FILE_THRESHOLD
+        or module_roots >= MODULE_ROOT_THRESHOLD
+    )
 
 
 def find_executable() -> str | None:
