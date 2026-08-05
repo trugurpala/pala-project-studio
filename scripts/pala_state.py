@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import tempfile
 import subprocess
 import sys
 import tomllib
@@ -61,6 +62,8 @@ CANDIDATES = {
     ),
 }
 REQUIRED = ("project", "plan", "status")
+VERIFY_STATUS_PASSED_KEYWORDS = ("passed", "ok", "succeeded")
+VERIFY_STATUS_FAILED_KEYWORDS = ("failed", "error", "broken", "exception")
 PROJECT_MARKERS = (
     ".codex-plugin/plugin.json",
     "SKILL.md",
@@ -299,11 +302,18 @@ def project_profiles(root: Path) -> tuple[str, list[str]]:
 
 def write_json(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+    with tempfile.NamedTemporaryFile(
+        "w",
+        suffix=".tmp",
         encoding="utf-8",
+        dir=path.parent,
+        delete=False,
         newline="\n",
-    )
+    ) as stream:
+        stream.write(json.dumps(payload, ensure_ascii=False, indent=2))
+        stream.write("\n")
+        temp_path = Path(stream.name)
+    temp_path.replace(path)
 
 
 def bounded_strings(values: list[str], *, limit: int) -> list[str]:
@@ -378,6 +388,126 @@ def changed_git_paths(root: Path) -> list[str]:
             if value:
                 paths.add(value.decode("utf-8", errors="surrogateescape"))
     return sorted(paths, key=str.casefold)
+
+
+def has_failed_verification(entries: list[str]) -> bool:
+    for value in entries:
+        lowered = value.casefold()
+        if any(token in lowered for token in VERIFY_STATUS_FAILED_KEYWORDS):
+            return True
+    return False
+
+
+def hook_safety_report(root: Path) -> dict[str, object]:
+    hooks_path = root / "hooks" / "hooks.json"
+    hook_script = root / "scripts" / "pala_hook.py"
+    state_file = root / ".codex" / "pala-workflow.json"
+    reasons: list[str] = []
+    if not hooks_path.is_file():
+        reasons.append("hooks.json missing")
+    else:
+        try:
+            hook_payload = json.loads(hooks_path.read_text(encoding="utf-8"))
+            if not isinstance(hook_payload, dict):
+                reasons.append("hooks.json is not a JSON object")
+            elif "hooks" not in hook_payload:
+                reasons.append("hooks.json is missing the hooks map")
+        except (OSError, json.JSONDecodeError):
+            reasons.append("hooks.json cannot be parsed")
+
+    if not hook_script.is_file():
+        reasons.append("pala_hook.py is missing")
+    elif "github.com" in hook_script.read_text(encoding="utf-8").casefold():
+        reasons.append("hook script uses restricted external references")
+
+    if not state_file.is_file():
+        reasons.append("hook state file is missing")
+
+    if not reasons:
+        return {
+            "status": "passed",
+            "reasons": [],
+            "recommendation": "run /hooks to review hook policy when you change safety boundaries",
+        }
+    return {
+        "status": "blocked",
+        "reasons": reasons,
+        "recommendation": "run /hooks to inspect and repair hook safety",
+    }
+
+
+def doctor_report(root: Path, manifest: dict[str, object] | None = None) -> dict[str, object]:
+    python_info = {
+        "executable": os.environ.get("PYTHON", sys.executable),
+        "version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+    }
+
+    git_root = run_git(root, "rev-parse", "--show-toplevel")
+    plugin_root = root.resolve()
+    status = {
+        "plugin": {
+            "root": str(plugin_root),
+            "manifest": str(plugin_root / ".codex-plugin" / "plugin.json"),
+            "hooks": str(plugin_root / "hooks" / "hooks.json"),
+            "manifest_present": (plugin_root / ".codex-plugin" / "plugin.json").is_file(),
+            "hooks_present": (plugin_root / "hooks" / "hooks.json").is_file(),
+        },
+        "python": python_info,
+        "git": {
+            "installed": git_root is not None,
+            "root": git_root,
+            "status_command": run_git(root, "status", "--short", "--branch"),
+        },
+        "project_registration": {
+            "registered": False,
+            "document_mapping": None,
+            "error": None,
+        },
+        "hook_discovery": {
+            "workflow_state_exists": (root / WORKFLOW).is_file(),
+            "workflow_state_preview": relative(
+                root, root / WORKFLOW
+            )
+            if (root / WORKFLOW).is_file()
+            else None,
+        },
+        "hook_safety": hook_safety_report(root),
+    }
+
+    if manifest is None:
+        try:
+            manifest = load_manifest(root)
+        except (OSError, ValueError, json.JSONDecodeError) as error:
+            status["project_registration"]["error"] = str(error)
+        else:
+            status["project_registration"]["registered"] = True
+            status["project_registration"]["document_mapping"] = manifest.get("documents")
+
+    if status["project_registration"]["registered"]:
+        workflow = None
+        try:
+            workflow = load_workflow(root)
+        except (OSError, ValueError, json.JSONDecodeError):
+            workflow = None
+        status["hook_discovery"]["active_ticket"] = (
+            workflow.get("active_ticket") if isinstance(workflow, dict) else None
+        )
+        status["hook_discovery"]["needs_reconcile"] = (
+            bool(workflow and workflow.get("needs_reconcile")) if workflow else None
+        )
+        status["hook_discovery"]["dirty"] = (
+            bool(workflow and workflow.get("dirty")) if workflow else None
+        )
+
+    status["healthy"] = (
+        status["plugin"]["manifest_present"]
+        and status["plugin"]["hooks_present"]
+        and status["git"]["installed"]
+        and status["project_registration"]["registered"]
+        and status["hook_safety"]["status"] == "passed"
+    )
+
+    return status
 
 
 def worktree_entry_digest(path: Path) -> str:
@@ -564,6 +694,12 @@ def load_workflow(root: Path) -> dict[str, object]:
 def begin_work(root: Path, ticket: str, goal: str) -> None:
     if not ticket.strip() or not goal.strip():
         raise ValueError("ticket and goal must be non-empty")
+    if (root / WORKFLOW).is_file():
+        existing = load_workflow(root)
+        if existing.get("dirty"):
+            raise ValueError(
+                "active workflow has uncheckpointed dirty work; run checkpoint before begin"
+            )
     payload = {
         "schema_version": WORKFLOW_SCHEMA_VERSION,
         "active_ticket": ticket.strip(),
@@ -786,6 +922,8 @@ def parser() -> argparse.ArgumentParser:
     checkpoint_parser.add_argument(
         "--tier", choices=VERIFICATION_TIERS, default="ticket"
     )
+    doctor_parser = subparsers.add_parser("doctor")
+    doctor_parser.add_argument("--cwd", default=".")
     return result
 
 
@@ -814,10 +952,28 @@ def main() -> int:
             print(str(exc), file=sys.stderr)
             return 2
     if args.command == "begin":
-        begin_work(root, args.ticket, args.goal)
+        try:
+            begin_work(root, args.ticket, args.goal)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
         print(str(root / WORKFLOW))
         return 0
     if args.command == "checkpoint":
+        try:
+            manifest = load_manifest(root)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        if not args.verification:
+            print("verification evidence is required for checkpoint", file=sys.stderr)
+            return 2
+        if has_failed_verification(args.verification):
+            print(
+                "checkpoint refused: verification contains failed status",
+                file=sys.stderr,
+            )
+            return 2
         checkpoint_work(
             root,
             args.next_action,
@@ -827,6 +983,10 @@ def main() -> int:
         )
         print(str(root / WORKFLOW))
         return 0
+    if args.command == "doctor":
+        payload = doctor_report(root)
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if payload["healthy"] else 2
     return validate(root)
 
 

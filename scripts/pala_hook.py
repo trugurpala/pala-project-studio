@@ -113,7 +113,8 @@ def session_context(
         f"inspect only the active ticket section in plan={plan}. active={active or 'none'}; "
         f"next={next_action or 'reconcile first'}; dirty={str(dirty).lower()}; "
         f"blockers={blocker_count}; reconcile={str(needs_reconcile).lower()}"
-        f"({reason_count}). Do not re-plan completed scope. Continue authorized local "
+        f"({reason_count}). Run /hooks if hook safety changed. "
+        "Do not re-plan completed scope. Continue authorized local "
         "work; use the full gate only at the plan's milestone/release boundary, then "
         "checkpoint one coherent ticket."
     )
@@ -178,7 +179,7 @@ def main() -> int:
                         "Before ending this turn, reconcile the active ticket, "
                         "verification evidence, blockers, and exactly one next "
                         "action in the registered plan/status documents. Then "
-                        "run the Pala state validator."
+                        "run the Pala state validator. Run /hooks if hook safety is unknown."
                     ),
                 }
             )

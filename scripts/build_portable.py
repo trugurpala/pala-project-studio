@@ -66,6 +66,7 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "LICENSE",
         plugin_root / "OPEN_SOURCE.md",
         plugin_root / "THIRD_PARTY_NOTICES.md",
+        plugin_root / ".github" / "workflows" / "quality.yml",
     ]
     for directory in ("hooks", "skills"):
         candidates.extend(

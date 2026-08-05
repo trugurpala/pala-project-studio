@@ -32,7 +32,7 @@ class UserExperienceContractTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        self.assertTrue(manifest["version"].startswith("0.3.2+codex."))
+        self.assertTrue(manifest["version"].startswith("0.3.3+codex."))
         self.assertEqual(
             manifest["repository"],
             "https://github.com/trugurpala/pala-project-studio",
@@ -201,6 +201,7 @@ class UserExperienceContractTests(unittest.TestCase):
         normalized = " ".join(workflow.split())
         self.assertIn("permissions: contents: read", normalized)
         self.assertIn("cancel-in-progress: true", workflow)
+        self.assertIn("matrix:", workflow)
         self.assertIn(
             "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
             workflow,
@@ -211,7 +212,6 @@ class UserExperienceContractTests(unittest.TestCase):
         )
         self.assertIn("python scripts/verify.py", workflow)
         self.assertNotIn("write-all", workflow)
-        self.assertNotIn("strategy:", workflow)
 
 
 class PortablePackageContractTests(unittest.TestCase):

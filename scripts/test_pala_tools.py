@@ -9,6 +9,7 @@ import json
 import subprocess
 import tempfile
 import unittest
+import sys
 from argparse import Namespace
 from pathlib import Path
 from unittest.mock import patch
@@ -205,6 +206,59 @@ class PalaStateTests(unittest.TestCase):
 
             self.assertTrue(report["needed"])
             self.assertIn("plan changed since checkpoint", report["reasons"])
+
+    def test_doctor_reports_hook_safety_block_and_recommendation(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            manifest = {
+                "schema_version": 1,
+                "managed_by": "pala-project-finisher",
+                "documents": {
+                    "project": "PROJECT.md",
+                    "plan": "PLAN.md",
+                    "status": "STATUS.md",
+                },
+            }
+            (root / ".codex").mkdir()
+            (root / "PROJECT.md").write_text("# Project\n", encoding="utf-8")
+            (root / "PLAN.md").write_text("# Plan\n", encoding="utf-8")
+            (root / "STATUS.md").write_text("# Status\n", encoding="utf-8")
+            (root / ".codex" / "pala-project.json").write_text(
+                json.dumps(manifest), encoding="utf-8"
+            )
+            (root / ".codex" / "pala-workflow.json").write_text(
+                json.dumps({"schema_version": 2, "active_ticket": "T-001"}),
+                encoding="utf-8",
+            )
+            report = pala_state.doctor_report(root)
+            self.assertIn("hook_safety", report)
+            self.assertIn("recommendation", report["hook_safety"])
+            self.assertEqual(report["hook_safety"]["status"], "blocked")
+
+    def test_checkpoint_command_requires_verification_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            for name in ("PROJECT.md", "PLAN.md", "STATUS.md"):
+                (root / name).write_text(f"# {name}\n", encoding="utf-8")
+            (root / ".codex" / "pala-project.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "managed_by": "pala-project-finisher",
+                        "documents": {
+                            "project": "PROJECT.md",
+                            "plan": "PLAN.md",
+                            "status": "STATUS.md",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with patch.object(
+                sys, "argv", ["pala_state.py", "checkpoint", "--cwd", temp, "--next-action", "re-check"]
+            ):
+                self.assertEqual(pala_state.main(), 2)
 
     def test_checkpoint_detects_content_change_while_git_status_stays_modified(
         self,
@@ -637,6 +691,17 @@ class PalaHookTests(unittest.TestCase):
         self.assertIn("Read status first", message)
         self.assertNotIn("docs/PRODUCT_DECISIONS.md", message)
         self.assertNotIn("docs/OPEN_SOURCE.md", message)
+
+    def test_begin_rejects_dirty_workflow(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            (root / ".codex" / "pala-workflow.json").write_text(
+                json.dumps({"schema_version": 2, "dirty": True}),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ValueError):
+                pala_state.begin_work(root, "T-001", "repair")
 
     def test_hook_never_runs_quality_or_network_commands(self) -> None:
         source = (SCRIPT_DIR / "pala_hook.py").read_text(encoding="utf-8").casefold()
