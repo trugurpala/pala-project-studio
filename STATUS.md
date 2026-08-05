@@ -66,7 +66,7 @@
 - Güncelleme: 2026-08-05
 - GitHub sayfa standardı: Her release'te README hızlı başlangıç, güncel indirme
   bağlantısı, uzman işçi güvenlik sınırları, Divan açıklaması ve GitHub release
-  asset bütünlüğü güncellenecek; bu kontrol M15 altında takip edilir.
+  asset bütünlüğü doğrulanmıştır; bu kontrol M15 altında tamamlandı.
 - 0.4 teslim hazırlığı: session-safe state, adapter sözleşmeleri, fail-closed
   RTK hook'u, graph eşiği ve GitHub routing private release dalında birleşti.
   Repo görünürlüğü değiştirilmeden private PR/CI/release kanıtı bekleniyor.

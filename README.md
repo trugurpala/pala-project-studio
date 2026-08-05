@@ -1,10 +1,17 @@
 # Pala Project Studio
 
+![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
+[![Release](https://img.shields.io/github/v/release/trugurpala/pala-project-studio?label=release)](https://github.com/trugurpala/pala-project-studio/releases/latest)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Pala Project Studio, Codex'in uzun soluklu yazılım projelerinde aktif işi
 kaybetmeden ilerlemesine yardımcı olan Türkçe odaklı bir proje yürütme
 eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bulur,
 aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
 göre katmanlandırır.
+
+- Dünya standartlarına uygun GitHub yayın akışı için: `README`teki sürüm linki,
+  güvenlik sınırları ve dağıtım kanıtı birlikte doğrulanır.
 
 ## Hızlı başlangıç
 

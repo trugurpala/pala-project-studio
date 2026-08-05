@@ -168,11 +168,10 @@
 
 ## M15 — GitHub ana sayfa ve yayın standardı
 
-- [ ] Her release öncesi README'nin güncel sürüm indirme bağlantısını, kısa
-  değer önerisini, güvenlik sınırlarını ve Divan'ın ortak altyapı rolünü
-  doğrula.
-- [ ] GitHub depo açıklamasını, release başlığını ve taşınabilir ZIP adını aynı
+- [x] Her release öncesi README'nin güncel sürüm indirme bağlantısını, kısa
+  değer önerisini, güvenlik sınırlarını ve Divan'ın ortak altyapı rolünü doğrula.
+- [x] GitHub depo açıklamasını, release başlığını ve taşınabilir ZIP adını aynı
   sürümle uyumlu tut; eski etiketi yeni kodu gösterecek biçimde değiştirme.
-- [ ] Yayın sonrası release asset SHA-256 değerini GitHub API'den karşılaştır;
+- [x] Yayın sonrası release asset SHA-256 değerini GitHub API'den karşılaştır;
   ana dal, etiketi, CI ve indirme bağlantısı doğrulanmadan release'i tamamlandı
   sayma.
