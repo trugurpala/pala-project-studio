@@ -119,6 +119,30 @@ class ExpertInstallerTests(unittest.TestCase):
             self.assertEqual(environment["UV_TOOL_DIR"], str((state / "experts" / "python-tools").resolve()))
             self.assertEqual(environment["UV_TOOL_BIN_DIR"], str((state / "experts" / "python-bin").resolve()))
 
+    def test_suite_installs_only_declared_experts_in_pala_state(self) -> None:
+        wheel = b"a verified wheel"
+        archive = BytesIO()
+        with zipfile.ZipFile(archive, "w") as zip_file:
+            zip_file.writestr("codebase-memory-mcp.exe", b"exe")
+            zip_file.writestr("ollama.exe", b"exe")
+        zip_payload = archive.getvalue()
+        lock = {
+            "graphify": {"version": "1.0", "source_url": "https://example.invalid/graphify.whl", "sha256": hashlib.sha256(wheel).hexdigest()},
+            "serena": {"version": "1.0", "source_url": "https://example.invalid/serena.whl", "sha256": hashlib.sha256(wheel).hexdigest()},
+            "codebase-memory": {"version": "1.0", "source_url": "https://example.invalid/cbm.zip", "sha256": hashlib.sha256(zip_payload).hexdigest()},
+            "ollama": {"version": "1.0", "source_url": "https://example.invalid/ollama.zip", "sha256": hashlib.sha256(zip_payload).hexdigest()},
+            "rtk": {"version": "1.0", "source_url": "https://example.invalid/rtk.exe", "sha256": hashlib.sha256(b"rtk").hexdigest()},
+        }
+        payloads = {entry["source_url"]: zip_payload if entry["source_url"].endswith(".zip") else wheel for entry in lock.values()}
+        with tempfile.TemporaryDirectory() as temp:
+            state = Path(temp) / "Pala"
+            report = self.installer.install_expert_suite(
+                lock, state, fetch=lambda url: payloads[url], uv="uv.exe", run=lambda _args, _env: 0,
+            )
+            self.assertEqual(set(report["experts"]), {"graphify", "serena", "codebase-memory", "ollama"})
+            self.assertTrue(all(item["state"] == "ready" for item in report["experts"].values()))
+            self.assertFalse((state / "experts" / "rtk").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

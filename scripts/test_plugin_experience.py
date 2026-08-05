@@ -247,6 +247,8 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertIn("scripts\\Install-Pala.ps1", entry)
         self.assertIn('ValidateSet("Install","Doctor","Repair","Update","Uninstall")', compact)
         self.assertIn("pala_installer.py", wrapper)
+        self.assertIn("pala_expert_installer.py", wrapper)
+        self.assertIn("managed-tools.lock.json", wrapper)
         self.assertIn("--dry-run", wrapper)
         self.assertNotIn("Remove-Item -Path $installRoot -Recurse", wrapper)
         self.assertNotIn("Copy-Item -Path (Join-Path $pluginRoot", wrapper)

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import os
@@ -16,6 +17,13 @@ from pathlib import Path
 from pathlib import PurePosixPath
 import stat
 import zipfile
+
+
+PYTHON_EXPERTS = frozenset({"graphify", "serena"})
+ZIP_EXPERTS = {
+    "codebase-memory": "codebase-memory-mcp.exe",
+    "ollama": "ollama.exe",
+}
 
 
 def _safe_part(value: str) -> str:
@@ -253,3 +261,72 @@ def install_python_tool(
         "path": str(tool_dir),
         "bin_dir": str(bin_dir),
     }
+
+
+def install_expert_suite(
+    lock: dict[str, dict[str, str]],
+    state_root: Path,
+    *,
+    dry_run: bool = False,
+    fetch=_fetch,
+    uv: str = "uv",
+    run=None,
+) -> dict[str, object]:
+    """Install Pala's explicitly allowlisted expert workers, never arbitrary lock entries."""
+    experts: dict[str, dict[str, object]] = {}
+    names = tuple(sorted(PYTHON_EXPERTS | set(ZIP_EXPERTS)))
+    for name in names:
+        spec = lock.get(name)
+        if not isinstance(spec, dict):
+            raise ValueError(f"managed expert is missing from the lock: {name}")
+        experts[name] = install_binary(name, spec, state_root, dry_run=dry_run, fetch=fetch)
+    if dry_run:
+        return {"state": "would_install", "changed": False, "experts": experts}
+    for name in sorted(PYTHON_EXPERTS):
+        experts[name] = install_python_tool(name, lock[name], state_root, uv=uv, run=run)
+    for name, executable in ZIP_EXPERTS.items():
+        experts[name] = expand_verified_zip(name, lock[name], state_root, executable)
+    return {"state": "ready", "changed": any(bool(item.get("changed")) for item in experts.values()), "experts": experts}
+
+
+def _load_lock(path: Path) -> dict[str, dict[str, str]]:
+    raw = _read_json(path)
+    tools = raw.get("tools") if raw else None
+    if not isinstance(tools, dict):
+        raise ValueError("managed tools lock is invalid")
+    result: dict[str, dict[str, str]] = {}
+    for name, item in tools.items():
+        if not isinstance(name, str) or not isinstance(item, dict):
+            raise ValueError("managed tools lock contains an invalid entry")
+        result[name] = {str(key): str(value) for key, value in item.items()}
+    return result
+
+
+def parser() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(description=__doc__)
+    result.add_argument("action", choices=("install", "doctor"))
+    result.add_argument("--lock", type=Path, required=True)
+    result.add_argument("--state-root", type=Path, required=True)
+    result.add_argument("--uv", default="uv")
+    result.add_argument("--dry-run", action="store_true")
+    return result
+
+
+def main() -> int:
+    args = parser().parse_args()
+    try:
+        lock = _load_lock(args.lock)
+        if args.action == "doctor":
+            payload = {name: inspect_binary(name, lock[name], args.state_root) for name in sorted(PYTHON_EXPERTS | set(ZIP_EXPERTS))}
+            report: dict[str, object] = {"state": "ready" if all(item["state"] == "ready" for item in payload.values()) else "attention_required", "experts": payload}
+        else:
+            report = install_expert_suite(lock, args.state_root, dry_run=args.dry_run, uv=args.uv)
+    except (OSError, RuntimeError, ValueError) as error:
+        print(json.dumps({"state": "failed", "error": str(error)}, ensure_ascii=False))
+        return 1
+    print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+    return 0 if report["state"] in {"ready", "would_install"} else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
