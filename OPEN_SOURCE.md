@@ -19,6 +19,10 @@
 | `othmanadi/planning-with-files` | v3.9.0 | MIT | İlke uyarlaması | Plan, hook, compaction ve completion sahipliği Pala ile çakışır; dayanıklılık fikirleri testlere alınır. |
 | `nilbuild/developer-roadmap` | 4.0 release; aktif master | Lisans metni ayrıca incelenecek | Referans | Çalıştırılabilir araç değil; mimari/kalite kapsam kontrolünde seçici kullanılır. |
 | `ruvnet/ruflo` | v3.34.0 | MIT | 0.4 dışında | Ayrı MCP, daemon, hafıza, hook ve geniş ajan yüzeyi tek-kapı güvenilirliğini azaltır. |
+| `Graphify-Labs/graphify` | v0.9.33 | Apache-2.0 | Yönetilen yerel CLI | Kod AST'si ve belge grafiği Pala adaptöründen çalışır; Graphify'nin Codex skill/hook kurucusu çalıştırılmaz. |
+| `oraios/serena` | v1.6.1 | MIT | Yönetilen salt-okunur MCP | Sembol/referans zekâsı Pala sarmalayıcısında, bellek ve düzenleme araçları kapalıdır. |
+| `DeusData/codebase-memory-mcp` | v0.9.0 | MIT | Yönetilen tek-atımlık CLI | Büyük/çok dilli grafikte yalnız `cli` komutları, kök sınırı ve Pala verisi kullanılır. |
+| `ollama/ollama`, `qwen3:4b-instruct` | v0.32.6, 4B | MIT, Apache-2.0 | Pala sahiplikli yerel semantik | Geçici loopback süreci ve ayrı model deposu; bulut backend'i veya kullanıcı model deposu kullanılmaz. |
 
 Sürümler araştırma anındaki kabul adaylarıdır. Kurulumda kullanılan kesin
 release, asset SHA-256, lisans metni ve indirme kaynağı ayrı makine-okunur kilit

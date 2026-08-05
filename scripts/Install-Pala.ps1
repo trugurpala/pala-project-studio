@@ -14,6 +14,9 @@ $OutputEncoding = [Console]::OutputEncoding
 
 $pluginRoot = Split-Path -Path $PSScriptRoot -Parent
 $core = Join-Path $PSScriptRoot "pala_installer.py"
+$expertCore = Join-Path $PSScriptRoot "pala_expert_installer.py"
+$expertLock = Join-Path $pluginRoot "managed-tools.lock.json"
+$palaStateRoot = Join-Path ([Environment]::GetFolderPath("LocalApplicationData")) "Pala"
 
 function Resolve-PalaPython {
     $launcher = Get-Command py -ErrorAction SilentlyContinue
@@ -57,6 +60,46 @@ function Show-PalaResult([pscustomobject]$Payload) {
     }
 }
 
+function Invoke-PalaExperts([string]$Action) {
+    if (-not (Test-Path -LiteralPath $expertCore -PathType Leaf) -or -not (Test-Path -LiteralPath $expertLock -PathType Leaf)) {
+        throw "Pala uzman isci kurulumu bulunamadi."
+    }
+    $expertArgs = @()
+    if ($pythonCommand.Count -gt 1) { $expertArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
+    $expertArgs += @($expertCore, $Action, "--lock", $expertLock, "--state-root", $palaStateRoot)
+    if ($WhatIfPreference) { $expertArgs += "--dry-run" }
+    $expertRaw = (& $executable @expertArgs 2>&1 | Out-String).Trim()
+    $expertExit = $LASTEXITCODE
+    try {
+        $expertPayload = $expertRaw | ConvertFrom-Json
+    } catch {
+        throw "Pala uzman isci sonucu okunamadi."
+    }
+    Write-Host "[Pala] Uzman isciler: $($expertPayload.state)"
+    if ($expertExit -ne 0) { exit $expertExit }
+}
+
+function Invoke-PalaLocalModel {
+    $ollama = Join-Path $palaStateRoot "experts\ollama\0.32.6\expanded\ollama.exe"
+    if (-not (Test-Path -LiteralPath $ollama -PathType Leaf)) {
+        throw "Pala'ya ait Ollama ikilisi bulunamadi."
+    }
+    $env:OLLAMA_HOST = "127.0.0.1:11435"
+    $env:OLLAMA_MODELS = Join-Path $palaStateRoot "experts\ollama\0.32.6\models"
+    $env:OLLAMA_KEEP_ALIVE = "0"
+    $list = (& $ollama list 2>&1 | Out-String)
+    if ($LASTEXITCODE -ne 0) {
+        Start-Process -FilePath $ollama -ArgumentList "serve" -WindowStyle Hidden | Out-Null
+        Start-Sleep -Seconds 2
+        $list = (& $ollama list 2>&1 | Out-String)
+    }
+    if ($LASTEXITCODE -ne 0) { throw "Pala Ollama loopback sunucusu baslatilamadi." }
+    if ($list -notmatch "qwen3:4b-instruct\s+0edcdef34593") {
+        & $ollama pull "qwen3:4b-instruct"
+        if ($LASTEXITCODE -ne 0) { throw "Pala Qwen3 modeli indirilemedi." }
+    }
+}
+
 if (-not (Test-Path -LiteralPath $core -PathType Leaf)) {
     throw "Pala kurulum cekirdegi bulunamadi: $core"
 }
@@ -81,7 +124,10 @@ try {
 Show-PalaResult $payload
 if ($exitCode -ne 0) { exit $exitCode }
 
-if ($Mode -in @("Install", "Update", "Repair") -and -not $WhatIfPreference) {
+if ($Mode -in @("Install", "Update", "Repair")) {
+    Invoke-PalaExperts "install"
+    if (-not $WhatIfPreference) {
+    Invoke-PalaLocalModel
     $doctorArgs = @()
     if ($pythonCommand.Count -gt 1) { $doctorArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
     $doctorArgs += @($core, "doctor", "--source", $pluginRoot, "--project-root", (Get-Location).Path)
@@ -90,7 +136,11 @@ if ($Mode -in @("Install", "Update", "Repair") -and -not $WhatIfPreference) {
     $doctor = $doctorRaw | ConvertFrom-Json
     Show-PalaResult $doctor
     if ($doctorExit -ne 0) { exit $doctorExit }
+    Invoke-PalaExperts "doctor"
     Write-Host "[Pala] Yeni skill ve hook'larin yuklenmesi icin yeni bir Codex sohbeti acin."
+    }
+} elseif ($Mode -eq "Doctor") {
+    Invoke-PalaExperts "doctor"
 }
 
 exit 0

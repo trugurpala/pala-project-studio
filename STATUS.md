@@ -1,8 +1,8 @@
 # Pala Project Studio Durumu
 
-- Aktif milestone: M10 — Tek-kapı yönlendirme ve yönetilen araçlar (`in progress`)
-- Aktif ticket: PALA-043 — Çok oturumlu ticket sahipliği ve doğrulama
-  lifecycle'ı uygulanıyor.
+- Aktif milestone: M14 — Pala güvenli uzman işçileri (`completed locally`)
+- Aktif ticket: PALA-045 — Pala tek otoriteyken Graphify, Serena ve
+  codebase-memory'yi izole, kanıt döndüren uzman işçilere bağlama.
 - Son tamamlanan sonuç: Pala normal yazılım projesi isteklerinde örtük
   seçilebilir, salt sohbet kapsam dışı. SessionStart yalnız yerel plugin/Python/Git/
   hook durumunu özetler. İlk uygulama adımındaki sürüm kontrolü 24 saatlik atomik
@@ -36,9 +36,15 @@
   güncelleme önbelleği atomik JSON olarak ve olay logu yalnız izinli alanlarla
   en fazla 256 KB olacak biçimde doğrulandı. İdempotent Update + Doctor
   Pala-managed fingerprint'i değiştirmedi.
-- Engel: Yok.
-- Tek sonraki iş: PALA-043 CLI lifecycle sözleşmesini gerçek çağrı testleriyle
-  tamamla, ardından adapter sözleşmesi ve RTK ayrı ticket'ına geç.
+- Engel: Yok. PALA-043 yerel workflow kaydı ana çalışma alanında eski kalmıştı;
+  izole PALA-045 worktree'sinde yeni state ile uzlaştırıldı.
+- Tek sonraki iş: Değişiklikleri GitHub'a push et, draft PR aç ve CI kanıtını
+  kaydet.
+- PALA-045 yerel kanıtı: Pala-owned Graphify, Serena, codebase-memory ve
+  Ollama artifact'ları SHA-256 ile doğrulandı. Graphify `--code-only` smoke
+  çalışması Pala veri kökünde 451 düğüm/909 kenar üretti; codebase-memory
+  tek-atımlık index 844 düğüm/3298 kenarla tamamlandı. Ayrı loopback Ollama
+  deposunda `qwen3:4b-instruct` kimliği `0edcdef34593` olarak doğrulandı.
 - Güncelleme: 2026-08-05
 - 0.4 teslim hazırlığı: session-safe state, adapter sözleşmeleri, fail-closed
   RTK hook'u, graph eşiği ve GitHub routing private release dalında birleşti.

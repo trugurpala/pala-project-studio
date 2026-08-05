@@ -584,12 +584,12 @@ def doctor_bundle(source: Path, install_root: Path, state_root: Path) -> dict[st
         "schema_version": SCHEMA_VERSION,
         "healthy": plugin["status"] == "ready",
         "plugin": plugin,
-        "adapters": adapter_inventory(source),
+        "adapters": adapter_inventory(source, state_root),
         "state_file": str(state_path(state_root).resolve()),
     }
 
 
-def adapter_inventory(source: Path) -> dict[str, dict[str, object]]:
+def adapter_inventory(source: Path, state_root: Path | None = None) -> dict[str, dict[str, object]]:
     """Report optional tools without probing, installing, or changing user configuration."""
     try:
         adapter_path = Path(__file__).with_name("pala_adapters.py")
@@ -602,15 +602,27 @@ def adapter_inventory(source: Path) -> dict[str, dict[str, object]]:
         lock = module.load_managed_tools_lock(source / "managed-tools.lock.json")
     except (OSError, ValueError, ImportError):
         return {"lock": {"state": "failed", "detail": "managed tools lock unavailable"}}
-    return {
-        name: {
-            "state": "missing",
-            "changed": False,
-            "detail": "optional adapter is not installed",
-            "version": entry["version"],
-        }
-        for name, entry in lock.items()
-    }
+    inventory: dict[str, dict[str, object]] = {}
+    expert_module = None
+    if state_root is not None:
+        try:
+            expert_path = Path(__file__).with_name("pala_expert_installer.py")
+            expert_spec = importlib.util.spec_from_file_location("pala_installer_experts", expert_path)
+            if expert_spec is not None and expert_spec.loader is not None:
+                expert_module = importlib.util.module_from_spec(expert_spec)
+                sys.modules["pala_installer_experts"] = expert_module
+                expert_spec.loader.exec_module(expert_module)
+        except (OSError, ImportError):
+            expert_module = None
+    for name, entry in lock.items():
+        state = "missing"
+        detail = "optional adapter is not installed"
+        if expert_module is not None and "sha256" in entry:
+            inspected = expert_module.inspect_binary(name, entry, state_root)
+            state = str(inspected["state"])
+            detail = "Pala-owned artifact integrity verified" if state == "ready" else "Pala-owned artifact is missing or conflicted"
+        inventory[name] = {"state": state, "changed": False, "detail": detail, "version": entry["version"]}
+    return inventory
 
 
 def project_doctor(install_root: Path, project_root: Path) -> dict[str, object]:
