@@ -11,6 +11,26 @@ Yeni plugin içeriğinin mevcut model bağlamına geçmişe dönük enjekte edil
 varsayılmaz. Kurulum aynı oturumda tamamlanıp doğrulanabilir; Pala'nın yeni
 skill, MCP ve hook'larının güvenilir biçimde yüklenmesi yeni sohbet sınırıdır.
 
+## Global dağıtım sözleşmesi
+
+Pala belirli bir geliştirici bilgisayarına veya `@personal` kataloğuna bağlı
+değildir. Kaynak repo, repo kapsamlı `.agents/plugins/marketplace.json`
+kataloğunu taşır. GitHub checkout'u veya portable ZIP'deki tek Windows girişi:
+
+1. Codex ve mevcut marketplace/plugin durumunu JSON çıktılı desteklenen CLI
+   komutlarıyla keşfeder;
+2. kaynak paketi staging alanında doğrular;
+3. marketplace'i `codex plugin marketplace add`, Pala'yı `codex plugin add`
+   üzerinden idempotent kurar;
+4. güncel kurulumda “zaten hazır” der; yabancı veya farklı kaynaklı aynı adlı
+   kaydı ezmez;
+5. kaynak klasör daha sonra silinse bile Codex'in doğrulanmış kurulu kopyasını
+   kullanabildiğini temiz kullanıcı profili testinde kanıtlar.
+
+Yerel geliştirici kurulumu yalnız geliştirme ve test içindir; global ürün
+kurulumunun yerine geçmez. Public GitHub yayını ve evrensel Codex dizinine
+başvuru ayrı yayın adımlarıdır.
+
 ## Bileşen modeli
 
 ```text

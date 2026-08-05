@@ -62,9 +62,12 @@ def is_forbidden_source(path: Path) -> bool:
 def source_files(plugin_root: Path) -> list[Path]:
     """Return the allowlisted source files for a portable package."""
     candidates = [
+        plugin_root / ".agents" / "plugins" / "marketplace.json",
         plugin_root / ".codex-plugin" / "plugin.json",
+        plugin_root / "Install-Pala.ps1",
         plugin_root / "LICENSE",
         plugin_root / "OPEN_SOURCE.md",
+        plugin_root / "README.md",
         plugin_root / "THIRD_PARTY_NOTICES.md",
         plugin_root / ".github" / "workflows" / "quality.yml",
     ]

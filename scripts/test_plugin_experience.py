@@ -90,6 +90,20 @@ class UserExperienceContractTests(unittest.TestCase):
             self.assertNotIn("$", prompt)
         self.assertIn("Türkçe", manifest["interface"]["longDescription"])
 
+    def test_repo_marketplace_exposes_pala_without_personal_profile_assumption(self) -> None:
+        path = PLUGIN_ROOT / ".agents" / "plugins" / "marketplace.json"
+        marketplace = json.loads(path.read_text(encoding="utf-8"))
+
+        self.assertEqual(marketplace["name"], "pala-project-studio")
+        self.assertEqual(marketplace["interface"]["displayName"], "Pala Project Studio")
+        self.assertEqual(len(marketplace["plugins"]), 1)
+        entry = marketplace["plugins"][0]
+        self.assertEqual(entry["name"], "pala-project-studio")
+        self.assertEqual(entry["source"], {"source": "local", "path": "./"})
+        self.assertEqual(entry["policy"]["installation"], "AVAILABLE")
+        self.assertEqual(entry["policy"]["authentication"], "ON_INSTALL")
+        self.assertEqual(entry["category"], "Developer Tools")
+
     def test_skill_metadata_uses_consistent_brand_and_explicit_invocation(self) -> None:
         metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(
             encoding="utf-8"
@@ -210,6 +224,20 @@ class UserExperienceContractTests(unittest.TestCase):
     def test_single_command_verifier_exists(self) -> None:
         self.assertTrue((PLUGIN_ROOT / "scripts" / "verify.py").is_file())
 
+    def test_windows_single_entry_delegates_to_atomic_installer_core(self) -> None:
+        entry = (PLUGIN_ROOT / "Install-Pala.ps1").read_text(encoding="utf-8")
+        wrapper = (PLUGIN_ROOT / "scripts" / "Install-Pala.ps1").read_text(
+            encoding="utf-8"
+        )
+        compact = "".join(wrapper.split())
+
+        self.assertIn("scripts\\Install-Pala.ps1", entry)
+        self.assertIn('ValidateSet("Install","Doctor","Repair","Update","Uninstall")', compact)
+        self.assertIn("pala_installer.py", wrapper)
+        self.assertIn("--dry-run", wrapper)
+        self.assertNotIn("Remove-Item -Path $installRoot -Recurse", wrapper)
+        self.assertNotIn("Copy-Item -Path (Join-Path $pluginRoot", wrapper)
+
     def test_owner_demo_handoff_is_conditional_and_secrets_safe(self) -> None:
         reference = (REFERENCE_ROOT / "owner-demo-handoff.md").read_text(
             encoding="utf-8"
@@ -273,6 +301,10 @@ class PortablePackageContractTests(unittest.TestCase):
 
             self.assertEqual(names, entries)
             self.assertIn(
+                "pala-project-studio/.agents/plugins/marketplace.json",
+                names,
+            )
+            self.assertIn(
                 "pala-project-studio/.codex-plugin/plugin.json",
                 names,
             )
@@ -284,6 +316,9 @@ class PortablePackageContractTests(unittest.TestCase):
                 "pala-project-studio/scripts/test_plugin_experience.py",
                 names,
             )
+            self.assertIn("pala-project-studio/Install-Pala.ps1", names)
+            self.assertIn("pala-project-studio/scripts/pala_installer.py", names)
+            self.assertIn("pala-project-studio/README.md", names)
             self.assertIn("pala-project-studio/LICENSE", names)
             for name in names:
                 path = PurePosixPath(name)

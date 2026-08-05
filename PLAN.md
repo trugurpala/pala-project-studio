@@ -5,7 +5,8 @@
 - [x] Codex plugin, skill, hook, AGENTS, proje, context ve GitHub sınırlarını güncel resmî manual üzerinden doğrula.
 - [x] ZIP kaynağını ayrı Git çalışma alanına al ve mevcut kurulu sürümle eşliğini doğrula.
 - [x] Ürün, plan, durum ve karar belgelerini Pala'ya kaydet.
-- [x] AZR gibi mevcut belge adlarını otomatik keşif adaylarına ekle.
+- [x] Mevcut projelerde kullanılan alternatif kapsam, plan ve durum belge
+  adlarını otomatik keşif adaylarına ekle.
 - [x] Checkpoint kanıt özeti ve belge/Git fingerprint'iyle durum eskimesini algıla.
 
 ## M2 — Token-verimli aktif yürütme
@@ -28,34 +29,33 @@
 - [x] Manifest, README, lisans, güvenlik ve CI yüzeylerini tamamla.
 - [x] Birim, sözleşme, skill, plugin ve portable paket doğrulamalarını çalıştır.
 - [x] Yeni portable ZIP üret ve SHA-256 kaydet.
-- [x] Kişisel marketplace kaynağını güncelle, cachebuster uygula ve eklentiyi yeniden kur.
-- [x] Kaynağı secretsız özel GitHub deposunda sakla ve CI sonucunu doğrula.
+- [x] Yerel geliştirme kataloğunu güncelle, cachebuster uygula ve eklentiyi
+  geliştirme ortamında yeniden kur.
+- [x] Kaynağı secretsız GitHub deposunda sakla ve CI sonucunu doğrula.
 
-## M5 — AZR'ye dönüş
-
-- [x] AZR'nin gerçek F2 durumunun ayrı `feat/f2-collection-requests` worktree'inde ilerlediğini salt okunur doğrula.
-- [x] Aktif Task 8 oturumuna dosya çakışması yaratmadan kesin dönüş noktasını ve bekleyen görsel kabul işini belirle.
-
-## M6 — Büyük repo kod zekâsı
+## M5 — Büyük repo kod zekâsı
 
 - [x] PALA-031: `code-review-graph` entegrasyonunu isteğe bağlı ve yerel-first olarak ekle.
 - [x] Graph bulunmadığında dürüst `git diff`/`rg` fallback'i sağla.
 - [x] Windows kurulumu, lisans kaydı, bağımsız testler ve portable paketi doğrula.
 
-## M7 — Owner demo ve 0.3.1 dağıtımı
+## M6 — Owner demo ve 0.3.1 dağıtımı
 
 - [x] Kullanıcıya gösterilebilir ticket sonunda güncellenen secretsız `OWNER_DEMO.md` profilini ve şablonunu ekle.
 - [x] Demo belgesini keşif/kayıt/fingerprint akışına bağla; gerçek tarayıcı olmadan ekran kanıtı üretmeyi yasakla.
-- [x] 0.3.1 cachebuster, portable ZIP, kişisel kurulum, private GitHub push ve CI kanıtını tamamla.
+- [x] 0.3.1 cachebuster, portable ZIP, yerel geliştirme kurulumu, GitHub push
+  ve CI kanıtını tamamla.
 
-## M8 — Checkpoint commit öz-referansı ve 0.3.2
+## M7 — Checkpoint commit öz-referansı ve 0.3.2
 
-- [x] Temiz AZR ağacında checkpoint commit'inden sonra oluşan yanlış stale uyarısını gerçek kullanımda yeniden üret.
+- [x] Temiz örnek proje ağacında checkpoint commit'inden sonra oluşan yanlış
+  stale uyarısını gerçek kullanımda yeniden üret.
 - [x] Değişen yol sayısı + birleşik içerik özetiyle yalnız aynı snapshot'ı taşıyan descendant commit'i kabul et.
 - [x] Aynı checkpoint'ten sonraki ek/farklı commit'in uzlaştırma gerektirmeye devam ettiğini sözleşme testiyle koru.
-- [x] 0.3.2 tam doğrulama, portable ZIP, kişisel kurulum, private GitHub push ve CI kanıtını tamamla.
+- [x] 0.3.2 tam doğrulama, portable ZIP, yerel geliştirme kurulumu, GitHub push
+  ve CI kanıtını tamamla.
 
-## M9 — 0.4 ürün sözleşmesi ve araç seçimi
+## M8 — 0.4 ürün sözleşmesi ve araç seçimi
 
 - [x] PALA-040: Geçmiş kullanıcı önerilerini, güncel Codex manual'ini, mevcut
   0.3.3 kaynağını, kurulu 0.3.2 eklentisini ve Windows makine durumunu tek
@@ -68,7 +68,7 @@
 - [x] 0.4 kabul kapılarını ve geri alma modelini kesinleştir; kod sürümünü
   artırma.
 
-## M10 — İdempotent tek komut Windows kurulumu
+## M9 — İdempotent tek komut Windows kurulumu
 
 - [ ] PALA-041: Repo ve portable ZIP kökünden aynı tek komutla çalışan
   `Install`, `Doctor`, `Repair`, `Update`, `Uninstall` ve `-WhatIf` akışını
@@ -80,10 +80,16 @@
   halinde önceki çalışan kuruluma geri dön.
 - [ ] Codex marketplace/plugin kurulumunu desteklenen CLI üzerinden idempotent
   yap; config ve marketplace JSON'unu elle düzenleme.
+- [ ] Repo kapsamlı `.agents/plugins/marketplace.json` kataloğunu doğrula;
+  GitHub checkout veya portable ZIP kökünü desteklenen `codex plugin
+  marketplace add` ve `codex plugin add` akışına bağla.
+- [ ] Temiz Windows kullanıcı profilinde kurulu Pala yok, güncel Pala var,
+  eski Pala var ve aynı adlı yabancı kayıt var senaryolarını ayır; kullanıcıya
+  ait katalog veya ayarı sessizce değiştirme.
 - [ ] Pala'ya ait kurulum envanteri, güncelleme önbelleği ve logları atomik,
   sınırlı ve secretsız yaz.
 
-## M11 — Tek-kapı yönlendirme ve yönetilen araçlar
+## M10 — Tek-kapı yönlendirme ve yönetilen araçlar
 
 - [ ] PALA-042: Pala skill'ini normal yazılım geliştirme, denetleme, kurtarma,
   çalıştırma ve tamamlama isteklerinde örtük seçilebilir yap; salt sohbet ve
@@ -104,7 +110,7 @@
 - [ ] OpenSpec bulunan projeyi algıla ve artifact'larını Pala ticket'ına bağla;
   bulunmayan projeye ikinci plan sistemi kurma.
 
-## M12 — Büyük iş dayanıklılığı
+## M11 — Büyük iş dayanıklılığı
 
 - [ ] PALA-043: Bir aktif ticket, tek sonraki iş, atomik checkpoint ve
   compaction geri yükleme sözleşmesini çok oturumlu senaryolarla genişlet.
@@ -117,7 +123,7 @@
 - [ ] Kapanışta gerçek runtime, test, lint, typecheck, build, dependency ve
   secrets kontrollerinden yalnız projede var olan uygun kapıları çalıştır.
 
-## M13 — Arıza, çakışma ve tekrar testleri
+## M12 — Arıza, çakışma ve tekrar testleri
 
 - [ ] PALA-044: İzole geçici kullanıcı profiliyle 50 ardışık
   install/doctor/update çalıştırıp ikinci ve sonraki kurulumların değişiklik
@@ -130,12 +136,17 @@
 - [ ] Kaynak testleri, portable ZIP içinden testler, temiz klasör kurulumu,
   repair, uninstall ve önceki sürüme rollback kapılarını geçir.
 
-## M14 — 0.4 paket ve teslim
+## M13 — 0.4 global paket ve teslim
 
 - [ ] Tüm source ve portable kapılar geçmeden manifest sürümünü artırma.
 - [ ] Windows ve Ubuntu CI başarılarını, temiz Windows doctor çıktısını,
   üretilen ZIP'i ve SHA-256 değerini kaydet.
-- [ ] Kurulu kişisel Pala'yı doğrulanmış paketle güncelle; yeni sohbette örtük
-  ve açık çağrı testlerini yap.
+- [ ] Herkese açık GitHub checkout/release ZIP'i ile temiz Windows profilinde
+  tek komut kurulumunu doğrula; yeni sohbette örtük ve açık çağrı testlerini
+  yap.
+- [ ] Yerel geliştirici kurulumu ile global dağıtımı ayrı tut; ürün kurulumu
+  `@personal`, belirli kullanıcı yolu veya geliştirici makinesi varsaymasın.
 - [ ] Commit, push, tag ve release'i ayrı yetki ve kanıt sınırlarında yürüt;
-  CI başarılı olmadan release oluşturma.
+  CI başarılı olmadan release oluşturma. Depoyu public yapma veya evrensel
+  kataloğa yayımlama yalnız bu hesap düzeyi işlem için açık kullanıcı yetkisiyle
+  yapılır.

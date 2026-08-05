@@ -22,6 +22,7 @@ def announce(message: str) -> None:
 
 def validate_json() -> None:
     for relative in (
+        Path(".agents/plugins/marketplace.json"),
         Path(".codex-plugin/plugin.json"),
         Path("hooks/hooks.json"),
     ):
@@ -29,6 +30,23 @@ def validate_json() -> None:
         data = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(data, dict):
             raise ValueError(f"JSON root must be an object: {relative}")
+
+    marketplace = json.loads(
+        (ROOT / ".agents" / "plugins" / "marketplace.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    if marketplace.get("name") != "pala-project-studio":
+        raise ValueError("repo marketplace name must be pala-project-studio")
+    plugins = marketplace.get("plugins")
+    if not isinstance(plugins, list) or len(plugins) != 1:
+        raise ValueError("repo marketplace must expose exactly one Pala plugin")
+    entry = plugins[0]
+    if not isinstance(entry, dict) or entry.get("name") != "pala-project-studio":
+        raise ValueError("repo marketplace plugin entry is invalid")
+    source = entry.get("source")
+    if not isinstance(source, dict) or source != {"source": "local", "path": "./"}:
+        raise ValueError("repo marketplace must load Pala from the repository root")
 
 
 def validate_python_syntax() -> None:

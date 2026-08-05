@@ -2,11 +2,17 @@
 
 ## Ürün amacı
 
-Pala Project Studio, Codex'in mevcut bir yazılım projesini veya yeni bir ürün fikrini doğru kapsamda keşfetmesini, uygulanabilir ticket'lara ayırmasını, aktif işi gerçekten yürütmesini ve sonucu kanıtla kapatmasını sağlayan kişisel bir Codex eklentisidir.
+Pala Project Studio, Codex'in mevcut bir yazılım projesini veya yeni bir ürün
+fikrini doğru kapsamda keşfetmesini, uygulanabilir ticket'lara ayırmasını, aktif
+işi gerçekten yürütmesini ve sonucu kanıtla kapatmasını sağlayan kurulabilir bir
+Codex eklentisidir.
 
 ## Ana kullanıcı sonucu
 
-Kullanıcı, AZR Reklam gibi çok fazlı bir projeyi her oturumda yeniden anlatmadan sürdürebilmeli; Codex yalnız aktif iş için gerekli bağlamı okumalı, dar geliştirme döngüsünde hızlı kalmalı ve milestone sonunda tam doğrulamayı atlamamalıdır.
+Kullanıcı, büyük ve çok fazlı bir projeyi her oturumda yeniden anlatmadan
+sürdürebilmeli; Codex yalnız aktif iş için gerekli bağlamı okumalı, dar
+geliştirme döngüsünde hızlı kalmalı ve milestone sonunda tam doğrulamayı
+atlamamalıdır.
 
 ## 0.4 tek-kapı kullanıcı sözleşmesi
 
@@ -96,4 +102,7 @@ korunur.
 - Kullanıcıya gösterilebilir ticket'larda secretsız owner-demo handoff'u ve
   yalnız gerçek tarayıcı kabulünden gelen görsel kanıt güncellenir.
 - Plugin ve skill doğrulayıcıları, birim testleri ve portable paket testi geçer.
-- Kişisel Codex eklentisi yeni sürümle kurulur ve yeni oturumda keşfedilir.
+- Eklenti GitHub checkout'u veya portable ZIP'den desteklenen Codex CLI
+  akışıyla temiz kullanıcı profilinde kurulur ve yeni oturumda keşfedilir.
+- Kurulum belirli bir bilgisayar, kullanıcı yolu veya `@personal` kataloğu
+  varsaymaz; mevcut kullanıcı kayıtlarını keşfeder ve çakışmaları korur.

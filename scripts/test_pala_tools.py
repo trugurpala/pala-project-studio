@@ -48,7 +48,7 @@ pala_hook = load_module("pala_hook", "pala_hook.py")
 
 
 class PalaStateTests(unittest.TestCase):
-    def test_discover_recognizes_azr_style_documents_and_laravel_backend(self) -> None:
+    def test_discover_recognizes_alternative_documents_and_laravel_backend(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "docs").mkdir()
