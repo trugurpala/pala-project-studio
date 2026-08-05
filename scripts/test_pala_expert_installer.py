@@ -100,7 +100,7 @@ class ExpertInstallerTests(unittest.TestCase):
 
     def test_python_tool_uses_only_pala_owned_uv_locations(self) -> None:
         payload = b"a verified wheel"
-        spec = {"version": "1.0", "source_url": "https://example.invalid/expert.whl", "sha256": hashlib.sha256(payload).hexdigest()}
+        spec = {"version": "1.0", "source_url": "https://example.invalid/graphifyy-1.0-py3-none-any.whl", "sha256": hashlib.sha256(payload).hexdigest()}
         calls: list[tuple[tuple[str, ...], dict[str, str]]] = []
         with tempfile.TemporaryDirectory() as temp:
             state = Path(temp) / "Pala"
@@ -116,6 +116,7 @@ class ExpertInstallerTests(unittest.TestCase):
             self.assertEqual(args[:3], ("uv.exe", "tool", "install"))
             self.assertIn("--no-python-downloads", args)
             self.assertIn("--no-build", args)
+            self.assertTrue(args[-1].endswith("graphifyy-1.0-py3-none-any.whl"))
             self.assertEqual(environment["UV_TOOL_DIR"], str((state / "experts" / "python-tools").resolve()))
             self.assertEqual(environment["UV_TOOL_BIN_DIR"], str((state / "experts" / "python-bin").resolve()))
 
@@ -142,6 +143,16 @@ class ExpertInstallerTests(unittest.TestCase):
             self.assertEqual(set(report["experts"]), {"graphify", "serena", "codebase-memory", "ollama"})
             self.assertTrue(all(item["state"] == "ready" for item in report["experts"].values()))
             self.assertFalse((state / "experts" / "rtk").exists())
+
+    def test_serena_build_exception_is_limited_to_its_pala_owned_tool(self) -> None:
+        payload = b"a verified wheel"
+        spec = {"version": "1.0", "source_url": "https://example.invalid/serena_agent-1.0-py3-none-any.whl", "sha256": hashlib.sha256(payload).hexdigest()}
+        calls: list[tuple[str, ...]] = []
+        with tempfile.TemporaryDirectory() as temp:
+            state = Path(temp) / "Pala"
+            self.installer.install_binary("serena", spec, state, fetch=lambda _: payload)
+            self.installer.install_python_tool("serena", spec, state, uv="uv.exe", allow_build=True, run=lambda args, _env: calls.append(args) or 0)
+            self.assertNotIn("--no-build", calls[0])
 
 
 if __name__ == "__main__":

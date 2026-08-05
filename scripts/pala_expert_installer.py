@@ -16,6 +16,7 @@ import uuid
 from pathlib import Path
 from pathlib import PurePosixPath
 import stat
+from urllib.parse import urlparse
 import zipfile
 
 
@@ -198,6 +199,7 @@ def install_python_tool(
     state_root: Path,
     *,
     uv: str = "uv",
+    allow_build: bool = False,
     run=None,
 ) -> dict[str, object]:
     """Install a verified wheel in Pala's uv tool and binary roots only."""
@@ -220,7 +222,10 @@ def install_python_tool(
     version = _safe_part(spec.get("version", ""))
     expected_hash = spec.get("sha256", "").casefold()
     source_payload = root / name / version / "payload.bin"
-    wheel = root / "python-wheels" / f"{name}-{version}.whl"
+    wheel_name = PurePosixPath(urlparse(spec.get("source_url", "")).path).name
+    if not wheel_name.endswith(".whl") or _archive_path(wheel_name).name != wheel_name:
+        raise ValueError("Python expert source must be a wheel URL")
+    wheel = root / "python-wheels" / wheel_name
     if wheel.exists() and _file_hash(wheel) != expected_hash:
         return {"state": "external_conflict", "changed": False, "path": str(wheel)}
     if not wheel.exists():
@@ -234,7 +239,7 @@ def install_python_tool(
         except Exception:
             staging.unlink(missing_ok=True)
             raise
-    command = (
+    command = [
         uv,
         "tool",
         "install",
@@ -242,16 +247,18 @@ def install_python_tool(
         "--python",
         sys.executable,
         "--no-python-downloads",
-        "--no-build",
         "--link-mode",
         "copy",
         str(wheel),
-    )
+    ]
+    if not allow_build:
+        command.insert(7, "--no-build")
+    command_tuple = tuple(command)
     if run is None:
-        completed = subprocess.run(command, check=False, env=environment, timeout=600)
+        completed = subprocess.run(command_tuple, check=False, env=environment, timeout=600)
         code = completed.returncode
     else:
-        result = run(command, environment)
+        result = run(command_tuple, environment)
         code = result.returncode if hasattr(result, "returncode") else int(result)
     if code != 0:
         raise RuntimeError(f"Pala-owned Python tool installation failed: {name}")
@@ -274,18 +281,20 @@ def install_expert_suite(
 ) -> dict[str, object]:
     """Install Pala's explicitly allowlisted expert workers, never arbitrary lock entries."""
     experts: dict[str, dict[str, object]] = {}
-    names = tuple(sorted(PYTHON_EXPERTS | set(ZIP_EXPERTS)))
+    names = ("graphify", "serena", "codebase-memory", "ollama")
     for name in names:
         spec = lock.get(name)
         if not isinstance(spec, dict):
             raise ValueError(f"managed expert is missing from the lock: {name}")
         experts[name] = install_binary(name, spec, state_root, dry_run=dry_run, fetch=fetch)
+        if dry_run:
+            continue
+        if name in PYTHON_EXPERTS:
+            experts[name] = install_python_tool(name, spec, state_root, uv=uv, allow_build=name == "serena", run=run)
+        else:
+            experts[name] = expand_verified_zip(name, spec, state_root, ZIP_EXPERTS[name])
     if dry_run:
         return {"state": "would_install", "changed": False, "experts": experts}
-    for name in sorted(PYTHON_EXPERTS):
-        experts[name] = install_python_tool(name, lock[name], state_root, uv=uv, run=run)
-    for name, executable in ZIP_EXPERTS.items():
-        experts[name] = expand_verified_zip(name, lock[name], state_root, executable)
     return {"state": "ready", "changed": any(bool(item.get("changed")) for item in experts.values()), "experts": experts}
 
 
