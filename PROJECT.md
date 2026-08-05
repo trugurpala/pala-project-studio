@@ -104,5 +104,5 @@ korunur.
 - Plugin ve skill doğrulayıcıları, birim testleri ve portable paket testi geçer.
 - Eklenti GitHub checkout'u veya portable ZIP'den desteklenen Codex CLI
   akışıyla temiz kullanıcı profilinde kurulur ve yeni oturumda keşfedilir.
-- Kurulum belirli bir bilgisayar, kullanıcı yolu veya `@personal` kataloğu
+- Kurulum belirli bir bilgisayar, kullanıcı yolu veya kişisel katalog
   varsaymaz; mevcut kullanıcı kayıtlarını keşfeder ve çakışmaları korur.

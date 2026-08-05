@@ -78,9 +78,9 @@
   sonucu ver.
 - [ ] Pala dosyalarını staging klasöründe doğrula, atomik etkinleştir ve hata
   halinde önceki çalışan kuruluma geri dön.
-- [ ] Codex marketplace/plugin kurulumunu desteklenen CLI üzerinden idempotent
+- [x] Codex marketplace/plugin kurulumunu desteklenen CLI üzerinden idempotent
   yap; config ve marketplace JSON'unu elle düzenleme.
-- [ ] Repo kapsamlı `.agents/plugins/marketplace.json` kataloğunu doğrula;
+- [x] Repo kapsamlı `.agents/plugins/marketplace.json` kataloğunu doğrula;
   GitHub checkout veya portable ZIP kökünü desteklenen `codex plugin
   marketplace add` ve `codex plugin add` akışına bağla.
 - [ ] Temiz Windows kullanıcı profilinde kurulu Pala yok, güncel Pala var,
@@ -145,7 +145,7 @@
   tek komut kurulumunu doğrula; yeni sohbette örtük ve açık çağrı testlerini
   yap.
 - [ ] Yerel geliştirici kurulumu ile global dağıtımı ayrı tut; ürün kurulumu
-  `@personal`, belirli kullanıcı yolu veya geliştirici makinesi varsaymasın.
+  kişisel katalog, belirli kullanıcı yolu veya geliştirici makinesi varsaymasın.
 - [ ] Commit, push, tag ve release'i ayrı yetki ve kanıt sınırlarında yürüt;
   CI başarılı olmadan release oluşturma. Depoyu public yapma veya evrensel
   kataloğa yayımlama yalnız bu hesap düzeyi işlem için açık kullanıcı yetkisiyle

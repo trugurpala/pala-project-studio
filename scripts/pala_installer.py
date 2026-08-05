@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import uuid
@@ -16,15 +17,17 @@ from pathlib import Path
 
 SCHEMA_VERSION = 1
 OWNER = "pala-project-studio"
+PLUGIN_ID = f"{OWNER}@{OWNER}"
 STATE_NAME = "install-state.json"
 REQUIRED_FILES = (
+    Path(".agents/plugins/marketplace.json"),
     Path(".codex-plugin/plugin.json"),
     Path("scripts/pala_state.py"),
     Path("scripts/pala_hook.py"),
     Path("hooks/hooks.json"),
     Path("skills/pala-project-finisher/SKILL.md"),
 )
-PACKAGE_DIRECTORIES = (".codex-plugin", "hooks", "scripts", "skills")
+PACKAGE_DIRECTORIES = (".agents", ".codex-plugin", "hooks", "scripts", "skills")
 PACKAGE_FILES = (
     "LICENSE",
     "OPEN_SOURCE.md",
@@ -64,6 +67,198 @@ def read_json(path: Path) -> dict[str, object] | None:
     except (OSError, ValueError):
         return None
     return value if isinstance(value, dict) else None
+
+
+def run_codex_json(arguments: list[str]) -> dict[str, object]:
+    executable = shutil.which("codex")
+    if executable is None:
+        raise RuntimeError("Codex CLI is not available on PATH")
+    try:
+        completed = subprocess.run(
+            [executable, *arguments],
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError("Codex CLI timed out") from error
+    if completed.returncode != 0:
+        label = " ".join(arguments[:3])
+        raise RuntimeError(
+            f"Codex CLI command failed with exit {completed.returncode}: {label}"
+        )
+    try:
+        payload = json.loads(completed.stdout)
+    except ValueError as error:
+        raise RuntimeError("Codex CLI returned invalid JSON") from error
+    if not isinstance(payload, dict):
+        raise RuntimeError("Codex CLI JSON root is not an object")
+    return payload
+
+
+def comparable_path(value: object) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    normalized = value.removeprefix("\\\\?\\")
+    try:
+        return str(Path(normalized).resolve()).casefold()
+    except OSError:
+        return os.path.normcase(os.path.abspath(normalized))
+
+
+def codex_status(
+    install_root: Path,
+    expected_version: str,
+    *,
+    invoke=run_codex_json,
+) -> dict[str, object]:
+    try:
+        marketplace_payload = invoke(
+            ["plugin", "marketplace", "list", "--json"]
+        )
+        plugin_payload = invoke(["plugin", "list", "--json"])
+    except RuntimeError as error:
+        return {
+            "status": "unavailable",
+            "healthy": False,
+            "error": str(error),
+        }
+
+    marketplaces = marketplace_payload.get("marketplaces", [])
+    installed = plugin_payload.get("installed", [])
+    if not isinstance(marketplaces, list) or not isinstance(installed, list):
+        return {
+            "status": "unavailable",
+            "healthy": False,
+            "error": "Codex CLI inventory has an invalid shape",
+        }
+
+    expected_root = comparable_path(str(install_root))
+    named_marketplaces = [
+        entry
+        for entry in marketplaces
+        if isinstance(entry, dict) and entry.get("name") == OWNER
+    ]
+    marketplace = named_marketplaces[0] if named_marketplaces else None
+    if marketplace is not None and comparable_path(marketplace.get("root")) != expected_root:
+        return {
+            "status": "external_conflict",
+            "healthy": False,
+            "marketplace_root": marketplace.get("root"),
+        }
+
+    target = next(
+        (
+            entry
+            for entry in installed
+            if isinstance(entry, dict) and entry.get("pluginId") == PLUGIN_ID
+        ),
+        None,
+    )
+    duplicates = [
+        str(entry.get("pluginId"))
+        for entry in installed
+        if isinstance(entry, dict)
+        and entry.get("name") == OWNER
+        and entry.get("pluginId") != PLUGIN_ID
+    ]
+    if duplicates:
+        return {
+            "status": "external_conflict",
+            "healthy": False,
+            "conflicting_plugins": duplicates,
+        }
+    if marketplace is None:
+        status = "missing"
+    elif target is None:
+        status = "missing"
+    elif target.get("version") != expected_version or not target.get("enabled"):
+        status = "outdated"
+    else:
+        status = "ready"
+    return {
+        "status": status,
+        "healthy": status == "ready",
+        "marketplace_registered": marketplace is not None,
+        "marketplace_root": marketplace.get("root") if marketplace else None,
+        "plugin_id": target.get("pluginId") if target else None,
+        "installed_version": target.get("version") if target else None,
+        "expected_version": expected_version,
+        "enabled": bool(target and target.get("enabled")),
+    }
+
+
+def ensure_codex_install(
+    install_root: Path,
+    expected_version: str,
+    *,
+    dry_run: bool = False,
+    invoke=run_codex_json,
+) -> dict[str, object]:
+    install_root = install_root.resolve()
+    before = codex_status(install_root, expected_version, invoke=invoke)
+    status = str(before["status"])
+    if status == "ready":
+        return {**before, "changed": False}
+    if status in {"external_conflict", "unavailable"}:
+        return {**before, "changed": False}
+    if dry_run:
+        action = "update" if status == "outdated" else "install"
+        return {**before, "status": f"would_{action}", "changed": False}
+
+    marketplace_added = False
+    try:
+        if not before.get("marketplace_registered"):
+            invoke(
+                [
+                    "plugin",
+                    "marketplace",
+                    "add",
+                    str(install_root),
+                    "--json",
+                ]
+            )
+            marketplace_added = True
+        invoke(["plugin", "add", PLUGIN_ID, "--json"])
+        after = codex_status(install_root, expected_version, invoke=invoke)
+        if after.get("status") != "ready":
+            raise RuntimeError("Codex did not report Pala as installed and enabled")
+    except Exception:
+        if marketplace_added:
+            try:
+                invoke(["plugin", "marketplace", "remove", OWNER, "--json"])
+            except Exception:
+                pass
+        raise
+    result_status = "updated" if status == "outdated" else "installed"
+    return {**after, "status": result_status, "changed": True}
+
+
+def remove_codex_install(
+    install_root: Path,
+    expected_version: str,
+    *,
+    dry_run: bool = False,
+    invoke=run_codex_json,
+) -> dict[str, object]:
+    before = codex_status(install_root, expected_version, invoke=invoke)
+    status = str(before["status"])
+    if status in {"external_conflict", "unavailable"}:
+        return {**before, "changed": False}
+    present = bool(before.get("marketplace_registered") or before.get("plugin_id"))
+    if not present:
+        return {**before, "status": "absent", "changed": False}
+    if dry_run:
+        return {**before, "status": "would_uninstall", "changed": False}
+
+    if before.get("plugin_id") == PLUGIN_ID:
+        invoke(["plugin", "remove", PLUGIN_ID, "--json"])
+    if before.get("marketplace_registered"):
+        invoke(["plugin", "marketplace", "remove", OWNER, "--json"])
+    return {**before, "status": "uninstalled", "healthy": True, "changed": True}
 
 
 def safe_source_file(relative: Path) -> bool:
@@ -248,6 +443,84 @@ def doctor_bundle(source: Path, install_root: Path, state_root: Path) -> dict[st
     }
 
 
+def project_doctor(install_root: Path, project_root: Path) -> dict[str, object]:
+    script = install_root / "scripts" / "pala_state.py"
+    if not script.is_file():
+        return {
+            "available": False,
+            "project_root": str(project_root.resolve()),
+            "error": "Pala project doctor is not installed",
+        }
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(script), "doctor", "--cwd", str(project_root)],
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=15,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "available": False,
+            "project_root": str(project_root.resolve()),
+            "error": "Pala project doctor timed out",
+        }
+    try:
+        payload = json.loads(completed.stdout)
+    except ValueError:
+        payload = None
+    if not isinstance(payload, dict):
+        return {
+            "available": False,
+            "project_root": str(project_root.resolve()),
+            "error": "Pala project doctor returned invalid JSON",
+        }
+    payload["available"] = completed.returncode == 0
+    return payload
+
+
+def doctor_installation(
+    source: Path,
+    install_root: Path,
+    state_root: Path,
+    project_root: Path,
+    *,
+    invoke=run_codex_json,
+) -> dict[str, object]:
+    bundle = doctor_bundle(source, install_root, state_root)
+    expected_version = str(manifest(source)["version"])
+    codex = codex_status(install_root, expected_version, invoke=invoke)
+    python_ready = sys.version_info >= (3, 10)
+    git_path = shutil.which("git")
+    codex_path = shutil.which("codex")
+    project = project_doctor(install_root, project_root)
+    healthy = bool(
+        bundle["healthy"]
+        and codex.get("healthy")
+        and python_ready
+        and git_path
+        and codex_path
+    )
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "healthy": healthy,
+        "status": "ready" if healthy else "attention_required",
+        "plugin": bundle["plugin"],
+        "codex": codex,
+        "python": {
+            "ready": python_ready,
+            "version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+            "executable": sys.executable,
+        },
+        "git": {"ready": bool(git_path), "executable": git_path},
+        "codex_cli": {"ready": bool(codex_path), "executable": codex_path},
+        "project": project,
+        "state_file": bundle["state_file"],
+    }
+
+
 def install_bundle(
     source: Path,
     install_root: Path,
@@ -340,6 +613,71 @@ def install_bundle(
     }
 
 
+def install_all(
+    source: Path,
+    install_root: Path,
+    state_root: Path,
+    *,
+    dry_run: bool = False,
+    repair: bool = False,
+    invoke=run_codex_json,
+) -> dict[str, object]:
+    expected_version = str(manifest(source)["version"])
+    codex_before = codex_status(install_root, expected_version, invoke=invoke)
+    if codex_before.get("status") in {"external_conflict", "unavailable"}:
+        return {
+            "status": codex_before["status"],
+            "changed": False,
+            "codex": codex_before,
+        }
+
+    bundle = install_bundle(
+        source,
+        install_root,
+        state_root,
+        dry_run=dry_run,
+        repair=repair,
+    )
+    if bundle.get("status") in {"external_conflict", "modified"}:
+        return {**bundle, "bundle": bundle, "codex": codex_before}
+    codex = ensure_codex_install(
+        install_root,
+        expected_version,
+        dry_run=dry_run,
+        invoke=invoke,
+    )
+    if codex.get("status") in {"external_conflict", "unavailable"}:
+        return {
+            "status": codex["status"],
+            "changed": bool(bundle.get("changed")),
+            "bundle": bundle,
+            "codex": codex,
+        }
+    changed = bool(bundle.get("changed") or codex.get("changed"))
+    if dry_run:
+        statuses = {str(bundle.get("status")), str(codex.get("status"))}
+        status = "would_update" if "would_update" in statuses else "would_install"
+        if "would_repair" in statuses:
+            status = "would_repair"
+    elif not changed:
+        status = "ready"
+    elif repair or bundle.get("status") == "repaired":
+        status = "repaired"
+    elif "updated" in {bundle.get("status"), codex.get("status")}:
+        status = "updated"
+    elif bundle.get("status") == "migrated":
+        status = "migrated"
+    else:
+        status = "installed"
+    return {
+        "status": status,
+        "changed": changed,
+        "version": expected_version,
+        "bundle": bundle,
+        "codex": codex,
+    }
+
+
 def uninstall_bundle(
     install_root: Path, state_root: Path, *, dry_run: bool = False
 ) -> dict[str, object]:
@@ -368,11 +706,48 @@ def uninstall_bundle(
     return {"status": "uninstalled", "changed": True}
 
 
+def uninstall_all(
+    source: Path,
+    install_root: Path,
+    state_root: Path,
+    *,
+    dry_run: bool = False,
+    invoke=run_codex_json,
+) -> dict[str, object]:
+    expected_version = str(manifest(source)["version"])
+    bundle_preview = uninstall_bundle(install_root, state_root, dry_run=True)
+    if bundle_preview.get("status") in {"external_conflict", "modified"}:
+        return {**bundle_preview, "bundle": bundle_preview}
+    codex = remove_codex_install(
+        install_root,
+        expected_version,
+        dry_run=dry_run,
+        invoke=invoke,
+    )
+    if codex.get("status") in {"external_conflict", "unavailable"}:
+        return {
+            "status": codex["status"],
+            "changed": False,
+            "bundle": bundle_preview,
+            "codex": codex,
+        }
+    bundle = uninstall_bundle(install_root, state_root, dry_run=dry_run)
+    changed = bool(bundle.get("changed") or codex.get("changed"))
+    if dry_run and (bundle.get("status") == "would_uninstall" or codex.get("status") == "would_uninstall"):
+        status = "would_uninstall"
+    elif changed:
+        status = "uninstalled"
+    else:
+        status = "absent"
+    return {"status": status, "changed": changed, "bundle": bundle, "codex": codex}
+
+
 def default_paths() -> tuple[Path, Path, Path]:
     source = Path(__file__).resolve().parent.parent
     profile = Path(os.environ.get("USERPROFILE", Path.home()))
     local_app_data = Path(os.environ.get("LOCALAPPDATA", profile / "AppData" / "Local"))
-    return source, profile / "plugins" / OWNER, local_app_data / "Pala"
+    state_root = local_app_data / "Pala"
+    return source, state_root / "marketplace", state_root
 
 
 def parser() -> argparse.ArgumentParser:
@@ -382,6 +757,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--source", type=Path, default=source)
     result.add_argument("--install-root", type=Path, default=install_root)
     result.add_argument("--state-root", type=Path, default=state_root)
+    result.add_argument("--project-root", type=Path, default=Path.cwd())
     result.add_argument("--dry-run", action="store_true")
     return result
 
@@ -390,13 +766,21 @@ def main() -> int:
     args = parser().parse_args()
     try:
         if args.mode == "doctor":
-            report = doctor_bundle(args.source, args.install_root, args.state_root)
+            report = doctor_installation(
+                args.source,
+                args.install_root,
+                args.state_root,
+                args.project_root,
+            )
         elif args.mode == "uninstall":
-            report = uninstall_bundle(
-                args.install_root, args.state_root, dry_run=args.dry_run
+            report = uninstall_all(
+                args.source,
+                args.install_root,
+                args.state_root,
+                dry_run=args.dry_run,
             )
         else:
-            report = install_bundle(
+            report = install_all(
                 args.source,
                 args.install_root,
                 args.state_root,
@@ -407,7 +791,12 @@ def main() -> int:
         print(json.dumps({"status": "failed", "error": str(error)}, ensure_ascii=False))
         return 1
     print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
-    if report.get("status") in {"external_conflict", "modified"}:
+    if report.get("status") in {
+        "attention_required",
+        "external_conflict",
+        "modified",
+        "unavailable",
+    }:
         return 2
     if args.mode == "doctor" and not report.get("healthy"):
         return 2

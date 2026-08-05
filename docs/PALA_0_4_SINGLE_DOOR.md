@@ -13,7 +13,7 @@ skill, MCP ve hook'larının güvenilir biçimde yüklenmesi yeni sohbet sınır
 
 ## Global dağıtım sözleşmesi
 
-Pala belirli bir geliştirici bilgisayarına veya `@personal` kataloğuna bağlı
+Pala belirli bir geliştirici bilgisayarına veya kişisel kataloğa bağlı
 değildir. Kaynak repo, repo kapsamlı `.agents/plugins/marketplace.json`
 kataloğunu taşır. GitHub checkout'u veya portable ZIP'deki tek Windows girişi:
 

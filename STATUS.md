@@ -12,16 +12,18 @@
 - Ortam önkoşulu: Kurucu temiz Windows kullanıcı profillerinde çalışacak;
   geliştirici bilgisayarının donanımına, mutlak yollarına veya önceden kurulmuş
   yardımcı araçlarına güvenmeyecek.
-- Doğrulama: `python scripts/verify.py` — 66 test passed;
-  `reproducible_zip_sha256=09228C7D059D671EEB4A0124D6A6AAEE6773F5492448004EEEA8BDB0F1C092E6`.
+- Doğrulama: `python scripts/verify.py` — 70 test passed;
+  `reproducible_zip_sha256=79B0ED3137F30752708BF4DD9C9CF38352984CA495DC6B22193B2093BF3DA239`.
   Bu SHA yalnız PALA-041 ara paketi içindir; 0.4 release kanıtı değildir.
   Son yayımlanmış 0.3.3 için GitHub Actions `31021033644` Windows ve Ubuntu'da
   başarılıydı.
 - PALA-041 ara kanıtı: kurulum çekirdeği için 50 çalıştırmalı idempotency,
   dry-run, legacy migration, drift repair, rollback ve güvenli uninstall
-  testleri geçti. Global marketplace/CLI bağlama ve temiz profil doğrulaması
-  henüz tamamlanmadı.
+  testleri geçti. Repo marketplace'i desteklenen Codex CLI akışına bağlandı.
+  İzole temiz Windows profilinde PowerShell 5.1/7 ile `-WhatIf`, install,
+  doctor, idempotent update ve uninstall gerçek Codex CLI üzerinden geçti;
+  ana kullanıcı profili değiştirilmedi.
 - Engel: Yok.
-- Tek sonraki iş: Repo marketplace kataloğunu ekle ve desteklenen Codex CLI
-  kurulumunu izole temiz profilde sözleşme testiyle bağla.
+- Tek sonraki iş: Portable ZIP'i temiz klasörde açıp aynı global kurulum akışını
+  çalıştır; eski Pala ve aynı adlı yabancı kayıt senaryolarını doğrula.
 - Güncelleme: 2026-08-05

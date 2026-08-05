@@ -24,6 +24,39 @@ gereksiz belgeleri her turda tekrar yüklemeyi ve ağır doğrulamayı yanlış 
 çalıştırmayı azaltmaktır. Ölçülmemiş hız ya da token tasarrufu yüzdesi vaat
 etmez.
 
+## Windows kurulumu
+
+GitHub deposunu indirdikten veya portable ZIP'i açtıktan sonra kök klasörde tek
+komut yeterlidir:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
+```
+
+Kurucu mevcut Codex ve Pala envanterini önce okur. Doğru sürüm varsa dosyalara
+dokunmadan `Zaten hazır` der; eksik veya Pala'ya ait eski sürümü doğrulanmış
+staging alanından kurar; aynı adlı yabancı kaydı ezmez. Repo marketplace'i ve
+eklenti kurulumu yalnız Codex'in desteklenen `codex plugin marketplace` ve
+`codex plugin` komutlarıyla yapılır. Kullanıcının kişisel marketplace JSON'u
+elle değiştirilmez.
+
+```powershell
+# Hiçbir değişiklik yapmadan önizle
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -WhatIf
+
+# Sağlık, proje kaydı ve hook güvenini kontrol et
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Doctor
+
+# Onar, güncelle veya güvenli biçimde kaldır
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Repair
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Update
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Uninstall
+```
+
+Kurulum aynı oturumda doğrulanır. Yeni skill ve hook'ların güvenilir biçimde
+yüklenmesi için kurulumdan sonra yeni bir Codex sohbeti açılır. Hook güveni
+eksikse kurucu güvenlik kontrolünü atlamaz; Codex'te `/hooks` komutunu gösterir.
+
 ## Büyük repo kod zekâsı
 
 Pala, büyük ve çapraz modüllü incelemelerde isteğe bağlı

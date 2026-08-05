@@ -39,6 +39,19 @@ function Write-PalaLog([string]$Text) {
 }
 
 function Show-PalaResult([pscustomobject]$Payload) {
+    if ($null -ne $Payload.healthy -and $null -ne $Payload.codex -and $null -ne $Payload.plugin) {
+        $pluginStatus = $Payload.plugin.status
+        $codexStatus = $Payload.codex.status
+        Write-Host "[Pala] Doctor: healthy=$($Payload.healthy), plugin=$pluginStatus, codex=$codexStatus"
+        Write-Host "[Pala] Python=$($Payload.python.ready), Git=$($Payload.git.ready), Codex CLI=$($Payload.codex_cli.ready)"
+        if ($null -ne $Payload.project.project_registration) {
+            Write-Host "[Pala] Proje kaydi=$($Payload.project.project_registration.registered), hook=$($Payload.project.hook_safety.status)"
+            if ($Payload.project.hook_safety.status -ne "passed") {
+                Write-Host "[Pala] Hook guveni icin Codex'te /hooks komutunu acin; otomatik bypass yapilmadi."
+            }
+        }
+        return
+    }
     switch ($Payload.status) {
         "ready" { Write-Host "[Pala] Zaten hazir; dosyalar degistirilmedi." }
         "installed" { Write-Host "[Pala] Kurulum tamamlandi." }
@@ -54,12 +67,7 @@ function Show-PalaResult([pscustomobject]$Payload) {
         "external_conflict" { Write-Host "[Pala] Ayni konumda Pala'ya ait oldugu dogrulanamayan icerik var; dokunulmadi." }
         "modified" { Write-Host "[Pala] Kurulum sonradan degistirilmis; kullanici dosyalarini korumak icin dokunulmadi." }
         default {
-            if ($null -ne $Payload.healthy) {
-                $pluginStatus = $Payload.plugin.status
-                Write-Host "[Pala] Doctor: healthy=$($Payload.healthy), plugin=$pluginStatus"
-            } else {
-                Write-Host "[Pala] Sonuç: $($Payload.status)"
-            }
+            Write-Host "[Pala] Sonuç: $($Payload.status)"
         }
     }
 }
@@ -72,7 +80,7 @@ $pythonCommand = Resolve-PalaPython
 $executable = $pythonCommand[0]
 $arguments = @()
 if ($pythonCommand.Count -gt 1) { $arguments += $pythonCommand[1..($pythonCommand.Count - 1)] }
-$arguments += @($core, $Mode.ToLowerInvariant(), "--source", $pluginRoot)
+$arguments += @($core, $Mode.ToLowerInvariant(), "--source", $pluginRoot, "--project-root", (Get-Location).Path)
 if ($WhatIfPreference) { $arguments += "--dry-run" }
 
 Write-Host "[Pala] Islem: $Mode"
@@ -95,7 +103,7 @@ if ($exitCode -ne 0) { exit $exitCode }
 if ($Mode -in @("Install", "Update", "Repair") -and -not $WhatIfPreference) {
     $doctorArgs = @()
     if ($pythonCommand.Count -gt 1) { $doctorArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
-    $doctorArgs += @($core, "doctor", "--source", $pluginRoot)
+    $doctorArgs += @($core, "doctor", "--source", $pluginRoot, "--project-root", (Get-Location).Path)
     $doctorRaw = (& $executable @doctorArgs 2>&1 | Out-String).Trim()
     $doctorExit = $LASTEXITCODE
     $doctor = $doctorRaw | ConvertFrom-Json
