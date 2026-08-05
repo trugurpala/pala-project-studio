@@ -1,4 +1,4 @@
-# Pala Project Studio 0.3 / 0.3.1 Uygulama Planı
+# Pala Project Studio 0.3–0.3.2 Uygulama Planı
 
 ## M1 — Codex-native kapsam ve hafıza
 
@@ -47,3 +47,10 @@
 - [x] Kullanıcıya gösterilebilir ticket sonunda güncellenen secretsız `OWNER_DEMO.md` profilini ve şablonunu ekle.
 - [x] Demo belgesini keşif/kayıt/fingerprint akışına bağla; gerçek tarayıcı olmadan ekran kanıtı üretmeyi yasakla.
 - [x] 0.3.1 cachebuster, portable ZIP, kişisel kurulum, private GitHub push ve CI kanıtını tamamla.
+
+## M8 — Checkpoint commit öz-referansı ve 0.3.2
+
+- [x] Temiz AZR ağacında checkpoint commit'inden sonra oluşan yanlış stale uyarısını gerçek kullanımda yeniden üret.
+- [x] Değişen yol sayısı + birleşik içerik özetiyle yalnız aynı snapshot'ı taşıyan descendant commit'i kabul et.
+- [x] Aynı checkpoint'ten sonraki ek/farklı commit'in uzlaştırma gerektirmeye devam ettiğini sözleşme testiyle koru.
+- [ ] 0.3.2 tam doğrulama, portable ZIP, kişisel kurulum, private GitHub push ve CI kanıtını tamamla.

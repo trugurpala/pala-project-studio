@@ -31,8 +31,12 @@ Run `register` once with the selected paths, `begin` before implementation, and
 `checkpoint --tier narrow|ticket|milestone|release` after a coherent outcome.
 Run `context` at session start. Workflow schema v2 stores bounded evidence plus
 hashes of registered documents and a Git fingerprint. A changed plan, status,
-HEAD, or worktree after checkpoint requires reconciliation; it must not trigger
-automatic re-planning or testing.
+HEAD, or worktree after checkpoint normally requires reconciliation. One safe
+exception exists: a descendant commit that exactly materializes the
+checkpointed path/content snapshot and leaves no other working-tree change is
+accepted as the same outcome. A later, divergent, or extra commit still
+requires reconciliation. Neither case may trigger automatic re-planning or
+testing.
 
 The generated state files may be committed only when they are secrets-free and
 repository policy allows it. See

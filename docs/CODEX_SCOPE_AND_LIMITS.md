@@ -26,7 +26,8 @@ Kaynaklar: [Build skills](https://learn.chatgpt.com/docs/build-skills),
   belgelerini uzlaştırmak ve yetkilendirilmiş yerel işi uygulamak.
 - Aktif işi dosyada saklayıp yeni oturum veya compaction sonrasında kısa bağlama
   geri yüklemek.
-- Değişen belge ve Git çalışma ağacı içeriğini checkpoint ile karşılaştırmak.
+- Değişen belge ve Git çalışma ağacı içeriğini checkpoint ile karşılaştırmak;
+  aynı snapshot'ın atomik commit edilmesini yeni işten ayırmak.
 - Dar, ticket, milestone ve release doğrulamasını doğru sınırda seçmek.
 - Kullanıcının ayrı yetkisi ve mevcut kimlik doğrulaması varsa Git/GitHub
   işlemlerini normal proje akışı olarak yürütmek.

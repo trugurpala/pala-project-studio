@@ -271,6 +271,124 @@ class PalaStateTests(unittest.TestCase):
             self.assertTrue(report["needed"])
             self.assertIn("working tree changed since checkpoint", report["reasons"])
 
+    def test_checkpoint_accepts_only_the_exact_commit_of_checkpointed_work(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            for name in ("PROJECT.md", "PLAN.md", "STATUS.md"):
+                (root / name).write_text(f"# {name}\n", encoding="utf-8")
+            (root / "app.txt").write_text("version one\n", encoding="utf-8")
+            manifest = {
+                "schema_version": 1,
+                "managed_by": "pala-project-finisher",
+                "documents": {
+                    "project": "PROJECT.md",
+                    "plan": "PLAN.md",
+                    "status": "STATUS.md",
+                },
+            }
+            (root / pala_state.MANIFEST).write_text(
+                json.dumps(manifest), encoding="utf-8"
+            )
+            subprocess.run(
+                ["git", "init", "-b", "main"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "add", "."], cwd=root, check=True, capture_output=True
+            )
+            commit = [
+                "git",
+                "-c",
+                "user.name=Pala Tests",
+                "-c",
+                "user.email=pala-tests@example.invalid",
+                "commit",
+            ]
+            subprocess.run(
+                [*commit, "-m", "fixture"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+
+            (root / "app.txt").write_text("version two\n", encoding="utf-8")
+            (root / "STATUS.md").write_text(
+                "# STATUS.md\n\nTicket complete.\n", encoding="utf-8"
+            )
+            pala_state.begin_work(root, "T-003", "Commit the coherent outcome")
+            pala_state.checkpoint_work(
+                root,
+                next_action="Continue with T-004",
+                verification=["ticket: passed"],
+                blockers=[],
+                tier="ticket",
+            )
+            checkpoint = pala_state.load_workflow(root)
+            git_basis = checkpoint["checkpoint_basis"]["git"]
+            self.assertEqual(git_basis["changed_count"], 2)
+            self.assertEqual(len(git_basis["changed_snapshot_sha256"]), 64)
+
+            subprocess.run(
+                ["git", "add", "."], cwd=root, check=True, capture_output=True
+            )
+            subprocess.run(
+                [*commit, "-m", "complete ticket"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            committed = pala_state.load_workflow(root)
+            report = pala_state.reconciliation_report(root, manifest, committed)
+            self.assertFalse(report["needed"], report["reasons"])
+
+            pala_state.checkpoint_work(
+                root,
+                next_action="Continue with T-005",
+                verification=["checkpoint metadata: passed"],
+                blockers=[],
+                tier="ticket",
+            )
+            workflow_only = pala_state.load_workflow(root)
+            self.assertEqual(
+                workflow_only["checkpoint_basis"]["git"]["changed_count"], 0
+            )
+            subprocess.run(
+                ["git", "add", str(pala_state.WORKFLOW)],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [*commit, "-m", "checkpoint metadata"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            metadata_report = pala_state.reconciliation_report(
+                root, manifest, workflow_only
+            )
+            self.assertFalse(metadata_report["needed"], metadata_report["reasons"])
+
+            (root / "app.txt").write_text("version three\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "add", "app.txt"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [*commit, "-m", "unexpected later work"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            changed = pala_state.reconciliation_report(root, manifest, workflow_only)
+            self.assertTrue(changed["needed"])
+            self.assertIn("Git HEAD changed since checkpoint", changed["reasons"])
+
     def test_legacy_workflow_requires_one_reconciliation(self) -> None:
         report = pala_state.reconciliation_report(
             Path.cwd(),

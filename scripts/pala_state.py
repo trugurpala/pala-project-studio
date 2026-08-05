@@ -400,11 +400,27 @@ def worktree_entry_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
-def git_checkpoint(root: Path) -> dict[str, str | None]:
+def git_paths_snapshot(root: Path, paths: list[str]) -> str:
+    fingerprint = hashlib.sha256()
+    for value in sorted(set(paths), key=str.casefold):
+        normalized = value.replace("\\", "/")
+        fingerprint.update(b"\0path\0")
+        fingerprint.update(normalized.encode("utf-8", errors="surrogateescape"))
+        fingerprint.update(b"\0content\0")
+        fingerprint.update(worktree_entry_digest(root / value).encode("ascii"))
+    return fingerprint.hexdigest()
+
+
+def git_checkpoint(root: Path) -> dict[str, object]:
     head = run_git(root, "rev-parse", "HEAD")
     status = run_git(root, "status", "--porcelain=v1", "--untracked-files=all")
     if status is None:
-        return {"head": head, "worktree_sha256": None}
+        return {
+            "head": head,
+            "worktree_sha256": None,
+            "changed_count": None,
+            "changed_snapshot_sha256": None,
+        }
     filtered = []
     workflow_name = WORKFLOW.as_posix().casefold()
     for line in status.splitlines():
@@ -412,18 +428,75 @@ def git_checkpoint(root: Path) -> dict[str, str | None]:
         if candidate == workflow_name:
             continue
         filtered.append(line)
+    changed_paths = [
+        value
+        for value in changed_git_paths(root)
+        if value.replace("\\", "/").casefold() != workflow_name
+    ]
+    changed_snapshot = git_paths_snapshot(root, changed_paths)
     fingerprint = hashlib.sha256()
     fingerprint.update("\n".join(filtered).encode("utf-8", errors="surrogateescape"))
-    for value in changed_git_paths(root):
-        normalized = value.replace("\\", "/")
-        if normalized.casefold() == workflow_name:
-            continue
-        fingerprint.update(b"\0path\0")
-        fingerprint.update(normalized.encode("utf-8", errors="surrogateescape"))
-        fingerprint.update(b"\0content\0")
-        fingerprint.update(worktree_entry_digest(root / value).encode("ascii"))
+    fingerprint.update(b"\0snapshot\0")
+    fingerprint.update(changed_snapshot.encode("ascii"))
     digest = fingerprint.hexdigest()
-    return {"head": head, "worktree_sha256": digest}
+    return {
+        "head": head,
+        "worktree_sha256": digest,
+        "changed_count": len(changed_paths),
+        "changed_snapshot_sha256": changed_snapshot,
+    }
+
+
+def git_is_ancestor(root: Path, ancestor: str, descendant: str) -> bool:
+    try:
+        result = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+            cwd=root,
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return False
+    return result.returncode == 0
+
+
+def git_diff_paths(root: Path, before: str, after: str) -> list[str] | None:
+    output = run_git_bytes(root, "diff", "--name-only", "-z", f"{before}..{after}")
+    if output is None:
+        return None
+    workflow_name = WORKFLOW.as_posix().casefold()
+    paths = []
+    for value in output.split(b"\0"):
+        if not value:
+            continue
+        decoded = value.decode("utf-8", errors="surrogateescape")
+        if decoded.replace("\\", "/").casefold() != workflow_name:
+            paths.append(decoded)
+    return paths
+
+
+def checkpoint_commit_materialized(
+    root: Path,
+    previous: dict[str, object],
+    current: dict[str, object],
+) -> bool:
+    previous_head = previous.get("head")
+    current_head = current.get("head")
+    previous_count = previous.get("changed_count")
+    previous_snapshot = previous.get("changed_snapshot_sha256")
+    if not (
+        isinstance(previous_head, str)
+        and isinstance(current_head, str)
+        and isinstance(previous_count, int)
+        and isinstance(previous_snapshot, str)
+        and current.get("changed_count") == 0
+        and git_is_ancestor(root, previous_head, current_head)
+    ):
+        return False
+    committed_paths = git_diff_paths(root, previous_head, current_head)
+    if committed_paths is None or len(committed_paths) != previous_count:
+        return False
+    return git_paths_snapshot(root, committed_paths) == previous_snapshot
 
 
 def checkpoint_basis(
@@ -459,12 +532,17 @@ def reconciliation_report(
         previous_git = basis.get("git")
         current_git = git_checkpoint(root)
         if isinstance(previous_git, dict):
-            if previous_git.get("head") != current_git.get("head"):
-                reasons.append("Git HEAD changed since checkpoint")
-            if previous_git.get("worktree_sha256") != current_git.get(
-                "worktree_sha256"
-            ):
-                reasons.append("working tree changed since checkpoint")
+            commit_materialized = (
+                previous_git.get("head") != current_git.get("head")
+                and checkpoint_commit_materialized(root, previous_git, current_git)
+            )
+            if not commit_materialized:
+                if previous_git.get("head") != current_git.get("head"):
+                    reasons.append("Git HEAD changed since checkpoint")
+                if previous_git.get("worktree_sha256") != current_git.get(
+                    "worktree_sha256"
+                ):
+                    reasons.append("working tree changed since checkpoint")
         else:
             reasons.append("checkpoint Git basis is missing")
 

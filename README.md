@@ -65,6 +65,11 @@ Komut seçeneklerinin güncel biçimi için `--help` kullanın. Projenin kendi
 durum ve plan belgeleri kaynak gerçektir; `.codex` altındaki Pala dosyaları
 küçük bir çalışma kontrol noktasıdır.
 
+Checkpoint, değişen dosya içeriklerini belleğe kopyalamaz; yol sayısı ve
+birleşik SHA-256 özeti saklar. Checkpoint'ten sonra aynı değişikliklerin atomik
+commit edilmesi yeni iş sayılmaz. Ek veya farklı bir commit ise yeniden
+uzlaştırma gerektirir.
+
 Kullanıcıya gösterilebilir bir ürün üzerinde çalışılıyorsa mevcut demo belgesi
 yeniden kullanılır; yoksa uygun ticket sonunda `reports/OWNER_DEMO.md` şablonu
 oluşturulur. Hook kendi başına ekran görüntüsü almaz. Görsel kanıt ancak gerçek
