@@ -46,4 +46,4 @@
 
 - [x] Kullanıcıya gösterilebilir ticket sonunda güncellenen secretsız `OWNER_DEMO.md` profilini ve şablonunu ekle.
 - [x] Demo belgesini keşif/kayıt/fingerprint akışına bağla; gerçek tarayıcı olmadan ekran kanıtı üretmeyi yasakla.
-- [ ] 0.3.1 cachebuster, portable ZIP, kişisel kurulum, private GitHub push ve CI kanıtını tamamla.
+- [x] 0.3.1 cachebuster, portable ZIP, kişisel kurulum, private GitHub push ve CI kanıtını tamamla.
