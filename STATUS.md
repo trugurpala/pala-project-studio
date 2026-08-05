@@ -14,7 +14,7 @@
   geliştirici bilgisayarının donanımına, mutlak yollarına veya önceden kurulmuş
   yardımcı araçlarına güvenmeyecek.
 - Doğrulama: M11 PALA-043 için `python -m unittest discover -s scripts -p
-  "test_*.py"` — 128 test passed (11.3 sn). `verification required` durumundan
+  "test_*.py"` — 150 test passed (12.187 sn). `verification required` durumundan
   `completed` lifecycle'a
   geçiş başarıyla çalıştı; paralel oturum izolasyonu, yeniden deneme-bütçesi,
   graph eşiği ve kapanış kapısı sözleşmesi test kapsamına alındı.
@@ -72,9 +72,9 @@
   Repo görünürlüğü değiştirilmeden private PR/CI/release kanıtı bekleniyor.
 - 0.4.1 için son durum: M13 tüm kapıları toplu doğrulandı ve yayın
   manifesti senkronize edildi.
-- M13 kanıt özeti: `py -3 scripts/verify.py` (128 test geçti, OK),
+- M13 kanıt özeti: `py -3 scripts/verify.py` (150 test geçti, OK),
   GH Actions `Quality` çalışma `31048474907` (windows-latest + ubuntu-latest,
   sonuçlar: `success`), `py -3 scripts/build_portable.py --output dist/pala-project-studio-0.4.1+codex.20260806090000.zip`
-  (SHA-256: `0FEAA1BCF55227492ED859EBAD453B544F1C6EB52B90669ABB905CE7714F7091`).
+  (SHA-256: `7CB222E89B8694924A200220E324E55F12F1B39FADC1464C89C7A1BBAF1FF9A3`).
   Release `v0.4.1` güncellendi: `pala-project-studio-0.4.1.zip` asset'i bu SHA-256 ile
   tekrar yüklenmiştir.
