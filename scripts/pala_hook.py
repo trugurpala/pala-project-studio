@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from pala_store import WorkflowStore
+
 MANIFEST = Path(".codex/pala-project.json")
 WORKFLOW = Path(".codex/pala-workflow.json")
 WORKFLOW_SCHEMA_VERSIONS = (1, 2)
@@ -165,11 +167,25 @@ def main() -> int:
         if workflow and workflow.get("active_ticket"):
             workflow["needs_reconcile"] = True
             save_workflow(root, workflow)
+        session_id = event.get("session_id")
+        if isinstance(session_id, str) and session_id.strip():
+            WorkflowStore(root).heartbeat(session_id, "pre_compact")
         emit({"continue": True})
         return 0
 
     if event_name == "SessionStart":
         workflow = load_workflow(root)
+        session_id = event.get("session_id")
+        if isinstance(session_id, str) and session_id.strip():
+            WorkflowStore(root).heartbeat(session_id, "session_start")
+            owned_ticket = WorkflowStore(root).active_for_session(session_id)
+            if owned_ticket is not None:
+                workflow = {
+                    "active_ticket": owned_ticket.get("ticket"),
+                    "next_action": owned_ticket.get("next_action"),
+                    "dirty": owned_ticket.get("dirty"),
+                    "blockers": [],
+                }
         reconciliation = reconciliation_report(root, payload, workflow)
         compacted = event.get("source") == "compact" or bool(
             workflow and workflow.get("needs_reconcile")
@@ -185,6 +201,13 @@ def main() -> int:
                 local_health(root),
             )
         )
+        return 0
+
+    if event_name == "SessionEnd":
+        session_id = event.get("session_id")
+        if isinstance(session_id, str) and session_id.strip():
+            WorkflowStore(root).heartbeat(session_id, "session_end")
+        emit({})
         return 0
 
     if event_name == "Stop":

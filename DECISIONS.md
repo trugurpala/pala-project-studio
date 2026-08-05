@@ -57,3 +57,11 @@ komutları RTK'ya yönlendirir. Bileşik shell ifadeleri, redirection, interakti
 komutlar, secrets taşıyabilecek işlemler ve Git/deploy mutasyonları aynen
 bırakılır. RTK yoksa veya parser emin değilse başarısız olmak yerine orijinal
 komut çalışır.
+
+## ADR-010 — V3 ticket durumu oturum sahipliğiyle ayrılır
+
+Pala v3 dinamik ticket kayıtları yalnız ignore edilen
+`.codex/plugin-data/pala/v3/` altında tutulur. Ham Codex `session_id` hiçbir
+JSON kaydına yazılmaz; ticket sahibi SHA-256'nın sınırlı özetidir. Her ticket
+ayrı atomik kilit kullanır. Eski v2 workflow dosyası yerinde ve okunabilir
+kalır; v3 yalnız gözlemci migration marker'ı yazar.

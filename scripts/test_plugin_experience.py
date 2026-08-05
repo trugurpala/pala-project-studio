@@ -208,6 +208,7 @@ class UserExperienceContractTests(unittest.TestCase):
             [
                 "Proje durumu yükleniyor",
                 "Çalışma bağlamı kaydediliyor",
+                "Oturum sahipliği kapatılıyor",
                 "İlerleme kaydı kontrol ediliyor",
             ],
         )

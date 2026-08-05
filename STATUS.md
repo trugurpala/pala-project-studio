@@ -1,8 +1,8 @@
 # Pala Project Studio Durumu
 
 - Aktif milestone: M10 — Tek-kapı yönlendirme ve yönetilen araçlar (`in progress`)
-- Aktif ticket: PALA-042 — Örtük Pala yönlendirmesi ve sınırlı oturum sağlığı
-  tamamlandı; kaynak ve portable doğrulaması yerel checkpoint için hazır.
+- Aktif ticket: PALA-043 — Çok oturumlu ticket sahipliği ve doğrulama
+  lifecycle'ı uygulanıyor.
 - Son tamamlanan sonuç: Pala normal yazılım projesi isteklerinde örtük
   seçilebilir, salt sohbet kapsam dışı. SessionStart yalnız yerel plugin/Python/Git/
   hook durumunu özetler. İlk uygulama adımındaki sürüm kontrolü 24 saatlik atomik
@@ -13,7 +13,9 @@
 - Ortam önkoşulu: Kurucu temiz Windows kullanıcı profillerinde çalışacak;
   geliştirici bilgisayarının donanımına, mutlak yollarına veya önceden kurulmuş
   yardımcı araçlarına güvenmeyecek.
-- Doğrulama: kaynak içinden `python scripts/verify.py` — 86 test passed.
+- Doğrulama: PALA-043 state/hook yüzeyinde `py -3 -m unittest
+  scripts.test_pala_tools -v` — 52 test passed. Tam kaynak kapısı, bu ticket'ın
+  sonraki checkpoint'inde yeniden çalıştırılacak.
   Taşınabilir ZIP SHA-256 değeri yalnız üretim artifact'ı için ayrıca raporlanır;
   bu durum belgesi kendi paketini değiştirdiği için buraya sabitlenmez.
   Son yayımlanmış 0.3.3 için GitHub Actions `31021033644` Windows ve Ubuntu'da
@@ -35,6 +37,6 @@
   en fazla 256 KB olacak biçimde doğrulandı. İdempotent Update + Doctor
   Pala-managed fingerprint'i değiştirmedi.
 - Engel: Yok.
-- Tek sonraki iş: PALA-043 kapsamında paralel/çok oturumlu ticket sahipliğini
-  genişlet; araç kurulumu ve RTK bu ticket'tan ayrı kalır.
+- Tek sonraki iş: PALA-043 CLI lifecycle sözleşmesini gerçek çağrı testleriyle
+  tamamla, ardından adapter sözleşmesi ve RTK ayrı ticket'ına geç.
 - Güncelleme: 2026-08-05
