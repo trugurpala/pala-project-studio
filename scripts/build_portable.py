@@ -64,12 +64,18 @@ def source_files(plugin_root: Path) -> list[Path]:
     candidates = [
         plugin_root / ".agents" / "plugins" / "marketplace.json",
         plugin_root / ".codex-plugin" / "plugin.json",
+        plugin_root / "AGENTS.md",
+        plugin_root / "DECISIONS.md",
         plugin_root / "Install-Pala.ps1",
         plugin_root / "LICENSE",
         plugin_root / "OPEN_SOURCE.md",
+        plugin_root / "PROJECT.md",
         plugin_root / "README.md",
+        plugin_root / "SECURITY.md",
         plugin_root / "THIRD_PARTY_NOTICES.md",
         plugin_root / ".github" / "workflows" / "quality.yml",
+        plugin_root / "docs" / "CODEX_SCOPE_AND_LIMITS.md",
+        plugin_root / "docs" / "PALA_0_4_SINGLE_DOOR.md",
     ]
     for directory in ("hooks", "skills"):
         candidates.extend(

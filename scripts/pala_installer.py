@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -362,6 +363,28 @@ def copy_bundle(source: Path, destination: Path) -> None:
         shutil.copy2(path, target)
 
 
+def remove_tree_resilient(path: Path, *, required: bool = True) -> bool:
+    """Remove an owned tree even if another owner cleanup is racing us."""
+    target = path
+    if os.name == "nt":
+        resolved = str(path.resolve())
+        if not resolved.startswith("\\\\?\\"):
+            target = Path(f"\\\\?\\{resolved}")
+    for _ in range(100):
+        if not target.exists():
+            return True
+        try:
+            shutil.rmtree(target, ignore_errors=True)
+        except FileNotFoundError:
+            pass
+        if not target.exists():
+            return True
+        time.sleep(0.05)
+    if target.exists() and required:
+        raise OSError(f"Pala-owned directory could not be removed: {path}")
+    return not target.exists()
+
+
 def state_path(state_root: Path) -> Path:
     return state_root / STATE_NAME
 
@@ -586,16 +609,16 @@ def install_bundle(
         }
         atomic_write_json(state_path(state_root), payload)
         if moved_previous and backup.exists():
-            shutil.rmtree(backup)
+            remove_tree_resilient(backup)
     except Exception:
         if activated and install_root.exists():
-            shutil.rmtree(install_root)
+            remove_tree_resilient(install_root)
         if moved_previous and backup.exists():
             os.replace(backup, install_root)
         raise
     finally:
         if stage.exists():
-            shutil.rmtree(stage)
+            remove_tree_resilient(stage)
 
     if repair or current_status == "drifted":
         result_status = "repaired"
@@ -697,13 +720,37 @@ def uninstall_bundle(
     trash = install_root.parent / f".{OWNER}.uninstall-{uuid.uuid4().hex}"
     os.replace(install_root, trash)
     try:
-        shutil.rmtree(trash)
+        remove_tree_resilient(trash)
         state_path(state_root).unlink(missing_ok=True)
     except Exception:
         if trash.exists() and not install_root.exists():
             os.replace(trash, install_root)
         raise
     return {"status": "uninstalled", "changed": True}
+
+
+def finalize_verified_uninstall(
+    install_root: Path, state_root: Path
+) -> dict[str, object]:
+    """Remove a previously verified Pala-owned root after Codex cleanup."""
+    install_root = install_root.resolve()
+    state_root = state_root.resolve()
+    state = owned_state(install_root, state_root)
+    if state is None:
+        return {"status": "external_conflict", "changed": False}
+    if install_root.exists():
+        trash = install_root.parent / f".{OWNER}.uninstall-{uuid.uuid4().hex}"
+        os.replace(install_root, trash)
+        cleaned = remove_tree_resilient(trash, required=False)
+    else:
+        trash = None
+        cleaned = True
+    state_path(state_root).unlink(missing_ok=True)
+    return {
+        "status": "uninstalled",
+        "changed": True,
+        "cleanup_pending": str(trash) if trash is not None and not cleaned else None,
+    }
 
 
 def uninstall_all(
@@ -731,7 +778,12 @@ def uninstall_all(
             "bundle": bundle_preview,
             "codex": codex,
         }
-    bundle = uninstall_bundle(install_root, state_root, dry_run=dry_run)
+    if dry_run:
+        bundle = bundle_preview
+    elif bundle_preview.get("status") == "would_uninstall":
+        bundle = finalize_verified_uninstall(install_root, state_root)
+    else:
+        bundle = uninstall_bundle(install_root, state_root, dry_run=False)
     changed = bool(bundle.get("changed") or codex.get("changed"))
     if dry_run and (bundle.get("status") == "would_uninstall" or codex.get("status") == "would_uninstall"):
         status = "would_uninstall"

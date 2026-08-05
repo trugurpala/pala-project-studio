@@ -366,6 +366,110 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertEqual(removed["status"], "uninstalled")
             self.assertFalse(install_root.exists())
 
+    def test_full_uninstall_handles_codex_removing_local_marketplace_root(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root)
+            install_root = root / "local" / "Pala" / "marketplace"
+            state_root = root / "local" / "Pala"
+            self.installer.install_bundle(source, install_root, state_root)
+            marketplaces: list[dict[str, object]] = [
+                {"name": "pala-project-studio", "root": str(install_root)}
+            ]
+            installed: list[dict[str, object]] = [
+                {
+                    "pluginId": "pala-project-studio@pala-project-studio",
+                    "name": "pala-project-studio",
+                    "marketplaceName": "pala-project-studio",
+                    "version": "0.4.0+codex.test",
+                    "installed": True,
+                    "enabled": True,
+                }
+            ]
+
+            def invoke(arguments: list[str]) -> dict[str, object]:
+                command = tuple(arguments)
+                if command == ("plugin", "marketplace", "list", "--json"):
+                    return {"marketplaces": list(marketplaces)}
+                if command == ("plugin", "list", "--json"):
+                    return {"installed": list(installed), "available": []}
+                if command == (
+                    "plugin",
+                    "remove",
+                    "pala-project-studio@pala-project-studio",
+                    "--json",
+                ):
+                    installed.clear()
+                    return {"pluginId": "pala-project-studio@pala-project-studio"}
+                if command == (
+                    "plugin",
+                    "marketplace",
+                    "remove",
+                    "pala-project-studio",
+                    "--json",
+                ):
+                    marketplaces.clear()
+                    for path in list(install_root.rglob("*")):
+                        if path.is_file() and path.suffix in {".py", ".json"}:
+                            path.unlink()
+                    return {"marketplaceName": "pala-project-studio"}
+                raise AssertionError(f"unexpected Codex command: {command}")
+
+            report = self.installer.uninstall_all(
+                source,
+                install_root,
+                state_root,
+                invoke=invoke,
+            )
+
+            self.assertEqual(report["status"], "uninstalled")
+            self.assertTrue(report["changed"])
+            self.assertFalse(install_root.exists())
+            self.assertFalse((state_root / "install-state.json").exists())
+
+    def test_resilient_tree_removal_tolerates_concurrent_file_disappearance(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp) / "owned-tree"
+            root.mkdir()
+            (root / "file.txt").write_text("owned", encoding="utf-8")
+            real_rmtree = self.installer.shutil.rmtree
+            attempts = 0
+
+            def flaky_rmtree(path: Path, **kwargs: object) -> None:
+                nonlocal attempts
+                attempts += 1
+                if attempts == 1:
+                    raise FileNotFoundError("simulated concurrent cleanup")
+                real_rmtree(path, **kwargs)
+
+            with patch.object(
+                self.installer.shutil, "rmtree", side_effect=flaky_rmtree
+            ):
+                self.installer.remove_tree_resilient(root)
+
+            self.assertEqual(attempts, 2)
+            self.assertFalse(root.exists())
+
+    def test_verified_uninstall_can_detach_a_temporarily_locked_owned_tree(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root)
+            install_root = root / "local" / "Pala" / "marketplace"
+            state_root = root / "local" / "Pala"
+            self.installer.install_bundle(source, install_root, state_root)
+
+            with patch.object(
+                self.installer, "remove_tree_resilient", return_value=False
+            ):
+                report = self.installer.finalize_verified_uninstall(
+                    install_root, state_root
+                )
+
+            self.assertEqual(report["status"], "uninstalled")
+            self.assertIsNotNone(report["cleanup_pending"])
+            self.assertFalse(install_root.exists())
+            self.assertFalse((state_root / "install-state.json").exists())
+
     def test_uninstall_refuses_modified_managed_installation(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
             root = Path(temp)

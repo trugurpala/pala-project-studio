@@ -67,7 +67,7 @@ function Show-PalaResult([pscustomobject]$Payload) {
         "external_conflict" { Write-Host "[Pala] Ayni konumda Pala'ya ait oldugu dogrulanamayan icerik var; dokunulmadi." }
         "modified" { Write-Host "[Pala] Kurulum sonradan degistirilmis; kullanici dosyalarini korumak icin dokunulmadi." }
         default {
-            Write-Host "[Pala] Sonuç: $($Payload.status)"
+            Write-Host "[Pala] Sonuc: $($Payload.status)"
         }
     }
 }

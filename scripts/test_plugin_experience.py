@@ -319,6 +319,11 @@ class PortablePackageContractTests(unittest.TestCase):
             self.assertIn("pala-project-studio/Install-Pala.ps1", names)
             self.assertIn("pala-project-studio/scripts/pala_installer.py", names)
             self.assertIn("pala-project-studio/README.md", names)
+            self.assertIn("pala-project-studio/PROJECT.md", names)
+            self.assertIn("pala-project-studio/DECISIONS.md", names)
+            self.assertIn(
+                "pala-project-studio/docs/PALA_0_4_SINGLE_DOOR.md", names
+            )
             self.assertIn("pala-project-studio/LICENSE", names)
             for name in names:
                 path = PurePosixPath(name)
@@ -326,7 +331,7 @@ class PortablePackageContractTests(unittest.TestCase):
                 self.assertNotIn("..", path.parts)
                 self.assertNotIn("__pycache__", path.parts)
                 self.assertNotIn(".ruff_cache", path.parts)
-                self.assertNotIn("docs", path.parts)
+                self.assertNotIn("superpowers", path.parts)
                 self.assertFalse(name.endswith((".pyc", ".pem", ".key")))
 
             with self.assertRaises(FileExistsError):

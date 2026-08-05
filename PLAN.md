@@ -70,13 +70,13 @@
 
 ## M9 — İdempotent tek komut Windows kurulumu
 
-- [ ] PALA-041: Repo ve portable ZIP kökünden aynı tek komutla çalışan
+- [x] PALA-041: Repo ve portable ZIP kökünden aynı tek komutla çalışan
   `Install`, `Doctor`, `Repair`, `Update`, `Uninstall` ve `-WhatIf` akışını
   oluştur.
-- [ ] Kurulu bileşeni sürüm, kaynak ve sahiplik bilgisiyle keşfet; doğruysa
+- [x] Kurulu bileşeni sürüm, kaynak ve sahiplik bilgisiyle keşfet; doğruysa
   `zaten hazır`, eskiyse `güncellenecek`, yabancı/çakışan ise `dokunulmadı`
   sonucu ver.
-- [ ] Pala dosyalarını staging klasöründe doğrula, atomik etkinleştir ve hata
+- [x] Pala dosyalarını staging klasöründe doğrula, atomik etkinleştir ve hata
   halinde önceki çalışan kuruluma geri dön.
 - [x] Codex marketplace/plugin kurulumunu desteklenen CLI üzerinden idempotent
   yap; config ve marketplace JSON'unu elle düzenleme.
