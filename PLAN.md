@@ -27,9 +27,9 @@
 - [x] GitHub'a alınan/alınmayan verileri ve ayrı yetki sınırlarını skill referansına işle.
 - [x] Manifest, README, lisans, güvenlik ve CI yüzeylerini tamamla.
 - [x] Birim, sözleşme, skill, plugin ve portable paket doğrulamalarını çalıştır.
-- [ ] Yeni portable ZIP üret ve SHA-256 kaydet.
-- [ ] Kişisel marketplace kaynağını güncelle, cachebuster uygula ve eklentiyi yeniden kur.
-- [ ] Kaynağı secretsız özel GitHub deposunda sakla ve CI sonucunu doğrula.
+- [x] Yeni portable ZIP üret ve SHA-256 kaydet.
+- [x] Kişisel marketplace kaynağını güncelle, cachebuster uygula ve eklentiyi yeniden kur.
+- [x] Kaynağı secretsız özel GitHub deposunda sakla ve CI sonucunu doğrula.
 
 ## M5 — AZR'ye dönüş
 
