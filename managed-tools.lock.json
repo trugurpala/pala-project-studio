@@ -17,14 +17,14 @@
     },
     "graphify": {
       "version": "0.9.33",
-      "source_url": "https://pypi.org/project/graphifyy/0.9.33/",
+      "source_url": "https://files.pythonhosted.org/packages/0e/39/ea6555c576729c9ff597e20cf2c10851774fc81b1d392036ad212963b06b/graphifyy-0.9.33-py3-none-any.whl",
       "license": "Apache-2.0",
       "sha256": "c32b5792c783a6e66b1100b35bc65df3538e3f69b9df45fb098c9634c1b8eb01",
       "platform": "any"
     },
     "serena": {
       "version": "1.6.1",
-      "source_url": "https://pypi.org/project/serena-agent/1.6.1/",
+      "source_url": "https://files.pythonhosted.org/packages/43/35/fe30599bcf4760519706c1aa635a25c4a656f26001d445e270b80bca4905/serena_agent-1.6.1-py3-none-any.whl",
       "license": "MIT",
       "sha256": "04ddd985bd3feb25598ab8732bf3a998f961d5b46dce271b816126c0a68a91e1",
       "platform": "any"

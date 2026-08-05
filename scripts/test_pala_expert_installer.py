@@ -40,6 +40,7 @@ class ExpertInstallerTests(unittest.TestCase):
             self.assertEqual(second["state"], "ready")
             self.assertFalse(second["changed"])
             self.assertEqual((state / "experts" / "demo" / "1.0" / "payload.bin").read_bytes(), payload)
+            self.assertEqual(self.installer.inspect_binary("demo", spec, state)["state"], "ready")
 
     def test_hash_mismatch_never_activates_payload(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -47,6 +48,16 @@ class ExpertInstallerTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.installer.install_binary("demo", {"version": "1.0", "source_url": "https://example.invalid", "sha256": "0" * 64}, state, fetch=lambda _: b"wrong")
             self.assertFalse((state / "experts" / "demo" / "1.0").exists())
+
+    def test_inspection_reports_missing_and_modified_owned_payload(self) -> None:
+        payload = b"pala-owned-expert"
+        spec = {"version": "1.0", "source_url": "https://example.invalid/expert", "sha256": hashlib.sha256(payload).hexdigest()}
+        with tempfile.TemporaryDirectory() as temp:
+            state = Path(temp) / "Pala"
+            self.assertEqual(self.installer.inspect_binary("demo", spec, state)["state"], "missing")
+            self.installer.install_binary("demo", spec, state, fetch=lambda _: payload)
+            (state / "experts" / "demo" / "1.0" / "payload.bin").write_bytes(b"modified")
+            self.assertEqual(self.installer.inspect_binary("demo", spec, state)["state"], "external_conflict")
 
     def test_dry_run_does_not_create_expert_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

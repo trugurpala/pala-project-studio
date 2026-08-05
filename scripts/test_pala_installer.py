@@ -132,6 +132,28 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertTrue(doctor["healthy"])
             self.assertEqual(doctor["adapters"]["rtk"]["state"], "missing")
 
+    def test_doctor_reports_verified_pala_owned_expert_artifact(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-experts-") as temp:
+            root = Path(temp)
+            source = make_bundle(root)
+            payload = b"verified-codebase-memory"
+            lock = json.loads((ROOT / "managed-tools.lock.json").read_text(encoding="utf-8"))
+            lock["tools"]["codebase-memory"] = {
+                "version": "test",
+                "source_url": "https://example.invalid/cbm",
+                "license": "MIT",
+                "sha256": __import__("hashlib").sha256(payload).hexdigest(),
+                "platform": "windows-x86_64",
+            }
+            (source / "managed-tools.lock.json").write_text(json.dumps(lock), encoding="utf-8")
+            state_root = root / "state"
+            expert = load_script("pala_expert_installer", "pala_expert_installer.py")
+            expert.install_binary("codebase-memory", lock["tools"]["codebase-memory"], state_root, fetch=lambda _: payload)
+
+            doctor = self.installer.doctor_bundle(source, root / "installed", state_root)
+
+            self.assertEqual(doctor["adapters"]["codebase-memory"]["state"], "ready")
+
     def test_mcp_adapter_distinguishes_exact_missing_and_foreign_records(self) -> None:
         spec = {
             "name": "context7",

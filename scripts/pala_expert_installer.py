@@ -32,6 +32,25 @@ def _read_json(path: Path) -> dict[str, object] | None:
     return value if isinstance(value, dict) else None
 
 
+def inspect_binary(name: str, spec: dict[str, str], state_root: Path) -> dict[str, object]:
+    """Report ownership and integrity without writing or using the network."""
+    name = _safe_part(name)
+    version = _safe_part(spec.get("version", ""))
+    target = state_root.resolve() / "experts" / name / version
+    marker = _read_json(target / "install.json")
+    payload = target / "payload.bin"
+    expected_hash = spec.get("sha256", "").casefold()
+    if not target.exists():
+        return {"state": "missing", "changed": False, "path": str(target)}
+    if marker is None or not payload.is_file():
+        return {"state": "external_conflict", "changed": False, "path": str(target)}
+    if marker.get("sha256") != expected_hash or marker.get("source_url") != spec.get("source_url"):
+        return {"state": "external_conflict", "changed": False, "path": str(target)}
+    actual = hashlib.sha256(payload.read_bytes()).hexdigest()
+    state = "ready" if actual == expected_hash else "external_conflict"
+    return {"state": state, "changed": False, "path": str(target)}
+
+
 def install_binary(
     name: str,
     spec: dict[str, str],
@@ -50,11 +69,9 @@ def install_binary(
     target = state_root.resolve() / "experts" / name / version
     marker = target / "install.json"
     payload_path = target / "payload.bin"
-    existing = _read_json(marker)
-    if existing is not None and payload_path.is_file() and existing.get("sha256") == expected_hash and existing.get("source_url") == source_url:
-        actual = hashlib.sha256(payload_path.read_bytes()).hexdigest()
-        if actual == expected_hash:
-            return {"state": "ready", "changed": False, "path": str(target)}
+    inspection = inspect_binary(name, spec, state_root)
+    if inspection["state"] == "ready":
+        return inspection
     if target.exists():
         return {"state": "external_conflict", "changed": False, "path": str(target)}
     if dry_run:
