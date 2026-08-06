@@ -9,6 +9,7 @@ import unittest
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+ROOT = SCRIPT_DIR.parent
 
 
 def load_module():
@@ -156,6 +157,15 @@ class PalaOssTests(unittest.TestCase):
         names = {gate["name"] for gate in result["optional_gates"]}
         self.assertEqual(names, {"dependency-vulnerability", "github-actions-security"})
         self.assertTrue(all(gate["required"] is False for gate in result["optional_gates"]))
+
+    def test_skill_routes_oss_requests_to_locked_reference(self) -> None:
+        skill = (ROOT / "skills" / "pala-project-finisher" / "SKILL.md").read_text(encoding="utf-8")
+        reference = ROOT / "skills" / "pala-project-finisher" / "references" / "oss-contribution.md"
+        self.assertIn("oss-contribution.md", skill)
+        self.assertTrue(reference.is_file())
+        text = reference.read_text(encoding="utf-8")
+        self.assertIn("GitHub MCP/connector as read-only scout", text)
+        self.assertIn("only a **draft pull request**", text)
 
     def test_write_plan_is_argv_only_and_requires_separate_authority(self) -> None:
         result = pala_oss.write_plan("owner/repo", "alice", "fix/issue-123")
