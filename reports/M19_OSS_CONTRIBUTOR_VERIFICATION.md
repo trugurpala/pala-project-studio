@@ -44,10 +44,11 @@ Draft PR: #6
   `scripts/` and recursively includes `skills/`, so `pala_oss.py`, its tests and
   the OSS contribution reference are automatically covered by the standard
   package path.
-- Final branch comparison against `main`: **ahead 21, behind 0**, merge base is
-  the current M18 main head, and exactly **10 intended files** differ. Plugin
-  manifest, version, installer, hook manifest and managed-tool locks are not in
-  the M19 diff.
+- Branch comparison against `main` is **behind 0**, uses the current M18 main
+  head as merge base, and exactly **10 intended files** differ. Plugin manifest,
+  version, installer, hook manifest and managed-tool locks are not in the M19
+  diff. Commit count is intentionally not persisted because this evidence file
+  itself is versioned and would make such a count self-referential.
 
 ## Not yet passed
 
