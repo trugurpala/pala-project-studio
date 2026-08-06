@@ -1,7 +1,7 @@
 # Pala Project Studio
 
 ![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
-[![Release](https://img.shields.io/github/v/release/trugurpala/pala-project-studio?label=release)](https://github.com/trugurpala/pala-project-studio/releases/latest)
+[![Release v0.4.4](https://img.shields.io/badge/release-v0.4.4-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.4.4)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Pala Project Studio, Codex'in uzun soluklu yazılım projelerinde aktif işi
@@ -10,8 +10,8 @@ eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bul
 aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
 göre katmanlandırır.
 
-- Dünya standartlarına uygun GitHub yayın akışı için: `README`teki sürüm linki,
-  güvenlik sınırları ve dağıtım kanıtı birlikte doğrulanır.
+- Güncel kararlı sürüm `v0.4.4`'tür. Windows kurucusu, taşınabilir ZIP,
+  `Update` ve `Doctor` akışları gerçek kurulumda doğrulanmıştır.
 
 ## Hızlı başlangıç
 

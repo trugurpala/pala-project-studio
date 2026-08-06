@@ -198,3 +198,9 @@
   devredildi; yayımlanmış etiket değiştirilmedi.
 - [x] PALA-050: Beklenen Ollama bağlantı reddi stderr çıktısını güvenle yakala,
   yönetilen loopback sunucusunun başlayabilmesini doğrula ve 0.4.4'ü yayınla.
+
+## M18 — GitHub sunum güncelliği
+
+- [x] PALA-051: Private depoda anonim Shields.io release sorgusunun ürettiği
+  yanlış kırmızı rozeti düzelt; README, sürüm metinleri, release, durum belgeleri
+  ve Pala checkpoint'ini güncel gerçek durumla uzlaştır.

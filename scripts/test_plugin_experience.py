@@ -41,6 +41,12 @@ class UserExperienceContractTests(unittest.TestCase):
             f"pala-project-studio-{release_version}.zip",
             readme,
         )
+        self.assertIn(
+            f"img.shields.io/badge/release-v{release_version}-2ea44f",
+            readme,
+        )
+        self.assertIn(f"releases/tag/v{release_version}", readme)
+        self.assertNotIn("img.shields.io/github/v/release/", readme)
         for required in (
             "güvenli uzman işçileri",
             "graphify",
