@@ -217,9 +217,9 @@
   publish kapısı ve fork/push/PR için üç ayrı uzak-yazma yetkisi ekle.
 - [x] Vibe-coder doğal dil akışını Pala skill'i, OSS referansı, README, ADR-011
   ve kilitli M19 uygulama planına bağla.
-- [x] Dar M19 sözleşme paketini çalıştır: `12/12 PASS`; `verify.py` ve portable
+- [x] Dar M19 sözleşme paketini çalıştır: `15/15 PASS`; `verify.py` ve portable
   paketleyicinin yeni script/test/reference yüzeyini otomatik kapsadığını
-  doğrula.
+  doğrula; orkestratör skill'ini mevcut 450-kelime bütçesinin altında tut.
 - [ ] Draft PR #6 üzerinde tam `Quality` kapısını Ubuntu + Windows'ta geçir.
   Connected GitHub oturumunda PR açma/synchronize/reopen olayları Actions koşusu
   oluşturmadı ve yeni `workflow_dispatch` başlatma aracı yok; bu kapı
