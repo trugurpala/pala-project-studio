@@ -204,3 +204,23 @@
 - [x] PALA-051: Private depoda anonim Shields.io release sorgusunun ürettiği
   yanlış kırmızı rozeti düzelt; README, sürüm metinleri, release, durum belgeleri
   ve Pala checkpoint'ini güncel gerçek durumla uzlaştır.
+
+## M19 — Güvenli açık kaynak katkı akışı
+
+- [x] PALA-052: Güncel GitHub/OSS araçlarını araştır; GitHub MCP/connector,
+  `gh`, OSV-Scanner, zizmor, OpenSSF Scorecard ve alternatif ajan/tarayıcılar
+  için ADOPT / ADAPT / REFERENCE / REJECT kararlarını kilitle.
+- [x] Katkı metinlerini untrusted data olarak işleyen ağsız policy reader,
+  açıklanabilir issue puanı ve güvenlik/mevcut PR/atama/AI politikası sert
+  blocker'larını uygula.
+- [x] Diff/commit/gate fingerprint'i, yalnız draft PR'a izin veren fail-closed
+  publish kapısı ve fork/push/PR için üç ayrı uzak-yazma yetkisi ekle.
+- [x] Vibe-coder doğal dil akışını Pala skill'i, OSS referansı, README, ADR-011
+  ve kilitli M19 uygulama planına bağla.
+- [x] Dar M19 sözleşme paketini çalıştır: `12/12 PASS`; `verify.py` ve portable
+  paketleyicinin yeni script/test/reference yüzeyini otomatik kapsadığını
+  doğrula.
+- [ ] Draft PR #6 üzerinde tam `Quality` kapısını Ubuntu + Windows'ta geçir.
+  Connected GitHub oturumunda PR açma/synchronize/reopen olayları Actions koşusu
+  oluşturmadı ve yeni `workflow_dispatch` başlatma aracı yok; bu kapı
+  `BLOCKED_EXTERNAL_TRIGGER`, PASS değildir.
