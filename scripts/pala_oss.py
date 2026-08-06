@@ -12,13 +12,6 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 SCHEMA_VERSION = 1
-SECURITY_LABELS = {
-    "security",
-    "vulnerability",
-    "cve",
-    "private vulnerability reporting",
-    "security advisory",
-}
 POSITIVE_LABEL_WEIGHTS = {
     "good first issue": 30,
     "help wanted": 20,
@@ -41,9 +34,10 @@ COMMIT_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
 
 AI_FORBIDDEN_PATTERNS = (
     r"\bno\s+(?:generative\s+)?ai(?:[- ]generated)?\s+contributions?\b",
-    r"\bai(?:[- ]generated)?\s+contributions?\s+(?:are|is)\s+(?:not\s+accepted|prohibited|forbidden)\b",
+    r"\bai(?:[- ]generated)?\s+contributions?\s+(?:are|is)\s+(?:not\s+accepted|not\s+allowed|not\s+permitted|prohibited|forbidden)\b",
     r"\bdo\s+not\s+use\s+(?:generative\s+)?ai\b",
-    r"\bgenerative\s+ai\s+(?:is\s+)?(?:prohibited|forbidden)\b",
+    r"\bmust\s+not\s+use\s+(?:generative\s+)?ai\b",
+    r"\bgenerative\s+ai\s+(?:is\s+)?(?:not\s+allowed|not\s+permitted|prohibited|forbidden)\b",
 )
 AI_DISCLOSURE_PATTERNS = (
     r"\bdisclos(?:e|ure).{0,40}\bai\b",
@@ -93,6 +87,20 @@ def _labels(issue: Mapping[str, Any]) -> list[str]:
             if isinstance(name, str):
                 result.append(name.casefold().strip())
     return result
+
+
+def _security_sensitive(labels: Sequence[str]) -> bool:
+    """Conservatively keep security-labelled work out of the automatic flow."""
+    for label in labels:
+        normalized = " ".join(label.casefold().replace("_", " ").replace("-", " ").split())
+        if (
+            "security" in normalized
+            or "vulnerability" in normalized
+            or normalized == "cve"
+            or normalized.startswith("cve ")
+        ):
+            return True
+    return False
 
 
 def _assignees(issue: Mapping[str, Any]) -> list[str]:
@@ -159,11 +167,14 @@ def score_issue(
         blockers.append("issue_not_open")
     if policy.get("ai_policy") == "forbidden":
         blockers.append("repository_forbids_ai_contributions")
-    if label_set.intersection(SECURITY_LABELS):
+    if _security_sensitive(labels):
         blockers.append("security_sensitive_issue")
 
-    linked_prs = issue.get("linked_prs", issue.get("pull_requests", []))
-    if isinstance(linked_prs, list) and linked_prs:
+    open_prs = issue.get(
+        "open_pull_requests",
+        issue.get("linked_prs", issue.get("pull_requests", [])),
+    )
+    if isinstance(open_prs, list) and open_prs:
         blockers.append("existing_pull_request")
 
     if assignees and (actor_key is None or actor_key not in assignees):
@@ -334,6 +345,25 @@ def tool_plan(root: Path) -> dict[str, Any]:
     }
 
 
+def _safe_identifier(label: str, value: str) -> str:
+    if not SAFE_SLUG.fullmatch(value) or value in {".", ".."} or value.startswith("-"):
+        raise ValueError(f"unsafe {label}")
+    return value
+
+
+def _safe_ref(label: str, value: str) -> str:
+    if (
+        not SAFE_REF.fullmatch(value)
+        or value.startswith(("/", "-"))
+        or value.endswith("/")
+        or ".." in value
+        or "//" in value
+        or value.endswith(".lock")
+    ):
+        raise ValueError(f"unsafe {label}")
+    return value
+
+
 def write_plan(
     repository: str,
     actor: str,
@@ -344,47 +374,36 @@ def write_plan(
     """Build argv-only GitHub write actions; execution remains a separate authority."""
     if not SAFE_REPO.fullmatch(repository):
         raise ValueError("repository must be owner/name")
-    if not SAFE_SLUG.fullmatch(actor):
-        raise ValueError("unsafe actor")
-
-    def safe_ref(label: str, value: str) -> str:
-        if (
-            not SAFE_REF.fullmatch(value)
-            or value.startswith("/")
-            or value.endswith("/")
-            or ".." in value
-            or "//" in value
-            or value.endswith(".lock")
-        ):
-            raise ValueError(f"unsafe {label}")
-        return value
-
-    safe_ref("branch", branch)
-    safe_ref("base_branch", base_branch)
-    repo_name = repository.split("/", 1)[1]
+    owner, repo_name = repository.split("/", 1)
+    _safe_identifier("repository owner", owner)
+    _safe_identifier("repository name", repo_name)
+    _safe_identifier("actor", actor)
+    _safe_ref("branch", branch)
+    _safe_ref("base_branch", base_branch)
     fork_url = f"https://github.com/{actor}/{repo_name}.git"
+
+    def step(authority: str, argv: list[str]) -> dict[str, Any]:
+        return {
+            "authority": authority,
+            "requires_explicit_authority": True,
+            "argv": argv,
+        }
 
     return {
         "schema_version": SCHEMA_VERSION,
         "requires_explicit_authority": True,
         "steps": [
-            {
-                "authority": "fork",
-                "argv": ["gh", "repo", "fork", repository, "--clone=false"],
-            },
-            {
-                "authority": "push",
-                "argv": ["git", "push", fork_url, f"HEAD:refs/heads/{branch}"],
-            },
-            {
-                "authority": "pull_request",
-                "argv": [
+            step("fork", ["gh", "repo", "fork", repository, "--clone=false"]),
+            step("push", ["git", "push", fork_url, f"HEAD:refs/heads/{branch}"]),
+            step(
+                "pull_request",
+                [
                     "gh", "pr", "create", "--draft",
                     "--repo", repository,
                     "--base", base_branch,
                     "--head", f"{actor}:{branch}",
                 ],
-            },
+            ),
         ],
     }
 
