@@ -35,6 +35,7 @@ COMPLEXITY_LABEL_PENALTIES = {
     "needs design": 15,
 }
 SAFE_SLUG = re.compile(r"^[A-Za-z0-9_.-]+$")
+SAFE_REF = re.compile(r"^[A-Za-z0-9._/-]+$")
 SAFE_REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 COMMIT_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
 
@@ -343,21 +344,47 @@ def write_plan(
     """Build argv-only GitHub write actions; execution remains a separate authority."""
     if not SAFE_REPO.fullmatch(repository):
         raise ValueError("repository must be owner/name")
-    for label, value in (("actor", actor), ("branch", branch), ("base_branch", base_branch)):
-        if not SAFE_SLUG.fullmatch(value):
+    if not SAFE_SLUG.fullmatch(actor):
+        raise ValueError("unsafe actor")
+
+    def safe_ref(label: str, value: str) -> str:
+        if (
+            not SAFE_REF.fullmatch(value)
+            or value.startswith("/")
+            or value.endswith("/")
+            or ".." in value
+            or "//" in value
+            or value.endswith(".lock")
+        ):
             raise ValueError(f"unsafe {label}")
+        return value
+
+    safe_ref("branch", branch)
+    safe_ref("base_branch", base_branch)
+    repo_name = repository.split("/", 1)[1]
+    fork_url = f"https://github.com/{actor}/{repo_name}.git"
 
     return {
         "schema_version": SCHEMA_VERSION,
         "requires_explicit_authority": True,
         "steps": [
-            ["gh", "repo", "fork", repository, "--clone=false"],
-            [
-                "gh", "pr", "create", "--draft",
-                "--repo", repository,
-                "--base", base_branch,
-                "--head", f"{actor}:{branch}",
-            ],
+            {
+                "authority": "fork",
+                "argv": ["gh", "repo", "fork", repository, "--clone=false"],
+            },
+            {
+                "authority": "push",
+                "argv": ["git", "push", fork_url, f"HEAD:refs/heads/{branch}"],
+            },
+            {
+                "authority": "pull_request",
+                "argv": [
+                    "gh", "pr", "create", "--draft",
+                    "--repo", repository,
+                    "--base", base_branch,
+                    "--head", f"{actor}:{branch}",
+                ],
+            },
         ],
     }
 
