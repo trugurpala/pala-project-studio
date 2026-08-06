@@ -69,6 +69,19 @@ korunur.
 6. Milestone sonunda tam kalite/runtime kapısını çalıştır.
 7. Açık yetki varsa yerel commit, GitHub push/PR veya release işlemini ayrı ayrı gerçekleştir.
 
+## Truth Core sözleşmesi
+
+- Bütün durum okuyucuları aynı immutable `ProjectSnapshot` sonucunu tüketir.
+- Ortak Git deposu ve her worktree ayrı kimliklenir; kalıcı kayda mutlak özel
+  yollar değil sınırlı özetler girer.
+- Açık/mevcut worktree, oturumun sahip olduğu dirty ticket, tek uyumlu aktif
+  ticket ve çelişkisiz checkpoint sırasıyla değerlendirilir; belirsizlikte
+  tahmin yapılmaz.
+- v3 canlı oturum koordinasyonudur, kayıtlı Markdown kalıcı ürün projeksiyonudur
+  ve migration marker sonrasında v2 yalnız audit/rollback girdisidir.
+- Session checkpoint gerçek doğrulama kanıtı, tier, blocker ve non-null basis
+  olmadan işi temiz saymaz.
+
 ## Değişmez sınırlar
 
 - Eklenti modelin bağlam penceresini, kullanım kotasını veya token bütçesini büyütmez.

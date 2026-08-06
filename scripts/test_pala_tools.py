@@ -234,7 +234,12 @@ class PalaStateTests(unittest.TestCase):
             store.claim("PALA-043", "Session ownership", "first-session")
 
             checkpoint = store.checkpoint(
-                ticket="PALA-043", session="first-session", next_action="Resume safely"
+                ticket="PALA-043",
+                session="first-session",
+                next_action="Resume safely",
+                verification=["unit: passed"],
+                tier="ticket",
+                blockers=[],
             )
             resumed = store.claim(
                 ticket="PALA-043", goal="Session ownership", session="second-session"

@@ -207,10 +207,18 @@
 
 ## M19 — Pala 0.5 Truthful Orchestrator tasarımı
 
-- [ ] PALA-052: Mevcut kaynak, gerçek Codex CLI/MCP durumu, linked-worktree
+- [x] PALA-052: Mevcut kaynak, gerçek Codex CLI/MCP durumu, linked-worktree
   yeniden üretimi, resmî Codex manuali ve bağımsız denetimleri birleştirerek en
   az 20 kanıtlı ürün önerisini `docs/superpowers/specs/2026-08-06-pala-0.5-truthful-orchestrator-design.md`
-  içinde üretici incelemesine sun.
-- [ ] Üretici yazılı tasarımı onayladıktan sonra önce yalnız `0.5A — Truth Core`
-  için test-first executable implementation planı yaz; routing, delivery ve
-  benchmark dilimlerini Truth Core kapısı geçmeden uygulama.
+  içinde üretici incelemesine sun. Tasarım üretici tarafından onaylandı.
+- [x] PALA-053 plan: Yalnız `0.5A — Truth Core` için test-first executable
+  implementation planını
+  `docs/superpowers/plans/2026-08-06-pala-0.5a-truth-core.md` içinde hazırla.
+- [x] PALA-053 uygulama: Tek immutable snapshot, repo/worktree kimliği,
+  deterministik devam seçimi, v2→v3 migration, evidence-bearing checkpoint,
+  typed reconciliation, session izolasyonu ve ayrık kurulum/proje doctor
+  katmanlarını uygula; milestone kapısını geçmeden 0.5B'ye başlama. Bağımsız
+  review bulguları test-first kapatıldı; son milestone kapısı 189/189 ve
+  yeniden üretilebilir paket SHA-256
+  `809435D7FC11BF7FEE54F5472B931F8BE428E225867C219B8C03B4411A6E1829`
+  kanıtıyla geçti. Commit ve entegrasyon ayrı kullanıcı yetkisini bekliyor.

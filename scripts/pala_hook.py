@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 from pala_store import WorkflowStore
+from pala_snapshot import build_snapshot
 
 MANIFEST = Path(".codex/pala-project.json")
 WORKFLOW = Path(".codex/pala-workflow.json")
@@ -101,6 +102,13 @@ def local_health(root: Path) -> dict[str, str]:
     }
 
 
+def snapshot_report(root: Path, session: str | None = None) -> dict[str, object]:
+    try:
+        return build_snapshot(root, session=session).to_dict()
+    except (OSError, ValueError, json.JSONDecodeError):
+        return {}
+
+
 def session_context(
     documents: dict[str, object],
     workflow: dict[str, object] | None,
@@ -169,24 +177,37 @@ def main() -> int:
             save_workflow(root, workflow)
         session_id = event.get("session_id")
         if isinstance(session_id, str) and session_id.strip():
-            WorkflowStore(root).heartbeat(session_id, "pre_compact")
+            WorkflowStore(root).handle_event(session_id, "pre_compact")
         emit({"continue": True})
         return 0
 
     if event_name == "SessionStart":
-        workflow = load_workflow(root)
         session_id = event.get("session_id")
         if isinstance(session_id, str) and session_id.strip():
-            WorkflowStore(root).heartbeat(session_id, "session_start")
-            owned_ticket = WorkflowStore(root).active_for_session(session_id)
-            if owned_ticket is not None:
-                workflow = {
-                    "active_ticket": owned_ticket.get("ticket"),
-                    "next_action": owned_ticket.get("next_action"),
-                    "dirty": owned_ticket.get("dirty"),
-                    "blockers": [],
-                }
-        reconciliation = reconciliation_report(root, payload, workflow)
+            WorkflowStore(root).handle_event(session_id, "session_start")
+        snapshot = snapshot_report(
+            root,
+            session_id if isinstance(session_id, str) and session_id.strip() else None,
+        )
+        snapshot_ticket = snapshot.get("active_ticket")
+        workflow = None
+        if isinstance(snapshot_ticket, dict):
+            workflow = {
+                "active_ticket": snapshot_ticket.get("ticket"),
+                "next_action": snapshot_ticket.get("next_action"),
+                "dirty": snapshot_ticket.get("dirty"),
+                "blockers": snapshot_ticket.get("blockers", []),
+            }
+        snapshot_findings = snapshot.get("findings", [])
+        reconciliation_reasons = [
+            str(item.get("code"))
+            for item in snapshot_findings
+            if isinstance(item, dict) and item.get("severity") == "error"
+        ]
+        reconciliation = {
+            "needed": bool(reconciliation_reasons),
+            "reasons": reconciliation_reasons,
+        }
         compacted = event.get("source") == "compact" or bool(
             workflow and workflow.get("needs_reconcile")
         )
@@ -206,7 +227,7 @@ def main() -> int:
     if event_name == "SessionEnd":
         session_id = event.get("session_id")
         if isinstance(session_id, str) and session_id.strip():
-            WorkflowStore(root).heartbeat(session_id, "session_end")
+            WorkflowStore(root).handle_event(session_id, "session_end")
         emit({})
         return 0
 
@@ -214,7 +235,11 @@ def main() -> int:
         if event.get("stop_hook_active"):
             emit({})
             return 0
-        workflow = load_workflow(root)
+        session_id = event.get("session_id")
+        if isinstance(session_id, str) and session_id.strip():
+            workflow = WorkflowStore(root).active_for_session(session_id)
+        else:
+            workflow = load_workflow(root)
         if workflow and workflow.get("dirty"):
             emit(
                 {

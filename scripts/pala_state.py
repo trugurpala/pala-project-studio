@@ -473,7 +473,10 @@ def hook_safety_report(root: Path) -> dict[str, object]:
 
 
 def doctor_report(
-    root: Path, manifest: dict[str, object] | None = None, session: str | None = None
+    root: Path,
+    manifest: dict[str, object] | None = None,
+    session: str | None = None,
+    plugin_root: Path | None = None,
 ) -> dict[str, object]:
     python_info = {
         "executable": os.environ.get("PYTHON", sys.executable),
@@ -481,7 +484,7 @@ def doctor_report(
     }
 
     git_root = run_git(root, "rev-parse", "--show-toplevel")
-    plugin_root = root.resolve()
+    plugin_root = (plugin_root or Path(__file__).resolve().parent.parent).resolve()
     status = {
         "plugin": {
             "root": str(plugin_root),
@@ -521,6 +524,13 @@ def doctor_report(
             status["project_registration"]["registered"] = True
             status["project_registration"]["document_mapping"] = manifest.get("documents")
 
+    snapshot = snapshot_dict(root, session=session)
+    snapshot_ticket = (
+        snapshot.get("active_ticket") if isinstance(snapshot, dict) else None
+    )
+    snapshot_findings = (
+        snapshot.get("findings", []) if isinstance(snapshot, dict) else []
+    )
     workflow = None
     if status["project_registration"]["registered"]:
         try:
@@ -528,18 +538,26 @@ def doctor_report(
         except (OSError, ValueError, json.JSONDecodeError):
             workflow = None
         status["hook_discovery"]["active_ticket"] = (
-            workflow.get("active_ticket") if isinstance(workflow, dict) else None
+            snapshot_ticket.get("ticket") if isinstance(snapshot_ticket, dict) else None
         )
-        reconciliation = (
-            reconciliation_report(root, manifest, workflow)
-            if isinstance(workflow, dict)
-            else None
-        )
+        reconciliation = {
+            "needed": any(
+                isinstance(item, dict) and item.get("severity") == "error"
+                for item in snapshot_findings
+            ),
+            "reasons": [
+                str(item.get("code"))
+                for item in snapshot_findings
+                if isinstance(item, dict) and item.get("severity") == "error"
+            ],
+        }
         status["hook_discovery"]["needs_reconcile"] = (
             reconciliation["needed"] if reconciliation is not None else None
         )
         status["hook_discovery"]["dirty"] = (
-            bool(workflow and workflow.get("dirty")) if workflow else None
+            bool(snapshot_ticket and snapshot_ticket.get("dirty"))
+            if isinstance(snapshot_ticket, dict)
+            else None
         )
     if session is not None:
         from pala_store import WorkflowStore
@@ -555,15 +573,56 @@ def doctor_report(
             else None
         )
 
-    status["healthy"] = (
-        status["plugin"]["manifest_present"]
-        and status["plugin"]["hooks_present"]
-        and status["git"]["installed"]
-        and status["project_registration"]["registered"]
-        and status["hook_safety"]["status"] == "passed"
+    tracked_dynamic = run_git(
+        root, "ls-files", "--", ".codex/plugin-data/pala/v3"
     )
+    project_findings = (
+        list(snapshot.get("findings", [])) if isinstance(snapshot, dict) else []
+    )
+    if tracked_dynamic:
+        project_findings.append(
+            {
+                "code": "TRACKED_DYNAMIC_STATE",
+                "severity": "error",
+                "source": "git-index",
+                "expected": "ignored runtime state",
+                "observed": tracked_dynamic.splitlines()[0],
+                "action": "Untrack v3 runtime records without deleting local files.",
+            }
+        )
+    installation_ready = (
+        status["plugin"]["manifest_present"] and status["plugin"]["hooks_present"]
+    )
+    project_ready = (
+        status["git"]["installed"]
+        and status["project_registration"]["registered"]
+        and not any(
+            isinstance(item, dict) and item.get("severity") == "error"
+            for item in project_findings
+        )
+    )
+    status["snapshot"] = snapshot
+    status["installation_health"] = {
+        "status": "ready" if installation_ready else "attention_required",
+        "root": str(plugin_root),
+    }
+    status["project_health"] = {
+        "status": "ready" if project_ready else "attention_required",
+        "root": str(root.resolve()),
+        "findings": project_findings,
+    }
+    status["healthy"] = installation_ready and project_ready
 
     return status
+
+
+def snapshot_dict(root: Path, session: str | None = None) -> dict[str, object] | None:
+    try:
+        from pala_snapshot import build_snapshot
+
+        return build_snapshot(root, session=session).to_dict()
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
 
 
 def worktree_entry_digest(path: Path) -> str:
@@ -758,6 +817,18 @@ def load_workflow(root: Path) -> dict[str, object]:
 def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -> None:
     if not ticket.strip() or not goal.strip():
         raise ValueError("ticket and goal must be non-empty")
+    try:
+        from pala_snapshot import build_snapshot
+
+        snapshot = build_snapshot(root, session=session)
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        raise ValueError(f"SNAPSHOT_UNAVAILABLE: {error}") from error
+    blocking = [item.code for item in snapshot.findings if item.severity == "error"]
+    if blocking:
+        raise ValueError(
+            "project state requires reconciliation: "
+            + ", ".join(dict.fromkeys(blocking))
+        )
     if session is not None:
         from pala_store import WorkflowStore
 
@@ -846,6 +917,7 @@ def discover(root: Path) -> dict[str, object]:
             "open_source": "docs/codex/OPEN_SOURCE.md",
             "demo": "reports/OWNER_DEMO.md",
         },
+        "snapshot": snapshot_dict(root),
     }
 
 
@@ -947,44 +1019,33 @@ def validate(root: Path) -> int:
 
 def context_report(root: Path, session: str | None = None) -> dict[str, object]:
     manifest = load_manifest(root)
-    try:
-        workflow = load_workflow(root)
-    except (OSError, ValueError, json.JSONDecodeError):
-        workflow = {}
-    if session is not None:
-        from pala_store import WorkflowStore
-
-        owned_ticket = WorkflowStore(root).active_for_session(session)
-        if owned_ticket is not None:
-            workflow = {
-                "schema_version": WORKFLOW_SCHEMA_VERSION,
-                "active_ticket": owned_ticket.get("ticket"),
-                "goal": owned_ticket.get("goal"),
-                "next_action": owned_ticket.get("next_action"),
-                "dirty": owned_ticket.get("dirty"),
-                "needs_reconcile": False,
-                "checkpoint_basis": None,
-                "verification_tier": "not-run",
-                "blockers": [],
-            }
     documents = manifest.get("documents")
     safe_documents = documents if isinstance(documents, dict) else {}
-    reconciliation = (
-        reconciliation_report(root, manifest, workflow)
-        if workflow
-        else {"needed": True, "reasons": ["workflow state is missing"]}
-    )
+    snapshot = snapshot_dict(root, session=session)
+    ticket = snapshot.get("active_ticket") if isinstance(snapshot, dict) else None
+    findings = snapshot.get("findings", []) if isinstance(snapshot, dict) else []
+    errors = [
+        str(item.get("code"))
+        for item in findings
+        if isinstance(item, dict) and item.get("severity") == "error"
+    ]
+    reconciliation = {"needed": bool(errors), "reasons": errors}
     return {
-        "active_ticket": workflow.get("active_ticket"),
-        "goal": workflow.get("goal"),
-        "next_action": workflow.get("next_action"),
-        "dirty": bool(workflow.get("dirty")),
-        "verification_tier": workflow.get("verification_tier", "not-run"),
-        "blockers": workflow.get("blockers", []),
+        "active_ticket": ticket.get("ticket") if isinstance(ticket, dict) else None,
+        "goal": ticket.get("goal") if isinstance(ticket, dict) else None,
+        "next_action": ticket.get("next_action") if isinstance(ticket, dict) else None,
+        "dirty": bool(ticket and ticket.get("dirty")),
+        "verification_tier": (
+            ticket.get("verification_tier", "not-run")
+            if isinstance(ticket, dict)
+            else "not-run"
+        ),
+        "blockers": ticket.get("blockers", []) if isinstance(ticket, dict) else [],
         "reconciliation": reconciliation,
         "read_first": safe_documents.get("status"),
         "active_plan": safe_documents.get("plan"),
         "project": safe_documents.get("project"),
+        "snapshot": snapshot,
     }
 
 
@@ -1010,6 +1071,11 @@ def parser() -> argparse.ArgumentParser:
     begin_parser.add_argument("--ticket", required=True)
     begin_parser.add_argument("--goal", required=True)
     begin_parser.add_argument("--session-key")
+    migrate_parser = subparsers.add_parser("migrate-state")
+    migrate_parser.add_argument("--cwd", default=".")
+    migrate_mode = migrate_parser.add_mutually_exclusive_group(required=True)
+    migrate_mode.add_argument("--dry-run", action="store_true")
+    migrate_mode.add_argument("--apply", action="store_true")
     checkpoint_parser = subparsers.add_parser("checkpoint")
     checkpoint_parser.add_argument("--cwd", default=".")
     checkpoint_parser.add_argument("--next-action", required=True)
@@ -1074,6 +1140,22 @@ def main() -> int:
             return 2
         print(str(root / WORKFLOW))
         return 0
+    if args.command == "migrate-state":
+        from pala_store import WorkflowStore
+
+        result = WorkflowStore(root).migrate_v2(apply=args.apply)
+        print(
+            json.dumps(
+                {"status": result.status, "record": result.record},
+                ensure_ascii=False,
+            )
+        )
+        return 0 if result.status in {
+            "would_migrate",
+            "migrated",
+            "already_migrated",
+            "not_found",
+        } else 2
     if args.command == "checkpoint":
         if args.session_key:
             if not args.ticket:
@@ -1082,7 +1164,12 @@ def main() -> int:
             from pala_store import WorkflowStore
 
             result = WorkflowStore(root).checkpoint(
-                args.ticket, args.session_key, args.next_action
+                args.ticket,
+                args.session_key,
+                args.next_action,
+                verification=args.verification,
+                tier=args.tier,
+                blockers=args.blocker,
             )
             print(json.dumps({"status": result.status, "record": result.record}, ensure_ascii=False))
             return 0 if result.status == "checkpointed" else 2

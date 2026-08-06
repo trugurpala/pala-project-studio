@@ -60,8 +60,19 @@ komut çalışır.
 
 ## ADR-010 — V3 ticket durumu oturum sahipliğiyle ayrılır
 
-Pala v3 dinamik ticket kayıtları yalnız ignore edilen
-`.codex/plugin-data/pala/v3/` altında tutulur. Ham Codex `session_id` hiçbir
-JSON kaydına yazılmaz; ticket sahibi SHA-256'nın sınırlı özetidir. Her ticket
-ayrı atomik kilit kullanır. Eski v2 workflow dosyası yerinde ve okunabilir
-kalır; v3 yalnız gözlemci migration marker'ı yazar.
+Pala v3 dinamik ticket kayıtları Git projelerinde ortak `git-common-dir`
+altındaki Pala alanında; Git olmayan kontrollü çalışma/test ortamlarında ignore
+edilen `.codex/plugin-data/pala/v3/` fallback'inde tutulur. Ham Codex
+`session_id` hiçbir JSON kaydına yazılmaz; ticket sahibi SHA-256'nın sınırlı
+özetidir. Her ticket ayrı atomik kilit kullanır. Eski v2 workflow dosyası
+yerinde ve okunabilir kalır; v3 yalnız gözlemci migration marker'ı yazar.
+
+## ADR-011 — Truth Core tek snapshot ve worktree-aware kimlik kullanır
+
+Pala 0.5A'da `discover`, `context`, `doctor` ve lifecycle hook aynı immutable
+`ProjectSnapshot` kararını tüketir. `RepoIdentity`, Git common-dir özetini;
+`WorktreeIdentity`, checkout'a özgü Git-dir özeti, branch ve HEAD'i taşır.
+Devam hedefi açık/mevcut worktree, session-owned dirty v3 kayıt, tek uyumlu
+aktif kayıt ve checkpoint sırasıyla seçilir. Birden fazla bağımsız adayda
+`WORKTREE_AMBIGUOUS` üretilir; mtime veya faz adına göre tahmin yapılmaz.
+Kurulum sağlığı hedef proje sağlığından ayrı raporlanır.

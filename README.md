@@ -131,14 +131,28 @@ Proje kaydı ve kontrol noktaları için:
 ```powershell
 py -3 scripts/pala_state.py discover --cwd C:\proje
 py -3 scripts/pala_state.py register --cwd C:\proje
+py -3 scripts/pala_state.py migrate-state --cwd C:\proje --dry-run
+py -3 scripts/pala_state.py migrate-state --cwd C:\proje --apply
 py -3 scripts/pala_state.py begin --cwd C:\proje --ticket F2-T1 --goal "Aktif hedef"
-py -3 scripts/pala_state.py checkpoint --cwd C:\proje --tier ticket --next-action "Sıradaki iş"
+py -3 scripts/pala_state.py checkpoint --cwd C:\proje --tier ticket --next-action "Sıradaki iş" --verification "unit: passed"
 py -3 scripts/pala_state.py context --cwd C:\proje
 ```
 
 Komut seçeneklerinin güncel biçimi için `--help` kullanın. Projenin kendi
 durum ve plan belgeleri kaynak gerçektir; `.codex` altındaki Pala dosyaları
 küçük bir çalışma kontrol noktasıdır.
+
+`discover`, `context`, `doctor` ve hook aynı sürümlü proje fotoğrafını kullanır.
+Fotoğraf ortak Git deposunu bağlı worktree'lerden ayırır; iki bağımsız devam
+adayı varsa `WORKTREE_AMBIGUOUS` bildirir ve seçim yapmaz. `migrate-state
+--dry-run` hiçbir dosyayı değiştirmez; `--apply` v2 kaydını olduğu gibi bırakıp
+v3 gözlem işaretini atomik ve idempotent yazar. Bağlı worktree'ler aynı ticket
+sahipliğini Git common-dir altındaki secretsız Pala v3 alanından paylaşır.
+
+Doctor iki ayrı sonuç verir: **installation health** kurulu Pala paketini,
+**project health** ise hedef projenin kayıt, Git ve uzlaştırma durumunu anlatır.
+Bir uygulama deposunda Pala paket dosyalarının bulunmaması artık kurulumun eksik
+olduğu anlamına gelmez.
 
 Checkpoint, değişen dosya içeriklerini belleğe kopyalamaz; yol sayısı ve
 birleşik SHA-256 özeti saklar. Checkpoint'ten sonra aynı değişikliklerin atomik

@@ -1,14 +1,15 @@
 # Pala Project Studio Durumu
 
 - Güncelleme: 2026-08-06
-- Aktif milestone: M19 — Pala 0.5 Truthful Orchestrator tasarımı (`in progress`).
-- Aktif ticket: PALA-052 — kanıtlı öneri mektubu ve üretici tasarım incelemesi.
+- Aktif milestone: M19 — Pala 0.5A Truth Core (`completed; integration pending`).
+- Aktif ticket: PALA-053 — uygulama ve bağımsız inceleme tamamlandı; entegrasyon bekliyor.
 - Son tamamlanan sonuç: Pala Project Studio `v0.4.4`, GitHub'da `Latest`
   release olarak yayınlandı ve yerel kurulum `0.4.4+codex.20260806055124`
   sürümüne güncellendi.
-- Çalışma ağacı: PALA-052 kapsamında yalnız tasarım ve kalıcı ilerleme
-  belgeleri değişiyor; ürün kodu uygulanmadı. Tasarım, üretici incelemesinden
-  sonra önce yalnız 0.5A Truth Core planına ayrılacak.
+- Çalışma ağacı: `codex/pala-0.5a-truth-core` bağlı worktree'sinde snapshot,
+  worktree identity, migration, checkpoint, typed reconciliation, session
+  isolation ve ayrık doctor katmanları uygulanıyor. Routing, installer/Core
+  ayrımı ve benchmark koduna dokunulmadı.
 - Doğrulama kanıtı:
   - `v0.4.4` release ve `pala-project-studio-0.4.4.zip` asset'i mevcut.
   - Release ZIP SHA-256:
@@ -27,9 +28,11 @@
   portable paket iki üretimde aynı
   `BA12F013F66E0DBE9876E39CABA19F31276A52306354CDB2FA8ED64D149CAA27`
   SHA-256 değerini verdi ve komut `exit 0` ile tamamlandı.
-- Engel: Kod uygulaması, üreticinin yazılı tasarım incelemesi tamamlanana kadar
-  brainstorming kapısında bekler.
-- Tek sonraki iş: Üretici
-  `docs/superpowers/specs/2026-08-06-pala-0.5-truthful-orchestrator-design.md`
-  belgesini onaylar veya değişiklik ister; onaydan sonra yalnız 0.5A Truth Core
-  implementation planı yazılır.
+- Taze uygulama kanıtı: Üç bağımsız inceleme turundaki tüm önemli bulgular
+  test-first kapatıldı. Tam `py -3 scripts/verify.py` milestone kapısı 189/189
+  geçti; iki portable üretim aynı
+  `809435D7FC11BF7FEE54F5472B931F8BE428E225867C219B8C03B4411A6E1829`
+  SHA-256 değerini verdi ve komut `exit 0` ile tamamlandı.
+- Engel: Yok.
+- Tek sonraki iş: 0.5A için commit/entegrasyon yetkisini üreticiden al.
+  0.5B planı ayrı onaydan önce başlamaz.
