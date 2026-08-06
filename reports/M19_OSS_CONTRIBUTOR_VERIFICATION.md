@@ -8,10 +8,12 @@ Draft PR: #6
 ## Verified in this implementation session
 
 - `scripts/pala_oss.py` is stdlib-only and contains no network or GitHub write execution.
-- Focused contract suite: **12/12 passed**.
+- Focused contract suite: **15/15 passed**.
 - Policy parser distinguishes AI prohibition, disclosure requirement, assignment,
-  DCO, CLA, issue-first and test-expectation signals.
-- Candidate scoring blocks security-sensitive work, existing implementation PRs,
+  DCO, CLA, issue-first and test-expectation signals, including common
+  `not allowed` / `not permitted` AI-ban wording.
+- Candidate scoring blocks security-sensitive work with conservative
+  security/vulnerability/CVE label matching, existing open implementation PRs,
   other assignees, unmet assignment requirements and repositories that forbid
   AI-assisted contributions.
 - Repository/issue text is handled as bounded data; it is never interpolated
@@ -19,15 +21,21 @@ Draft PR: #6
 - Approval fingerprint changes when the reviewed diff evidence changes.
 - Publish gate permits only a draft PR and requires human approval, a clean
   worktree, a 40-hex commit, all required gates passed, no open blockers and an
-  unchanged fingerprint.
+  unchanged fingerprint. A required `not-run` gate is explicitly rejected.
 - Fork, push and pull-request actions are represented as three separate
-  authorities and as argv arrays rather than shell strings.
+  authorities, each marked as requiring explicit authority, and as argv arrays
+  rather than shell strings.
 - Normal slash-containing refs such as `fix/issue-123` are accepted; traversal,
-  doubled separators and `.lock` refs are rejected.
+  leading option-like refs, doubled separators and `.lock` refs are rejected.
 - OSV-Scanner and zizmor discovery is optional and performs no installation or
   execution.
 - Pala's skill routes external contribution requests to the locked
   `oss-contribution.md` reference.
+- The orchestrator skill was re-counted after the M19 routing change. An initial
+  493-word regression would have broken the existing 450-word contract; the
+  skill was reduced to **434 words** while preserving required safety and
+  routing phrases.
+- README EOF newline was normalized after PR diff review.
 - Existing `scripts/verify.py` compiles every `scripts/*.py`, discovers every
   `scripts/test_*.py`, validates product JSON and builds the portable archive
   twice for byte-for-byte reproducibility.
