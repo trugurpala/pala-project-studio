@@ -158,12 +158,17 @@ class PalaOssTests(unittest.TestCase):
         self.assertTrue(all(gate["required"] is False for gate in result["optional_gates"]))
 
     def test_write_plan_is_argv_only_and_requires_separate_authority(self) -> None:
-        result = pala_oss.write_plan("owner/repo", "alice", "fix-123")
+        result = pala_oss.write_plan("owner/repo", "alice", "fix/issue-123")
         self.assertTrue(result["requires_explicit_authority"])
-        self.assertEqual(result["steps"][0][:3], ["gh", "repo", "fork"])
-        self.assertIn("--draft", result["steps"][1])
+        self.assertEqual(result["steps"][0]["authority"], "fork")
+        self.assertEqual(result["steps"][1]["authority"], "push")
+        self.assertEqual(result["steps"][2]["authority"], "pull_request")
+        self.assertIn("--draft", result["steps"][2]["argv"])
+        self.assertIn("HEAD:refs/heads/fix/issue-123", result["steps"][1]["argv"])
         with self.assertRaises(ValueError):
             pala_oss.write_plan("owner/repo;rm", "alice", "fix")
+        with self.assertRaises(ValueError):
+            pala_oss.write_plan("owner/repo", "alice", "../main")
 
 
 if __name__ == "__main__":
