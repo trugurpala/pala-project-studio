@@ -196,5 +196,5 @@
   regresyon kapsamını ekle ve düzeltmeyi 0.4.3 yama sürümü olarak yayınla.
   Gerçek Update kapısında bulunan Ollama soğuk başlangıç kusuru PALA-050'ye
   devredildi; yayımlanmış etiket değiştirilmedi.
-- [ ] PALA-050: Beklenen Ollama bağlantı reddi stderr çıktısını güvenle yakala,
+- [x] PALA-050: Beklenen Ollama bağlantı reddi stderr çıktısını güvenle yakala,
   yönetilen loopback sunucusunun başlayabilmesini doğrula ve 0.4.4'ü yayınla.

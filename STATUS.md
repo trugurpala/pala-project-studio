@@ -1,13 +1,15 @@
 # Pala Project Studio Durumu
 
-- Aktif milestone: M17 — 0.4.2–0.4.4 yama sürümleri (`in_progress`)
-- Aktif ticket: PALA-050 — Beklenen Ollama soğuk başlangıç stderr çıktısını
-  güvenle yakalayıp düzeltmeyi 0.4.4 olarak yayınlama.
-- Son tamamlanan sonuç: PALA-049 ile `uv` ilerleme çıktısı JSON protokolünden
-  ayrıldı ve 0.4.3 yayınlandı. Gerçek Update kapısında uzman işçiler `ready`
-  durumuna ulaştı; ardından Ollama loopback servisi kapalıyken beklenen bağlantı
-  reddi PowerShell'de sonlandırıcı hataya dönüştü. Etiket korunarak PALA-050'ye
-  aktarıldı.
+- Aktif milestone: M17 — 0.4.2–0.4.4 yama sürümleri (`completed`)
+- Aktif ticket: Yok.
+- Son tamamlanan sonuç: PALA-050 ile Ollama soğuk başlangıç stderr sınırı
+  güvenli native-process yakalamaya alındı ve Pala Project Studio 0.4.4 GitHub'da
+  `Latest` olarak yayınlandı. Uzaktan indirilen ZIP'in SHA-256 değeri
+  `F092D2066CE15BC6900C40B09B8AEDDB2939AB779C7178C9DED61092CD254B4F` ile
+  eşleşti. Gerçek ZIP üzerinden Update idempotent tamamlandı; Doctor çekirdek,
+  Codex, hook ve uzman işçileri `healthy/ready` raporladı. Yerel 154 test ile
+  GitHub Actions `31075515086` Windows/Ubuntu kapıları geçti. Türkçe manifest
+  metni tam değer ve bozuk-kodlama işaretleriyle regresyon kapsamındadır.
 - Bulunan ürün açığı: Geliştirme ortamındaki etkin Pala sürümü kaynak sürümünün
   gerisinde kalabildi. Bu, global kurucuda desteklenen Codex CLI üzerinden
   kurulum keşfi, update ve doctor kapılarının zorunlu olduğunu kanıtlıyor.
