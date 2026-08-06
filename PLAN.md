@@ -186,11 +186,15 @@
   `codex`, `node` ve `uv` kurulumundan bağımsızlaştır; testin sözleşmesi olan
   yönetilen kurulum döngüsünü deterministik araç keşfiyle doğrula.
 
-## M17 — 0.4.2 ve 0.4.3 yama sürümleri
+## M17 — 0.4.2–0.4.4 yama sürümleri
 
 - [x] PALA-048: PALA-046 ve PALA-047 düzeltmelerini 0.4.2 manifesti,
   yeniden üretilebilir portable ZIP, GitHub tag/release ve asset bütünlük
   kanıtıyla son kullanıcıya teslim et. Desteklenen Update akışında bulunan
   çalışma zamanı kusuru PALA-049'a devredildi; yayımlanmış etiket değiştirilmedi.
-- [ ] PALA-049: `uv` ilerleme çıktısını uzman kurucu JSON protokolünden ayır,
+- [x] PALA-049: `uv` ilerleme çıktısını uzman kurucu JSON protokolünden ayır,
   regresyon kapsamını ekle ve düzeltmeyi 0.4.3 yama sürümü olarak yayınla.
+  Gerçek Update kapısında bulunan Ollama soğuk başlangıç kusuru PALA-050'ye
+  devredildi; yayımlanmış etiket değiştirilmedi.
+- [ ] PALA-050: Beklenen Ollama bağlantı reddi stderr çıktısını güvenle yakala,
+  yönetilen loopback sunucusunun başlayabilmesini doğrula ve 0.4.4'ü yayınla.

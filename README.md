@@ -17,7 +17,7 @@ göre katmanlandırır.
 
 En güncel, taşınabilir sürümü indir:
 
-[Pala Project Studio 0.4.3'ü indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.4.3.zip)
+[Pala Project Studio 0.4.4'ü indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.4.4.zip)
 
 ZIP'i açtıktan sonra içindeki klasörde şu komutu çalıştır:
 

@@ -96,7 +96,7 @@ class UserExperienceContractTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        self.assertTrue(manifest["version"].startswith("0.4.3+codex."))
+        self.assertTrue(manifest["version"].startswith("0.4.4+codex."))
         self.assertEqual(
             manifest["repository"],
             "https://github.com/trugurpala/pala-project-studio",
@@ -279,6 +279,17 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertIn("--dry-run", wrapper)
         self.assertNotIn("Remove-Item -Path $installRoot -Recurse", wrapper)
         self.assertNotIn("Copy-Item -Path (Join-Path $pluginRoot", wrapper)
+
+    def test_windows_installer_contains_expected_ollama_probe_stderr(self) -> None:
+        wrapper = (PLUGIN_ROOT / "scripts" / "Install-Pala.ps1").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("function Invoke-PalaNativeCapture", wrapper)
+        self.assertIn('$ErrorActionPreference = "Continue"', wrapper)
+        self.assertIn('Invoke-PalaNativeCapture $ollama @("list")', wrapper)
+        self.assertIn('Invoke-PalaNativeCapture $ollama @("pull", "qwen3:4b-instruct")', wrapper)
+        self.assertNotIn("& $ollama list 2>&1", wrapper)
 
     def test_owner_demo_handoff_is_conditional_and_secrets_safe(self) -> None:
         reference = (REFERENCE_ROOT / "owner-demo-handoff.md").read_text(

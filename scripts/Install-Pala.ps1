@@ -26,6 +26,18 @@ function Resolve-PalaPython {
     throw "Python bulunamadi. Pala icin Python 3.10 veya ustu gereklidir."
 }
 
+function Invoke-PalaNativeCapture([string]$FilePath, [string[]]$Arguments) {
+    $previousErrorAction = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = (& $FilePath @Arguments 2>&1 | Out-String)
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorAction
+    }
+    return [pscustomobject]@{ Output = $output; ExitCode = $exitCode }
+}
+
 function Extract-PalaJson([string]$Text) {
     $start = $Text.IndexOf("{")
     if ($start -lt 0) { return $null }
@@ -128,16 +140,17 @@ function Invoke-PalaLocalModel {
     $env:OLLAMA_HOST = "127.0.0.1:11435"
     $env:OLLAMA_MODELS = Join-Path $palaStateRoot "experts\ollama\0.32.6\models"
     $env:OLLAMA_KEEP_ALIVE = "0"
-    $list = (& $ollama list 2>&1 | Out-String)
-    if ($LASTEXITCODE -ne 0) {
+    $listResult = Invoke-PalaNativeCapture $ollama @("list")
+    if ($listResult.ExitCode -ne 0) {
         Start-Process -FilePath $ollama -ArgumentList "serve" -WindowStyle Hidden | Out-Null
         Start-Sleep -Seconds 2
-        $list = (& $ollama list 2>&1 | Out-String)
+        $listResult = Invoke-PalaNativeCapture $ollama @("list")
     }
-    if ($LASTEXITCODE -ne 0) { throw "Pala Ollama loopback sunucusu baslatilamadi." }
-    if ($list -notmatch "qwen3:4b-instruct\s+0edcdef34593") {
-        & $ollama pull "qwen3:4b-instruct"
-        if ($LASTEXITCODE -ne 0) { throw "Pala Qwen3 modeli indirilemedi." }
+    if ($listResult.ExitCode -ne 0) { throw "Pala Ollama loopback sunucusu baslatilamadi." }
+    if ($listResult.Output -notmatch "qwen3:4b-instruct\s+0edcdef34593") {
+        Write-Host "[Pala] Yerel Qwen3 modeli hazirlaniyor."
+        $pullResult = Invoke-PalaNativeCapture $ollama @("pull", "qwen3:4b-instruct")
+        if ($pullResult.ExitCode -ne 0) { throw "Pala Qwen3 modeli indirilemedi." }
     }
 }
 
