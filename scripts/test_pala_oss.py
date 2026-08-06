@@ -37,6 +37,12 @@ class PalaOssTests(unittest.TestCase):
         self.assertTrue(result["assignment_required"])
         self.assertTrue(result["dco_required"])
 
+    def test_policy_detects_not_allowed_ai_wording(self) -> None:
+        result = pala_oss.analyze_policy({
+            "CONTRIBUTING.md": "AI-generated contributions are not allowed."
+        })
+        self.assertEqual(result["ai_policy"], "forbidden")
+
     def test_policy_distinguishes_ai_disclosure_from_ai_ban(self) -> None:
         result = pala_oss.analyze_policy({
             "CONTRIBUTING.md": "Please disclose AI assistance in the pull request description."
@@ -59,7 +65,7 @@ class PalaOssTests(unittest.TestCase):
             "body": "Steps to reproduce are documented. Add a regression test for expected behavior.",
             "labels": ["good first issue", "bug"],
             "assignees": [],
-            "linked_prs": [],
+            "open_pull_requests": [],
         }, policy, "alice")
         self.assertEqual(candidate["decision"], "eligible")
         self.assertGreaterEqual(candidate["score"], 70)
@@ -67,20 +73,22 @@ class PalaOssTests(unittest.TestCase):
         blocked = pala_oss.score_issue({
             "state": "open",
             "labels": ["good first issue"],
-            "linked_prs": [123],
+            "open_pull_requests": [123],
         }, policy, "alice")
         self.assertEqual(blocked["decision"], "blocked")
         self.assertEqual(blocked["score"], 0)
         self.assertIn("existing_pull_request", blocked["blockers"])
 
     def test_security_issue_is_blocked_from_automatic_contribution_flow(self) -> None:
-        result = pala_oss.score_issue(
-            {"state": "open", "labels": ["security"]},
-            pala_oss.analyze_policy({}),
-            "alice",
-        )
-        self.assertEqual(result["decision"], "blocked")
-        self.assertIn("security_sensitive_issue", result["blockers"])
+        for label in ("security", "type: security", "security-fix", "known vulnerability", "CVE 2026"):
+            with self.subTest(label=label):
+                result = pala_oss.score_issue(
+                    {"state": "open", "labels": [label]},
+                    pala_oss.analyze_policy({}),
+                    "alice",
+                )
+                self.assertEqual(result["decision"], "blocked")
+                self.assertIn("security_sensitive_issue", result["blockers"])
 
     def test_assignment_policy_requires_actor_assignment(self) -> None:
         policy = pala_oss.analyze_policy({"CONTRIBUTING.md": "You must be assigned before starting."})
@@ -134,6 +142,25 @@ class PalaOssTests(unittest.TestCase):
         self.assertFalse(refused["allowed"])
         self.assertIn("human_approval_required", refused["blockers"])
 
+    def test_publish_gate_blocks_not_run_required_gate(self) -> None:
+        request = {
+            "action": "draft_pr",
+            "human_approved": True,
+            "worktree_clean": True,
+            "repository": "owner/repo",
+            "issue_number": 4,
+            "base_branch": "main",
+            "head_branch": "fix-4",
+            "diff_sha256": "a" * 64,
+            "commit_sha": "b" * 40,
+            "gates": [{"name": "tests", "status": "not-run", "required": True}],
+            "blockers": [],
+        }
+        fingerprint = pala_oss.contribution_fingerprint(request)
+        result = pala_oss.publish_gate(request, fingerprint)
+        self.assertFalse(result["allowed"])
+        self.assertIn("required_gate_not_passed:tests", result["blockers"])
+
     def test_publish_gate_rejects_non_draft_actions_and_stale_approval(self) -> None:
         request = {
             "action": "merge",
@@ -176,15 +203,25 @@ class PalaOssTests(unittest.TestCase):
     def test_write_plan_is_argv_only_and_requires_separate_authority(self) -> None:
         result = pala_oss.write_plan("owner/repo", "alice", "fix/issue-123")
         self.assertTrue(result["requires_explicit_authority"])
-        self.assertEqual(result["steps"][0]["authority"], "fork")
-        self.assertEqual(result["steps"][1]["authority"], "push")
-        self.assertEqual(result["steps"][2]["authority"], "pull_request")
+        self.assertEqual([item["authority"] for item in result["steps"]], ["fork", "push", "pull_request"])
+        self.assertTrue(all(item["requires_explicit_authority"] for item in result["steps"]))
         self.assertIn("--draft", result["steps"][2]["argv"])
         self.assertIn("HEAD:refs/heads/fix/issue-123", result["steps"][1]["argv"])
-        with self.assertRaises(ValueError):
-            pala_oss.write_plan("owner/repo;rm", "alice", "fix")
-        with self.assertRaises(ValueError):
-            pala_oss.write_plan("owner/repo", "alice", "../main")
+
+    def test_write_plan_rejects_unsafe_repository_actor_and_refs(self) -> None:
+        bad_inputs = (
+            ("owner/repo;rm", "alice", "fix"),
+            ("../repo", "alice", "fix"),
+            ("owner/repo", "..", "fix"),
+            ("owner/repo", "-alice", "fix"),
+            ("owner/repo", "alice", "../main"),
+            ("owner/repo", "alice", "-bad"),
+            ("owner/repo", "alice", "fix//issue"),
+        )
+        for repository, actor, branch in bad_inputs:
+            with self.subTest(repository=repository, actor=actor, branch=branch):
+                with self.assertRaises(ValueError):
+                    pala_oss.write_plan(repository, actor, branch)
 
 
 if __name__ == "__main__":
