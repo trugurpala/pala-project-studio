@@ -204,3 +204,13 @@
 - [x] PALA-051: Private depoda anonim Shields.io release sorgusunun ürettiği
   yanlış kırmızı rozeti düzelt; README, sürüm metinleri, release, durum belgeleri
   ve Pala checkpoint'ini güncel gerçek durumla uzlaştır.
+
+## M19 — Pala 0.5 Truthful Orchestrator tasarımı
+
+- [ ] PALA-052: Mevcut kaynak, gerçek Codex CLI/MCP durumu, linked-worktree
+  yeniden üretimi, resmî Codex manuali ve bağımsız denetimleri birleştirerek en
+  az 20 kanıtlı ürün önerisini `docs/superpowers/specs/2026-08-06-pala-0.5-truthful-orchestrator-design.md`
+  içinde üretici incelemesine sun.
+- [ ] Üretici yazılı tasarımı onayladıktan sonra önce yalnız `0.5A — Truth Core`
+  için test-first executable implementation planı yaz; routing, delivery ve
+  benchmark dilimlerini Truth Core kapısı geçmeden uygulama.
