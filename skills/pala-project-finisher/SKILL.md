@@ -1,6 +1,6 @@
 ---
 name: pala-project-finisher
-description: "Use for end-to-end software projects across Codex sessions: inspect, plan, rescue, implement, verify, run, continue, or finish. Do not use for ordinary chat or when another specialist skill/plugin is explicitly invoked without Pala."
+description: "Use for end-to-end software projects across Codex sessions: inspect, plan, rescue, implement, verify, run, continue, finish, or prepare open-source contributions. Do not use for ordinary chat or when another specialist skill/plugin is explicitly invoked without Pala."
 ---
 
 # Pala Project Finisher
@@ -55,7 +55,10 @@ Never run it from a hook; unavailable checks never block work.
    [web-delivery.md](references/web-delivery.md). Use
    [specialist-routing.md](references/specialist-routing.md) for current
    providers and [open-source-intake.md](references/open-source-intake.md) for
-   material external code.
+   material external code. When the requested outcome is contributing to an
+   external repository, also load
+   [oss-contribution.md](references/oss-contribution.md) before selecting or
+   editing a candidate issue.
 6. Follow [quality-gates.md](references/quality-gates.md): narrow checks during
    development, applicable ticket checks at checkpoint, and full gates only at
    planned milestone/release boundaries. Record exact evidence.
@@ -64,7 +67,9 @@ Never run it from a hook; unavailable checks never block work.
    context; confirm graph output against source and tests.
 7. For remote persistence read
    [github-persistence.md](references/github-persistence.md). GitHub is
-   optional and never a secret or transcript store.
+   optional and never a secret or transcript store. OSS contribution scouting
+   remains read-only until the user separately authorizes the relevant remote
+   write; policy and publish checks use `../../scripts/pala_oss.py`.
 8. Before stopping, checkpoint completed work and apply
    [runtime-delivery.md](references/runtime-delivery.md). For user-facing work
    or an explicitly requested ongoing demo, also apply
