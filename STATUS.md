@@ -1,12 +1,11 @@
 # Pala Project Studio Durumu
 
-- Aktif milestone: M16 — Doktor uzlaştırma doğruluğu (`completed`)
-- Aktif ticket: PALA-047 — CI kurulum/doctor/update çevrim testini host
-  araçlarından bağımsızlaştırma.
-- Son tamamlanan sonuç: CI başarısızlığı, üretim kodunda değil testin CI
-  ana makinesinde bulunmayan `codex`, `node` ve `uv` yollarını gerçek ortamdan
-  okumasındaydı. Test artık gerekli araç keşfini deterministik olarak mock'lar
-  ve yönetilen kurulum döngüsünün kendi sözleşmesine odaklanır.
+- Aktif milestone: M17 — 0.4.2 yama sürümü (`in_progress`)
+- Aktif ticket: PALA-048 — Son uzlaştırma ve CI düzeltmelerini 0.4.2 olarak
+  paketleyip GitHub'da yayınlama.
+- Son tamamlanan sonuç: PALA-046 ve PALA-047 kaynak düzeltmeleri `main`
+  dalında; yerel 151 test ve GitHub Actions Quality `31055148374` Windows/Ubuntu
+  kapıları geçti.
 - Bulunan ürün açığı: Geliştirme ortamındaki etkin Pala sürümü kaynak sürümünün
   gerisinde kalabildi. Bu, global kurucuda desteklenen Codex CLI üzerinden
   kurulum keşfi, update ve doctor kapılarının zorunlu olduğunu kanıtlıyor.

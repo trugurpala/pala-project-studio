@@ -185,3 +185,9 @@
 - [x] PALA-047: Kurulum/doctor/update çevrim testini CI ana makinesindeki
   `codex`, `node` ve `uv` kurulumundan bağımsızlaştır; testin sözleşmesi olan
   yönetilen kurulum döngüsünü deterministik araç keşfiyle doğrula.
+
+## M17 — 0.4.2 yama sürümü
+
+- [ ] PALA-048: PALA-046 ve PALA-047 düzeltmelerini 0.4.2 manifesti,
+  yeniden üretilebilir portable ZIP, GitHub tag/release ve asset bütünlük
+  kanıtıyla son kullanıcıya teslim et.
