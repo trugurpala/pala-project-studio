@@ -1,25 +1,29 @@
 # Pala Project Studio Durumu
 
-- Güncelleme: 2026-08-06
-- Aktif milestone: M18 — GitHub sunum güncelliği (`completed`)
-- Aktif ticket: Yok.
-- Son tamamlanan sonuç: Pala Project Studio `v0.4.4`, GitHub'da `Latest`
-  release olarak yayınlandı ve yerel kurulum `0.4.4+codex.20260806055124`
-  sürümüne güncellendi.
-- Çalışma ağacı: README release rozeti private depo davranışına uygun statik
-  sürüm rozetiyle değiştirildi; kullanıcıya dönük güncellik metni yenilendi ve
-  bu sözleşme sürüm uyumluluk testine eklendi. Eski ve çelişkili ara durum
-  notları bu kısa durum belgesinden kaldırıldı.
+- Güncelleme: 2026-08-07
+- Aktif milestone: M19 — Güvenli açık kaynak katkı akışı (`in_progress`).
+- Aktif ticket: PALA-052.
+- Son kararlı sürüm: `v0.4.4`; bu çalışma sürüm artırımı veya release değildir.
+- Çalışma branch'i: `feat/oss-contributor-m19`; draft PR: `#6`.
+- Uygulanan kapsam:
+  - GitHub connector/MCP salt-okunur scout sözleşmesi ve `gh` için ayrı yazma
+    yetkisi modeli kilitlendi.
+  - Ağsız `scripts/pala_oss.py` ile katkı politikası, açıklanabilir issue
+    puanlama, sert blocker'lar, approval fingerprint, draft-PR publish kapısı ve
+    opsiyonel OSV/zizmor keşfi eklendi.
+  - Pala skill'i, OSS katkı referansı, README, ADR-011 ve M19 plan kilidi
+    güncellendi.
 - Doğrulama kanıtı:
-  - `v0.4.4` release ve `pala-project-studio-0.4.4.zip` asset'i mevcut.
-  - Release ZIP SHA-256:
-    `F092D2066CE15BC6900C40B09B8AEDDB2939AB779C7178C9DED61092CD254B4F`.
-  - Gerçek ZIP üzerinden `Update` idempotent tamamlandı; `Doctor` çekirdek,
-    Codex, hook ve uzman işçileri `healthy/ready` raporladı.
-  - Son `main` kalite kapısı: GitHub Actions `31076145048`, Windows ve Ubuntu
-    `success`; yerel 154 test geçti.
-  - Shields.io'nun private repo için anonim dinamik sorgusu yanlış kırmızı
-    sonuç üretiyordu; yeni statik `v0.4.4` rozeti HTTP 200 ile doğru metni
-    render ediyor.
-- Engel: Yok.
-- Tek sonraki iş: Yeni kullanıcı isteğini bekle.
+  - M19 dar sözleşme paketi: `12/12 PASS`.
+  - `scripts/verify.py` bütün `scripts/*.py` dosyalarını derler ve
+    `scripts/test_*.py` testlerini otomatik keşfeder; portable paketleyici tüm
+    `scripts/*.py` ile `skills/` ağacını kapsar.
+  - Ayrıntılı kanıt: `reports/M19_OSS_CONTRIBUTOR_VERIFICATION.md`.
+  - Draft PR #6 açıldı, branch PR açıkken güncellendi ve bir kez kapatılıp
+    yeniden açıldı; buna rağmen bu connector oturumunda hiçbir GitHub Actions
+    koşusu oluşmadı. Bağlantıda yeni `workflow_dispatch` başlatma aracı yok.
+- Engel: Tam `Quality` kapısı `BLOCKED_EXTERNAL_TRIGGER`; PASS sayılmadı.
+- Tek sonraki iş: PR #6 için GitHub `Quality` workflow'unu gerçek GitHub
+  tetikleyicisiyle çalıştır; Ubuntu + Windows başarılıysa M19'u tamamla. Ardından
+  kurulu Windows owner-canary ve gerçek üçüncü taraf katkı canary'si ayrı dış
+  kabul kapılarıdır.
