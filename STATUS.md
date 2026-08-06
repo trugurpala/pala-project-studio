@@ -14,7 +14,9 @@
   - Pala skill'i, OSS katkı referansı, README, ADR-011 ve M19 plan kilidi
     güncellendi.
 - Doğrulama kanıtı:
-  - M19 dar sözleşme paketi: `12/12 PASS`.
+  - M19 dar sözleşme paketi: `15/15 PASS`.
+  - Orkestratör skill'i M19 eklemelerinden sonra 493 kelimeye çıkmıştı; mevcut
+    450-kelime sözleşmesini korumak için 434 kelimeye indirildi.
   - `scripts/verify.py` bütün `scripts/*.py` dosyalarını derler ve
     `scripts/test_*.py` testlerini otomatik keşfeder; portable paketleyici tüm
     `scripts/*.py` ile `skills/` ağacını kapsar.
