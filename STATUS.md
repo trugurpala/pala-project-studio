@@ -16,8 +16,8 @@
     `F092D2066CE15BC6900C40B09B8AEDDB2939AB779C7178C9DED61092CD254B4F`.
   - Gerçek ZIP üzerinden `Update` idempotent tamamlandı; `Doctor` çekirdek,
     Codex, hook ve uzman işçileri `healthy/ready` raporladı.
-  - Son yayımlanmış kod kapısı: GitHub Actions `31075515086`, Windows ve
-    Ubuntu `success`; yerel 154 test geçti.
+  - Son `main` kalite kapısı: GitHub Actions `31076145048`, Windows ve Ubuntu
+    `success`; yerel 154 test geçti.
   - Shields.io'nun private repo için anonim dinamik sorgusu yanlış kırmızı
     sonuç üretiyordu; yeni statik `v0.4.4` rozeti HTTP 200 ile doğru metni
     render ediyor.
