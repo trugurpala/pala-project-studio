@@ -33,8 +33,9 @@ Draft PR: #6
   `oss-contribution.md` reference.
 - The orchestrator skill was re-counted after the M19 routing change. An initial
   493-word regression would have broken the existing 450-word contract; the
-  skill was reduced to **434 words** while preserving required safety and
-  routing phrases.
+  skill was reduced to **434 words**. All existing required routing, task-mode,
+  human-contract and separate-authority substrings were checked again: missing
+  required substrings **0**.
 - README EOF newline was normalized after PR diff review.
 - Existing `scripts/verify.py` compiles every `scripts/*.py`, discovers every
   `scripts/test_*.py`, validates product JSON and builds the portable archive
@@ -43,6 +44,10 @@ Draft PR: #6
   `scripts/` and recursively includes `skills/`, so `pala_oss.py`, its tests and
   the OSS contribution reference are automatically covered by the standard
   package path.
+- Final branch comparison against `main`: **ahead 21, behind 0**, merge base is
+  the current M18 main head, and exactly **10 intended files** differ. Plugin
+  manifest, version, installer, hook manifest and managed-tool locks are not in
+  the M19 diff.
 
 ## Not yet passed
 
