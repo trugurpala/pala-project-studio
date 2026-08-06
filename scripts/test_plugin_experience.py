@@ -110,6 +110,29 @@ class UserExperienceContractTests(unittest.TestCase):
                 "Bu fikri doğru mimariyle çalışan bir projeye dönüştür.",
             ],
         )
+
+    def test_manifest_turkish_text_decodes_without_mojibake(self) -> None:
+        manifest = json.loads(
+            (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        interface = manifest["interface"]
+        decoded = "\n".join(
+            [
+                manifest["description"],
+                interface["shortDescription"],
+                interface["longDescription"],
+                *interface["defaultPrompt"],
+            ]
+        )
+
+        self.assertEqual(
+            interface["shortDescription"],
+            "Projeyi anlar, planlar, uygular ve doğrular.",
+        )
+        for marker in ("\ufffd", "Ã", "Ä", "Å", "dođrular"):
+            self.assertNotIn(marker, decoded)
         for prompt in manifest["interface"]["defaultPrompt"]:
             self.assertLessEqual(len(prompt), 128)
             self.assertNotIn("$", prompt)
