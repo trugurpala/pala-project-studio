@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import subprocess
 import sys
 import tempfile
 import unittest
 import zipfile
 from io import BytesIO
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -119,6 +121,21 @@ class ExpertInstallerTests(unittest.TestCase):
             self.assertTrue(args[-1].endswith("graphifyy-1.0-py3-none-any.whl"))
             self.assertEqual(environment["UV_TOOL_DIR"], str((state / "experts" / "python-tools").resolve()))
             self.assertEqual(environment["UV_TOOL_BIN_DIR"], str((state / "experts" / "python-bin").resolve()))
+
+    def test_python_tool_captures_uv_progress_outside_json_protocol(self) -> None:
+        payload = b"a verified wheel"
+        spec = {"version": "1.0", "source_url": "https://example.invalid/graphifyy-1.0-py3-none-any.whl", "sha256": hashlib.sha256(payload).hexdigest()}
+        with tempfile.TemporaryDirectory() as temp:
+            state = Path(temp) / "Pala"
+            self.installer.install_binary("graphify", spec, state, fetch=lambda _: payload)
+
+            with patch.object(self.installer.subprocess, "run") as run:
+                run.return_value = subprocess.CompletedProcess(("uv.exe",), 0, stdout="", stderr="Resolved 30 packages\n")
+                result = self.installer.install_python_tool("graphify", spec, state, uv="uv.exe")
+
+            self.assertEqual(result["state"], "ready")
+            self.assertTrue(run.call_args.kwargs["capture_output"])
+            self.assertTrue(run.call_args.kwargs["text"])
 
     def test_suite_installs_only_declared_experts_in_pala_state(self) -> None:
         wheel = b"a verified wheel"

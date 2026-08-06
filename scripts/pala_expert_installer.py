@@ -255,7 +255,16 @@ def install_python_tool(
         command.insert(7, "--no-build")
     command_tuple = tuple(command)
     if run is None:
-        completed = subprocess.run(command_tuple, check=False, env=environment, timeout=600)
+        completed = subprocess.run(
+            command_tuple,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=environment,
+            timeout=600,
+        )
         code = completed.returncode
     else:
         result = run(command_tuple, environment)
