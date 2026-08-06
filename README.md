@@ -46,6 +46,28 @@ gereksiz belgeleri her turda tekrar yüklemeyi ve ağır doğrulamayı yanlış 
 çalıştırmayı azaltmaktır. Ölçülmemiş hız ya da token tasarrufu yüzdesi vaat
 etmez.
 
+## Açık kaynağa katkı
+
+Bir vibe coder Pala'ya örneğin `bugün açık kaynağa katkı yapalım` diyebilir.
+Pala hedef depoda önce salt-okunur keşif yapar; katkı kurallarını, AI kullanım
+politikasını, atanma/claim şartlarını, CLA/DCO beklentisini, açık PR'ları ve
+issue sahipliğini kontrol eder. Güvenlik hassasiyetli, başkasına atanmış,
+mevcut uygulama PR'ı bulunan veya AI katkısını yasaklayan adayları otomatik
+katkı akışından çıkarır.
+
+Uygun iş seçildikten sonra değişiklik hedef projenin mevcut test ve kalite
+kapılarıyla doğrulanır. `scripts/pala_oss.py` politika, açıklanabilir issue
+puanlama, approval fingerprint ve draft-PR publish kapısını ağsız ve
+deterministik yürütür. OSV-Scanner ve zizmor yalnız zaten kuruluysa ve ilgili
+proje yüzeyi varsa isteğe bağlı ek kanıt sağlar; bunların yokluğu Pala'yı
+çalışamaz hâle getirmez.
+
+Fork, branch push ve draft PR üç ayrı uzak-yazma yetkisidir. Merge, tag,
+release, force-push, silme ve görünürlük değişimi bu akıştan otomatik yetki
+almaz. Ayrıntılı sözleşme için
+[OSS Contribution Flow](skills/pala-project-finisher/references/oss-contribution.md)
+belgesine bakın.
+
 ## Windows kurulumu
 
 GitHub deposunu indirdikten veya portable ZIP'i açtıktan sonra kök klasörde tek
