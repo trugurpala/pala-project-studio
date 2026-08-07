@@ -54,6 +54,10 @@ py -3 scripts\pala_state.py memory --cwd .
 - Hook içinde test, build, ağ veya GitHub işlemi çalıştırmaz.
 - Commit, push, PR, release ve deploy için ayrı kullanıcı yetkisini korur.
 
+Bu depoyu fork/PR ile geliştirmek için [CONTRIBUTING.md](CONTRIBUTING.md) ve
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) dosyalarına bak. Güvenlik bildirimleri:
+[SECURITY.md](SECURITY.md).
+
 Pala daha fazla token veya daha geniş bir Codex bağlamı oluşturamaz. Katkısı,
 gereksiz belgeleri her turda tekrar yüklemeyi ve ağır doğrulamayı yanlış yerde
 çalıştırmayı azaltmaktır. Ölçülmemiş hız ya da token tasarrufu yüzdesi vaat
