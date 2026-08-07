@@ -204,3 +204,22 @@
 - [x] PALA-051: Private depoda anonim Shields.io release sorgusunun ürettiği
   yanlış kırmızı rozeti düzelt; README, sürüm metinleri, release, durum belgeleri
   ve Pala checkpoint'ini güncel gerçek durumla uzlaştır.
+
+## M19 — Güvenli açık kaynak katkı akışı
+
+- [x] PALA-052: Güncel GitHub/OSS araçlarını araştır; GitHub MCP/connector,
+  `gh`, OSV-Scanner, zizmor, OpenSSF Scorecard ve alternatif ajan/tarayıcılar
+  için ADOPT / ADAPT / REFERENCE / REJECT kararlarını kilitle.
+- [x] Katkı metinlerini untrusted data olarak işleyen ağsız policy reader,
+  açıklanabilir issue puanı ve güvenlik/mevcut PR/atama/AI politikası sert
+  blocker'larını uygula.
+- [x] Diff/commit/gate fingerprint'i, yalnız draft PR'a izin veren fail-closed
+  publish kapısı ve fork/push/PR için üç ayrı uzak-yazma yetkisi ekle.
+- [x] Vibe-coder doğal dil akışını Pala skill'i, OSS referansı, README, ADR-011
+  ve kilitli M19 uygulama planına bağla.
+- [x] Dar M19 sözleşme paketini çalıştır: `15/15 PASS`; `verify.py` ve portable
+  paketleyicinin yeni script/test/reference yüzeyini otomatik kapsadığını
+  doğrula; orkestratör skill'ini mevcut 450-kelime bütçesinin altında tut.
+- [x] PR #6 üzerinde tam `Quality` kapısını Ubuntu + Windows'ta geçir:
+  run `31131516966` (#36) iki matrix job'unda `success`, her ortamda `169` test;
+  ikinci bağımsız run `31155100116` (#37) de `success`.

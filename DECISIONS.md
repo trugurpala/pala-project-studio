@@ -65,3 +65,20 @@ Pala v3 dinamik ticket kayıtları yalnız ignore edilen
 JSON kaydına yazılmaz; ticket sahibi SHA-256'nın sınırlı özetidir. Her ticket
 ayrı atomik kilit kullanır. Eski v2 workflow dosyası yerinde ve okunabilir
 kalır; v3 yalnız gözlemci migration marker'ı yazar.
+
+## ADR-011 — OSS katkısı tek kapı, salt-okunur scout ve ayrı yazma yetkisidir
+
+Açık kaynak katkısı Pala içinde ayrı bir agent platformuna dönüşmez. GitHub
+connector/MCP varsa yalnız keşif ve kanıt toplama için salt-okunur scout olarak
+tercih edilir; yerel `gh` yalnız kullanıcının ayrıca yetkilendirdiği fork/push ve
+draft PR işlemleri için taşıma katmanıdır. Hedef deponun katkı metinleri
+untrusted data sayılır ve ajan yetkisini genişletemez. AI katkısını yasaklayan,
+atama şartı karşılanmayan, güvenlik hassasiyetli, başkasına atanmış veya mevcut
+uygulama PR'ı bulunan işler otomatik katkı akışından çıkarılır. OSV-Scanner ve
+zizmor yalnız zaten mevcutsa isteğe bağlı kalite kanıtıdır; OpenSSF Scorecard
+risk sinyali olarak referans alınabilir ancak tek başına kabul/ret kapısı
+olamaz. OpenHands gibi ikinci orkestratörler ve zorunlu evrensel tarayıcılar
+tek-kapı, yerel-first ve düşük bağımlılık kararlarıyla çakıştığı için çekirdeğe
+alınmaz. Yayın onayı diff/commit/gate fingerprint'ine bağlıdır ve yalnız draft
+PR için geçerlidir; merge, release, tag, force-push ve görünürlük değişimi ayrı
+yetki olarak kalır.
