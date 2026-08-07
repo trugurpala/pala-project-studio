@@ -248,6 +248,19 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertFalse(report["uv"]["ready"])
             self.assertIn("hooks_next_step", report)
             self.assertIn("/hooks", report["hooks_next_step"])
+            self.assertIn("hook_safety=passed", report["hooks_next_step"])
+            self.assertIn("dosya", report["hooks_next_step"].casefold())
+            self.assertIn(
+                "hook_safety=passed",
+                self.installer.hooks_next_step_message(
+                    {"hook_safety": {"status": "passed"}}
+                ),
+            )
+            blocked = self.installer.hooks_next_step_message(
+                {"hook_safety": {"status": "blocked"}}
+            )
+            self.assertIn("hook_safety=blocked", blocked)
+            self.assertIn("/hooks", blocked)
 
     def test_doctor_reports_verified_pala_owned_expert_artifact(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-experts-") as temp:

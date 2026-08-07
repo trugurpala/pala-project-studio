@@ -2,7 +2,14 @@
 
 ![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
 [![Release v0.7.1](https://img.shields.io/badge/release-v0.7.1-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.7.1)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-index-0A66C2)](docs/README.md)
+
+**English (30 seconds):** Pala is a **Codex plugin** (not a ChatGPT Plus chat
+add-on) that keeps long software projects durable across sessions: memory
+contract, local status HTML, SQLite catalog, evidence-gated verification, and a
+single Windows install door. It does **not** enlarge model context or quotas.
+First path: [docs/VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md).
 
 Pala Project Studio, Codex'in uzun soluklu yazılım projelerinde aktif işi
 kaybetmeden ilerlemesine yardımcı olan Türkçe odaklı bir proje yürütme
@@ -14,8 +21,12 @@ göre katmanlandırır.
   ayrımı; 0.7 yerel store üzerine). Windows kurucusu, taşınabilir ZIP, `Update` ve
   `Doctor` akışları 0.4.x üzerinde doğrulanmıştır; bellek sözleşmesi, durum sayfası
   ve yerel store `verify` ile kanıtlanır.
+- Değişiklik günlüğü: [CHANGELOG.md](CHANGELOG.md) · Destek: [SUPPORT.md](SUPPORT.md)
+  · Doküman dizini: [docs/README.md](docs/README.md)
 
 ## Hızlı başlangıç
+
+**Vibe / first 10 minutes:** [docs/VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md)
 
 En güncel, taşınabilir sürümü indir:
 
@@ -29,6 +40,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 
 Pala kurulum sırasında ne yapacağını açıkça gösterir. `-WhatIf` ile önce
 önizleyebilir, `-Mode Doctor` ile kurulumun sağlığını kontrol edebilirsin.
+
+Sonra: Codex Work → `/hooks` (Pala'ya güven) → **yeni sohbet** → yazılım işi söyle.
 
 Durum sayfasını (sol menülü yerel HTML) üretip açmak için:
 
@@ -70,9 +83,18 @@ Ayrıntı: [İç kurulum](docs/PALA_INTERNAL_PROVISION.md).
 - Hook içinde test, build, ağ veya GitHub işlemi çalıştırmaz.
 - Commit, push, PR, release ve deploy için ayrı kullanıcı yetkisini korur.
 
+## Ne değildir? / What this is not
+
+| Claim | Reality |
+| --- | --- |
+| ChatGPT Plus chat plugin | **No** — Codex / Work only ([PALA_EVERYWHERE](docs/PALA_EVERYWHERE.md)) |
+| Bigger context / quota | **No** — selects less wasteful context |
+| Hook auto-commits | **No** — hooks stay short and local |
+| Soft “done” | **No** — evidence labels only |
+
 Bu depoyu fork/PR ile geliştirmek için [CONTRIBUTING.md](CONTRIBUTING.md) ve
 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) dosyalarına bak. Güvenlik bildirimleri:
-[SECURITY.md](SECURITY.md).
+[SECURITY.md](SECURITY.md). Destek: [SUPPORT.md](SUPPORT.md).
 
 Pala daha fazla token veya daha geniş bir Codex bağlamı oluşturamaz. Katkısı,
 gereksiz belgeleri her turda tekrar yüklemeyi ve ağır doğrulamayı yanlış yerde

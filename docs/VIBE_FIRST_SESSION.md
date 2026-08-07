@@ -13,13 +13,27 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Doctor
 ```
 
-Doctor'da çekirdek `plugin_ready` / `healthy` beklenir. Hook güveni atlanmaz.
+Doctor'da çekirdek `plugin_ready` / `healthy` beklenir.
 
-3. Codex'te `/hooks` ile Pala hook'larını güven; **yeni sohbet** aç.
-4. Proje klasöründe yazılım işi söyle (ör. “bu projeyi sürdür”) veya skill
-   `pala-project-finisher` çağır.
-5. Beklenen: Status HTML / rapor yüzeyi; sonra discover → aktif ticket;
-   checkpoint. Hook kendi başına test/build/ağ çalıştırmaz.
+**Doctor `hook_safety=passed` ≠ Codex `/hooks` trust.**  
+`hook_safety` yalnız dosya kontrolüdür (`hooks.json` + `pala_hook.py` + workflow).
+Kullanıcı trust Codex Work'te interaktiftir; `codex exec` ile tamamlanmaz.
+
+3. Codex Work'te `/hooks` ile Pala hook'larını **güven**; **yeni sohbet** aç
+   (başlık önerisi: **Kodlamaya başla**). Eski `/hooks`'ta takılı thread'i zorlama.
+4. İlk mesaj (yapıştır):
+
+```
+Bu projeyi sürdür. Önce mevcut durumu oku, aktif işi bul, yetkilendirilmiş yerel uygulamaya kaldığı yerden devam et.
+
+Kapsam: read-first. Commit/push/release yapma. Hook içinde test/build başlatma.
+STATUS.md ve docs/VIBE_FIRST_SESSION.md ile uyumlu ilerle; tek sonraki işi söyle.
+```
+
+5. Beklenen ilk sonuç:
+   - STATUS/PROGRESS/workflow okunur
+   - Aktif ticket yoksa açıkça söylenir (uydurma ticket yok)
+   - Commit/push/verify otomatik başlamaz
 6. İsteğe bağlı dışarıdan:
 
 ```powershell
@@ -34,5 +48,6 @@ Yerel store: `%USERPROFILE%\Desktop\Codex\pala.sqlite`.
 - ChatGPT Plus sohbete ZIP yapıştırarak kurulum
 - Ölçülmemiş “daha hızlı / daha az token” yüzdesi
 - Hook içinden commit, push, release veya deploy
+- Doctor yeşil = tam yetki iddiası
 
 Dağıtım sınırları: [PALA_EVERYWHERE.md](PALA_EVERYWHERE.md).

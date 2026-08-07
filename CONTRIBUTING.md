@@ -23,6 +23,9 @@ py -3 -m unittest scripts.test_pala_tools scripts.test_plugin_experience scripts
 py -3 scripts\verify.py
 ```
 
+Human help: [SUPPORT.md](SUPPORT.md) · Release history: [CHANGELOG.md](CHANGELOG.md) ·
+Docs index: [docs/README.md](docs/README.md)
+
 Optional install into your Codex profile (Windows):
 
 ```powershell

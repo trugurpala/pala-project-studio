@@ -11,8 +11,11 @@
   "license": "MIT",
   "keywords": [
     "codex",
+    "openai-codex",
+    "agent-skills",
     "project-management",
     "verification",
+    "local-first",
     "turkish"
   ],
   "skills": "./skills/",
