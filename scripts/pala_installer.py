@@ -690,6 +690,34 @@ def adapter_inventory(source: Path, state_root: Path | None = None) -> dict[str,
     return inventory
 
 
+def hooks_next_step_message(project: dict[str, object] | None) -> str:
+    """Remind Codex Work UI trust; do not confuse with local hook_safety.
+
+    Doctor ``hook=passed`` means hooks.json + pala_hook.py + workflow exist.
+    Codex ``/hooks`` user trust is a separate interactive step and cannot be
+    completed from ``codex exec``.
+    """
+    safety = ""
+    if isinstance(project, dict):
+        hook_safety = project.get("hook_safety")
+        if isinstance(hook_safety, dict):
+            safety = str(hook_safety.get("status") or "").strip().casefold()
+    if safety == "passed":
+        return (
+            "hook_safety=passed (dosya kontrolu). Codex Work'te /hooks ile "
+            "kullanici trust verin; terminal/codex exec yetmez. Sonra yeni sohbet."
+        )
+    if safety == "blocked":
+        return (
+            "hook_safety=blocked (dosya). Once hooks.json/pala_hook/workflow "
+            "duzeltin; sonra Codex Work'te /hooks trust. Otomatik bypass yok."
+        )
+    return (
+        "Codex Work'te yeni sohbet acin ve /hooks ile Pala hook guvenini verin; "
+        "otomatik bypass yok. (Doctor hook= alani dosya guvenligidir, UI trust degil.)"
+    )
+
+
 def project_doctor(install_root: Path, project_root: Path) -> dict[str, object]:
     script = install_root / "scripts" / "pala_state.py"
     if not script.is_file():
@@ -765,10 +793,7 @@ def doctor_installation(
     )
     experts_ready = bool(node_path and uv_path)
     healthy = plugin_ready
-    hooks_next = (
-        "Codex'te yeni sohbet acin ve /hooks ile Pala hook guvenini verin; "
-        "otomatik bypass yok."
-    )
+    hooks_next = hooks_next_step_message(project)
     return {
         "schema_version": SCHEMA_VERSION,
         "healthy": healthy,

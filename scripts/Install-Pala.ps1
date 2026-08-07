@@ -92,12 +92,12 @@ function Show-PalaResult([pscustomobject]$Payload) {
             Write-Host "[Pala] $($Payload.codex_cli.hint)"
         }
         if ($null -ne $Payload.project.project_registration) {
-            Write-Host "[Pala] Proje kaydi=$($Payload.project.project_registration.registered), hook=$($Payload.project.hook_safety.status)"
+            Write-Host "[Pala] Proje kaydi=$($Payload.project.project_registration.registered), hook_safety=$($Payload.project.hook_safety.status)"
         }
         if ($null -ne $Payload.hooks_next_step -and "$($Payload.hooks_next_step)".Trim().Length -gt 0) {
             Write-Host "[Pala] $($Payload.hooks_next_step)"
         } elseif ($null -ne $Payload.project.hook_safety -and $Payload.project.hook_safety.status -ne "passed") {
-            Write-Host "[Pala] Hook guveni icin Codex'te /hooks komutunu acin; otomatik bypass yapilmadi."
+            Write-Host "[Pala] Hook dosya guvenligi veya Codex Work /hooks trust gerekir; otomatik bypass yok."
         }
         return
     }
