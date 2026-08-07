@@ -2,12 +2,12 @@
 
 Date: 2026-08-07
 Ticket: PALA-052
-Branch: `feat/oss-contributor-m19`
-Pull request: #6
+Feature PR: #6
+Main commit: `2a8ad32f434fc88069e5d8e17bb2cc9bbf2a6e27`
 
 ## Result
 
-**M19 source acceptance: PASS.**
+**M19 source delivery: PASS and merged to `main`.**
 
 The implementation preserves Pala's single-door, local-first architecture and
 adds a deterministic OSS contribution layer without bundling a second agent
@@ -47,14 +47,13 @@ platform or silently installing remote services.
   reproducibility.
 - `scripts/build_portable.py` automatically includes the new script/test and
   `skills/` reference through the standard package path.
-- Branch comparison against `main` is behind 0 at the M19 acceptance point and
-  the feature diff is limited to the intended OSS implementation/documentation
-  surface; manifest version, installer, hook manifest and managed-tool locks
-  were not changed by M19.
+- M19 intentionally did not modify the plugin version, installer, hook manifest
+  or managed-tool lock contract.
 
-## Full GitHub Quality evidence
+## GitHub Quality evidence
 
-Quality run `31131516966` (#36) completed successfully on both matrix jobs:
+Pull-request Quality run `31131516966` (#36) completed successfully on both
+matrix jobs:
 
 - Windows Server 2025 / Python 3.12.10: **169 tests passed**.
 - Ubuntu 24.04 / Python 3.12.13: **169 tests passed**.
@@ -63,8 +62,14 @@ Quality run `31131516966` (#36) completed successfully on both matrix jobs:
 - Ubuntu same-environment reproducible ZIP SHA-256:
   `1AF2C40FAC26064BBAC03704073E27CA030A33FCAA19611FEEC9F282AD751CF3`.
 
-A second independent pull-request Quality run `31155100116` (#37) also
-completed with conclusion **success**.
+Additional evidence:
+
+- Pull-request Quality `31155100116` (#37): **success**.
+- Final feature-head Quality `31155437330` (#40): **success**.
+- PR #6 squash-merged successfully into `main` as
+  `2a8ad32f434fc88069e5d8e17bb2cc9bbf2a6e27`.
+- Merge-post `main` Quality `31155491104` (#41): **success** on both Windows and
+  Ubuntu matrix jobs.
 
 The platform-specific ZIP hashes are not asserted to be equal across operating
 systems; the existing reproducibility contract requires byte-for-byte equality
@@ -76,7 +81,7 @@ both matrix jobs.
 ### Installed owner Windows/Codex canary
 
 This connected environment cannot launch the owner's actual Windows desktop,
-install the branch into that profile, or open a fresh Codex Desktop session.
+install current `main` into that profile, or open a fresh Codex Desktop session.
 
 Result: **NOT_RUN**.
 
@@ -89,11 +94,10 @@ may involve repository-specific policy or CLA/DCO acceptance.
 Result: **NOT_RUN**.
 
 These are post-M19 real-world acceptance activities. They are not reported as
-PASS until actually run, but they no longer block the M19 source acceptance.
+PASS until actually run, but they do not block the completed M19 source delivery.
 
 ## Completion boundary
 
-M19 source implementation and repository Quality acceptance are complete.
-Merge may proceed as the delivery action. Release/tag/version changes remain a
-separate milestone because M19 intentionally did not modify the product version
-or release contract.
+M19 source implementation, PR verification, merge and post-merge `main` Quality
+are complete. Release/tag/version changes remain a separate milestone because
+M19 intentionally did not modify the product version or release contract.
