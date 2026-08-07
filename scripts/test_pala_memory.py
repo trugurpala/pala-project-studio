@@ -187,6 +187,28 @@ class MemoryContractTests(unittest.TestCase):
             self.assertTrue((root / "TOOLING_DECISIONS.md").is_file())
             self.assertTrue((root / "DEBUGGING.md").is_file())
 
+    def test_plain_memory_report_is_human_readable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "AGENTS.md").write_text("# Agents\n", encoding="utf-8")
+            (root / "reports").mkdir()
+            (root / "reports" / "CURRENT_STATUS.md").write_text(
+                "# Status\n- Next: F2-T2\n", encoding="utf-8"
+            )
+            text = pala_memory.plain_memory_report(
+                root,
+                documents={
+                    "instructions": "AGENTS.md",
+                    "status": "reports/CURRENT_STATUS.md",
+                },
+                workflow={"active_ticket": "F2-T1", "next_action": "F2-T2"},
+                tool_counts={"installed": 1, "not_installed": 2},
+            )
+            self.assertIn("Pala hafıza durumu", text)
+            self.assertIn("Okuma sırası", text)
+            self.assertIn("SORUN", text)
+            self.assertIn("Araç özeti", text)
+
 
 if __name__ == "__main__":
     unittest.main()

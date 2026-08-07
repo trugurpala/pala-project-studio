@@ -1156,10 +1156,12 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     subparsers = result.add_subparsers(dest="command", required=True)
-    for command in ("discover", "validate", "instructions", "context"):
+    for command in ("discover", "validate", "instructions", "context", "memory"):
         child = subparsers.add_parser(command)
         child.add_argument("--cwd", default=".")
         if command == "context":
+            child.add_argument("--session-key")
+        if command == "memory":
             child.add_argument("--session-key")
     register_parser = subparsers.add_parser("register")
     register_parser.add_argument("--cwd", default=".")
@@ -1228,6 +1230,46 @@ def main() -> int:
                 )
             )
             return 0
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+    if args.command == "memory":
+        try:
+            from pala_memory import plain_memory_report
+
+            try:
+                report = context_report(root, getattr(args, "session_key", None))
+                documents = dict(load_manifest(root).get("documents") or {})
+                workflow = {
+                    "active_ticket": report.get("active_ticket"),
+                    "next_action": report.get("next_action"),
+                }
+                tool_counts = None
+                tool_memory = report.get("tool_memory")
+                if isinstance(tool_memory, dict) and isinstance(
+                    tool_memory.get("counts"), dict
+                ):
+                    tool_counts = tool_memory["counts"]
+                coherence = report.get("ticket_coherence")
+                mismatch = (
+                    isinstance(coherence, dict) and bool(coherence.get("mismatch"))
+                )
+            except (OSError, ValueError, json.JSONDecodeError):
+                discovery = discover(root)
+                documents = dict(discovery.get("documents") or {})
+                workflow = {}
+                tool_counts = None
+                mismatch = False
+            print(
+                plain_memory_report(
+                    root,
+                    documents=documents,
+                    workflow=workflow,
+                    tool_counts=tool_counts,
+                ),
+                end="",
+            )
+            return 1 if mismatch else 0
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             print(str(exc), file=sys.stderr)
             return 2

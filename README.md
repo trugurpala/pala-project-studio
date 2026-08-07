@@ -29,6 +29,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 Pala kurulum sırasında ne yapacağını açıkça gösterir. `-WhatIf` ile önce
 önizleyebilir, `-Mode Doctor` ile kurulumun sağlığını kontrol edebilirsin.
 
+Kayıtlı bir projede hafızayı insan dilinde görmek için:
+
+```powershell
+py -3 scripts\pala_state.py memory --cwd .
+```
+
 ## Ne sağlar?
 
 - Mevcut `AGENTS.md`, ürün, plan, durum ve karar belgelerini yeniden kullanır.
