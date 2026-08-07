@@ -299,7 +299,10 @@ class UserExperienceContractTests(unittest.TestCase):
         compact = "".join(wrapper.split())
 
         self.assertIn("scripts\\Install-Pala.ps1", entry)
-        self.assertIn('ValidateSet("Install","Doctor","Repair","Update","Uninstall")', compact)
+        self.assertIn(
+            'ValidateSet("Install","Doctor","Repair","Update","Uninstall","Status")',
+            compact,
+        )
         self.assertIn("pala_installer.py", wrapper)
         self.assertIn("pala_expert_installer.py", wrapper)
         self.assertIn("managed-tools.lock.json", wrapper)

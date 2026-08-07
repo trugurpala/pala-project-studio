@@ -11,16 +11,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 SCHEMA_VERSION = 1
-DEFAULT_CATALOG_ROOT = Path(r"C:\Users\Pala-Pc\Desktop\Codex")
 CATALOG_NAME = "pala-catalog.json"
 INDEX_NAME = "INDEX.md"
+
+
+def default_catalog_root() -> Path:
+    """Desktop/Codex under the current user home; portable across machines."""
+    return Path.home() / "Desktop" / "Codex"
 
 
 def catalog_root() -> Path:
     override = os.environ.get("PALA_CATALOG_ROOT")
     if override:
         return Path(override)
-    return DEFAULT_CATALOG_ROOT
+    return default_catalog_root()
 
 
 def catalog_path(root: Path | None = None) -> Path:
@@ -185,9 +189,46 @@ def list_projects(catalog_dir: Path | None = None) -> list[dict[str, object]]:
     return [p for p in projects if isinstance(p, dict)]
 
 
+def plain_summary(catalog_dir: Path | None = None) -> str:
+    """Human-readable Turkish overview across all catalogued projects."""
+    cdir = catalog_dir or catalog_root()
+    projects = list_projects(cdir)
+    lines = [
+        "Pala proje kataloğu",
+        "===================",
+        f"Konum: {catalog_path(cdir)}",
+        f"Proje sayısı: {len(projects)}",
+        "",
+    ]
+    if not projects:
+        lines.append("Henüz kayıtlı proje yok. Bir projede 'register' çalıştır.")
+        return "\n".join(lines) + "\n"
+    ordered = sorted(
+        projects,
+        key=lambda item: str(item.get("updated_at", "")),
+        reverse=True,
+    )
+    for item in ordered:
+        name = str(item.get("name", "?"))
+        phase = str(item.get("phase", "") or "belirsiz")
+        nxt = str(item.get("next_action", "") or "yok")
+        quality = str(item.get("quality_result", "") or "yok")
+        tech = ", ".join(item.get("tech", []) if isinstance(item.get("tech"), list) else [])
+        blockers = item.get("blockers")
+        blocker_count = len(blockers) if isinstance(blockers, list) else 0
+        lines.append(f"- {name}")
+        lines.append(f"    Faz: {phase} · Kalite: {quality} · Teknoloji: {tech or '?'}")
+        lines.append(f"    Sonraki iş: {nxt}")
+        if blocker_count:
+            lines.append(f"    Blokaj: {blocker_count} adet")
+        lines.append(f"    Yol: {item.get('path', '')}")
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("list", "sync", "show"))
+    parser.add_argument("command", choices=("list", "sync", "show", "summary"))
     parser.add_argument("--cwd", default=".")
     parser.add_argument("--catalog-root", default="")
     args = parser.parse_args()
@@ -195,6 +236,9 @@ def main() -> int:
     root = Path(args.cwd).resolve()
     if args.command == "list":
         print(json.dumps(list_projects(cdir), ensure_ascii=False, indent=2))
+        return 0
+    if args.command == "summary":
+        print(plain_summary(cdir), end="")
         return 0
     if args.command == "sync":
         entry = upsert_project(root, catalog_dir=cdir)

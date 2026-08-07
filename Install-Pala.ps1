@@ -4,7 +4,7 @@
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [ValidateSet("Install", "Doctor", "Repair", "Update", "Uninstall")]
+    [ValidateSet("Install", "Doctor", "Repair", "Update", "Uninstall", "Status")]
     [string]$Mode = "Install"
 )
 

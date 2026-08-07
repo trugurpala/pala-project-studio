@@ -4,7 +4,7 @@
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [ValidateSet("Install", "Doctor", "Repair", "Update", "Uninstall")]
+    [ValidateSet("Install", "Doctor", "Repair", "Update", "Uninstall", "Status")]
     [string]$Mode = "Install"
 )
 
@@ -160,6 +160,24 @@ if (-not (Test-Path -LiteralPath $core -PathType Leaf)) {
 
 $pythonCommand = Resolve-PalaPython
 $executable = $pythonCommand[0]
+
+if ($Mode -eq "Status") {
+    $stateScript = Join-Path $PSScriptRoot "pala_state.py"
+    $catalogScript = Join-Path $PSScriptRoot "pala_catalog.py"
+    $projectRoot = (Get-Location).Path
+    Write-Host "[Pala] Durum: $projectRoot"
+    $memoryArgs = @()
+    if ($pythonCommand.Count -gt 1) { $memoryArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
+    $memoryArgs += @($stateScript, "memory", "--cwd", $projectRoot)
+    & $executable @memoryArgs
+    Write-Host ""
+    $summaryArgs = @()
+    if ($pythonCommand.Count -gt 1) { $summaryArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
+    $summaryArgs += @($catalogScript, "summary", "--cwd", $projectRoot)
+    & $executable @summaryArgs
+    exit 0
+}
+
 $arguments = @()
 if ($pythonCommand.Count -gt 1) { $arguments += $pythonCommand[1..($pythonCommand.Count - 1)] }
 $arguments += @($core, $Mode.ToLowerInvariant(), "--source", $pluginRoot, "--project-root", (Get-Location).Path)

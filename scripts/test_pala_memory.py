@@ -4,11 +4,34 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 import unittest
 from argparse import Namespace
 from pathlib import Path
+
+_CATALOG_TMP: tempfile.TemporaryDirectory | None = None
+_CATALOG_PREV: str | None = None
+
+
+def setUpModule() -> None:
+    """Isolate the cross-project catalog so tests never touch the real one."""
+    global _CATALOG_TMP, _CATALOG_PREV
+    _CATALOG_PREV = os.environ.get("PALA_CATALOG_ROOT")
+    _CATALOG_TMP = tempfile.TemporaryDirectory()
+    os.environ["PALA_CATALOG_ROOT"] = _CATALOG_TMP.name
+
+
+def tearDownModule() -> None:
+    global _CATALOG_TMP, _CATALOG_PREV
+    if _CATALOG_PREV is None:
+        os.environ.pop("PALA_CATALOG_ROOT", None)
+    else:
+        os.environ["PALA_CATALOG_ROOT"] = _CATALOG_PREV
+    if _CATALOG_TMP is not None:
+        _CATALOG_TMP.cleanup()
+        _CATALOG_TMP = None
 
 SCRIPTS = Path(__file__).resolve().parent
 if str(SCRIPTS) not in sys.path:
@@ -127,6 +150,23 @@ class MemoryContractTests(unittest.TestCase):
             projects = pala_catalog.list_projects(cdir)
             self.assertEqual(len(projects), 1)
             self.assertEqual(projects[0]["next_action"], "B")
+
+    def test_catalog_summary_is_human_readable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "demo-project"
+            root.mkdir()
+            (root / "package.json").write_text("{}\n", encoding="utf-8")
+            cdir = Path(temp) / "Codex"
+            empty = pala_catalog.plain_summary(cdir)
+            self.assertIn("Henüz kayıtlı proje yok", empty)
+            pala_catalog.upsert_project(
+                root, catalog_dir=cdir, phase="F2-T2", next_action="Write tests"
+            )
+            text = pala_catalog.plain_summary(cdir)
+            self.assertIn("Pala proje kataloğu", text)
+            self.assertIn("demo-project", text)
+            self.assertIn("Write tests", text)
+            self.assertIn("node", text)
 
     def test_session_context_includes_memory_flags_under_limit(self) -> None:
         result = pala_hook.session_context(
