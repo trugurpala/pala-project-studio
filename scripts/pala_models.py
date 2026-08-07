@@ -7,7 +7,14 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 SESSION_KEY_LENGTH = 24
-VERIFICATION_STATUSES = {"passed", "failed", "timeout", "blocked", "not-run"}
+VERIFICATION_STATUSES = {
+    "passed",
+    "failed",
+    "timeout",
+    "blocked",
+    "not-run",
+    "configured-not-verified",
+}
 
 
 class SessionKey:

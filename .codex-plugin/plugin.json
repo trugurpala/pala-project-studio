@@ -1,7 +1,7 @@
 {
   "name": "pala-project-studio",
-  "version": "0.4.4+codex.20260806055124",
-  "description": "Codex i\u00e7in kal\u0131c\u0131, token-verimli proje y\u00fcr\u00fctme ve katmanl\u0131 do\u011frulama i\u015f ak\u0131\u015f\u0131.",
+  "version": "0.5.0+codex.20260807160000",
+  "description": "Codex i\u00e7in kal\u0131c\u0131 proje haf\u0131zas\u0131, token-verimli y\u00fcr\u00fctme ve kan\u0131ta ba\u011fl\u0131 do\u011frulama.",
   "author": {
     "name": "Pala",
     "url": "https://github.com/trugurpala"

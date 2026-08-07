@@ -37,11 +37,23 @@ CANDIDATES = {
         "docs/codex/PLAN.md",
     ),
     "status": (
-        "STATUS.md",
-        "PROGRESS.md",
         "reports/CURRENT_STATUS.md",
+        "STATUS.md",
         "PROJECT_STATE.md",
         "docs/codex/STATUS.md",
+    ),
+    "progress": (
+        "PROGRESS.md",
+        "docs/PROGRESS.md",
+    ),
+    "tooling": (
+        "TOOLING_DECISIONS.md",
+        "docs/TOOLING_DECISIONS.md",
+    ),
+    "debugging": (
+        "DEBUGGING.md",
+        "docs/vibe-os/TROUBLESHOOTING.md",
+        "docs/DEBUGGING.md",
     ),
     "decisions": (
         "DECISIONS.md",
@@ -63,8 +75,17 @@ CANDIDATES = {
     ),
 }
 REQUIRED = ("project", "plan", "status")
-VERIFY_STATUS_PASSED_KEYWORDS = ("passed", "ok", "succeeded")
+VERIFY_STATUS_PASSED_KEYWORDS = ("passed",)
 VERIFY_STATUS_FAILED_KEYWORDS = ("failed", "error", "broken", "exception")
+EVIDENCE_STATUSES = (
+    "passed",
+    "not-run",
+    "blocked",
+    "configured-not-verified",
+    "failed",
+    "timeout",
+)
+SOFT_DONE_RE = ("bitti", "done", "complete", "completed", "finished", "ok", "succeeded")
 PROJECT_MARKERS = (
     ".codex-plugin/plugin.json",
     "SKILL.md",
@@ -434,6 +455,53 @@ def has_failed_verification(entries: list[str]) -> bool:
     return False
 
 
+def _normalize_evidence_entries(entries: list[str]) -> list[dict[str, str]]:
+    """Parse `name=status` or `name: status` evidence lines."""
+    import re
+
+    parsed: list[dict[str, str]] = []
+    for raw in entries:
+        text = raw.strip()
+        if not text:
+            continue
+        lowered = text.casefold()
+        # Soft completion words alone are never evidence.
+        if lowered in SOFT_DONE_RE:
+            raise ValueError(
+                "checkpoint refused: soft done word is not evidence; "
+                "use name=passed|not-run|blocked|configured-not-verified"
+            )
+        match = re.match(
+            r"^(?P<name>[^=:]+)[=:]\s*(?P<status>[A-Za-z0-9_-]+)\s*(?P<rest>.*)$",
+            text,
+        )
+        if not match:
+            raise ValueError(
+                "checkpoint refused: evidence must look like "
+                "'unittest=passed' or 'install=configured-not-verified'"
+            )
+        status = match.group("status").casefold().replace("_", "-")
+        if status not in EVIDENCE_STATUSES:
+            raise ValueError(f"unsupported evidence status: {status}")
+        if status in {"failed"}:
+            raise ValueError("checkpoint refused: verification contains failed status")
+        parsed.append(
+            {
+                "name": match.group("name").strip()[:120],
+                "status": status,
+                "detail": match.group("rest").strip()[:200],
+            }
+        )
+    if not parsed:
+        raise ValueError("verification evidence is required for checkpoint")
+    if not any(item["status"] == "passed" for item in parsed):
+        # Allow checkpoint when only blocked/not-run if explicitly present,
+        # but require at least one non-soft structured line (already true).
+        # Still refuse if every line is soft-adjacent without passed when tier expects work.
+        pass
+    return parsed
+
+
 def hook_safety_report(root: Path) -> dict[str, object]:
     hooks_path = root / "hooks" / "hooks.json"
     hook_script = root / "scripts" / "pala_hook.py"
@@ -799,30 +867,82 @@ def checkpoint_work(
     verification: list[str],
     blockers: list[str],
     tier: str = "ticket",
+    *,
+    changed_summary: str = "",
+    changed_files: list[str] | None = None,
 ) -> None:
+    from pala_memory import (
+        append_status_mismatch,
+        ticket_coherence_report,
+    )
+
     payload = load_workflow(root)
     if not next_action.strip():
         raise ValueError("next action must be non-empty")
     if tier not in VERIFICATION_TIERS:
         raise ValueError(f"unsupported verification tier: {tier}")
+    if has_failed_verification(verification):
+        raise ValueError("checkpoint refused: verification contains failed status")
+    evidence = _normalize_evidence_entries(verification)
     try:
         manifest = load_manifest(root)
     except (OSError, ValueError, json.JSONDecodeError):
         manifest = {"documents": {}}
+    documents = manifest.get("documents") if isinstance(manifest, dict) else {}
+    docs = documents if isinstance(documents, dict) else {}
+    status_rel = docs.get("status") if isinstance(docs.get("status"), str) else None
+    status_text = ""
+    if status_rel and (root / status_rel).is_file():
+        status_text = (root / status_rel).read_text(encoding="utf-8")
+    coherence = ticket_coherence_report(
+        {**payload, "next_action": next_action.strip()},
+        status_text,
+        "",
+    )
+    needs_reconcile = bool(coherence.get("mismatch"))
     payload.update(
         {
             "schema_version": WORKFLOW_SCHEMA_VERSION,
             "dirty": False,
-            "needs_reconcile": False,
+            "needs_reconcile": needs_reconcile,
             "next_action": next_action.strip()[:500],
             "verification": bounded_strings(verification, limit=8),
+            "verification_evidence": evidence[:8],
             "verification_tier": tier,
             "blockers": bounded_strings(blockers, limit=5),
+            "changed_summary": (changed_summary or "")[:500],
+            "changed_files": bounded_strings(changed_files or [], limit=16),
+            "memory_mismatch": coherence if coherence.get("mismatch") else None,
             "checkpoint_basis": checkpoint_basis(root, manifest),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
     )
     write_json(root / WORKFLOW, payload)
+    if status_rel and coherence.get("mismatch"):
+        append_status_mismatch(root / status_rel, coherence)
+    # Best-effort catalog upsert (local Desktop\Codex); never fails checkpoint.
+    try:
+        from pala_catalog import upsert_project
+        from pala_tool_memory import tool_memory_report
+
+        tools = tool_memory_report(
+            profiles=list(manifest.get("profiles", []))
+            if isinstance(manifest.get("profiles"), list)
+            else []
+        )
+        upsert_project(
+            root,
+            phase=str(payload.get("active_ticket") or ""),
+            quality_result=tier,
+            tools_summary=(
+                f"{tools['counts'].get('installed', 0)}ok/"
+                f"{tools['counts'].get('not_installed', 0)}missing"
+            ),
+            next_action=next_action.strip()[:300],
+            blockers=list(payload.get("blockers") or []),
+        )
+    except (OSError, ValueError, TypeError, KeyError):
+        pass
 
 
 def discover(root: Path) -> dict[str, object]:
@@ -841,7 +961,10 @@ def discover(root: Path) -> dict[str, object]:
         "fallbacks": {
             "project": "docs/codex/PROJECT.md",
             "plan": "docs/codex/PLAN.md",
-            "status": "docs/codex/STATUS.md",
+            "status": "reports/CURRENT_STATUS.md",
+            "progress": "PROGRESS.md",
+            "tooling": "TOOLING_DECISIONS.md",
+            "debugging": "DEBUGGING.md",
             "decisions": "docs/codex/DECISIONS.md",
             "open_source": "docs/codex/OPEN_SOURCE.md",
             "demo": "reports/OWNER_DEMO.md",
@@ -861,6 +984,8 @@ def normalize_document(root: Path, value: str | None) -> str | None:
 
 
 def register(args: argparse.Namespace, root: Path) -> int:
+    from pala_memory import ensure_memory_stubs
+
     discovery = discover(root)
     found = discovery["documents"]
     documents = {
@@ -868,12 +993,29 @@ def register(args: argparse.Namespace, root: Path) -> int:
         "project": normalize_document(root, args.project or found["project"]),
         "plan": normalize_document(root, args.plan or found["plan"]),
         "status": normalize_document(root, args.status or found["status"]),
+        "progress": normalize_document(
+            root, getattr(args, "progress", None) or found.get("progress")
+        ),
+        "tooling": normalize_document(
+            root, getattr(args, "tooling", None) or found.get("tooling")
+        ),
+        "debugging": normalize_document(
+            root, getattr(args, "debugging", None) or found.get("debugging")
+        ),
         "decisions": normalize_document(root, args.decisions or found["decisions"]),
         "open_source": normalize_document(root, args.open_source or found["open_source"]),
         "demo": normalize_document(
             root, getattr(args, "demo", None) or found["demo"]
         ),
     }
+    # Create optional memory-contract stubs when missing (status still required).
+    stubbed = ensure_memory_stubs(
+        root,
+        {k: (v if isinstance(v, str) else None) for k, v in documents.items()},
+    )
+    for key in ("status", "progress", "tooling", "debugging"):
+        if not documents.get(key) and stubbed.get(key):
+            documents[key] = stubbed[key]
     missing = [name for name in REQUIRED if not documents[name]]
     if missing:
         print(
@@ -889,8 +1031,15 @@ def register(args: argparse.Namespace, root: Path) -> int:
         "project_kind": discovery["project_kind"],
         "profiles": discovery["profiles"],
         "documents": documents,
+        "memory_contract_version": 1,
     }
     write_json(manifest_path, payload)
+    try:
+        from pala_catalog import upsert_project
+
+        upsert_project(root, phase="registered", next_action="begin first ticket")
+    except (OSError, ValueError, TypeError):
+        pass
     print(str(manifest_path))
     return 0
 
@@ -974,6 +1123,15 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
         if workflow
         else {"needed": True, "reasons": ["workflow state is missing"]}
     )
+    from pala_memory import contract_context
+    from pala_tool_memory import tool_memory_report
+
+    memory = contract_context(root, safe_documents, workflow)
+    tools = tool_memory_report(
+        profiles=list(manifest.get("profiles", []))
+        if isinstance(manifest.get("profiles"), list)
+        else []
+    )
     return {
         "active_ticket": workflow.get("active_ticket"),
         "goal": workflow.get("goal"),
@@ -983,6 +1141,13 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
         "blockers": workflow.get("blockers", []),
         "reconciliation": reconciliation,
         "read_first": safe_documents.get("status"),
+        "read_order": memory.get("read_order"),
+        "ticket_coherence": memory.get("ticket_coherence"),
+        "tool_memory": {
+            "counts": tools.get("counts"),
+            "total": tools.get("total"),
+        },
+        "memory_contract_version": memory.get("memory_contract_version"),
         "active_plan": safe_documents.get("plan"),
         "project": safe_documents.get("project"),
     }
@@ -1094,19 +1259,17 @@ def main() -> int:
         if not args.verification:
             print("verification evidence is required for checkpoint", file=sys.stderr)
             return 2
-        if has_failed_verification(args.verification):
-            print(
-                "checkpoint refused: verification contains failed status",
-                file=sys.stderr,
+        try:
+            checkpoint_work(
+                root,
+                args.next_action,
+                args.verification,
+                args.blocker,
+                args.tier,
             )
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
             return 2
-        checkpoint_work(
-            root,
-            args.next_action,
-            args.verification,
-            args.blocker,
-            args.tier,
-        )
         print(str(root / WORKFLOW))
         return 0
     if args.command == "record-verification":

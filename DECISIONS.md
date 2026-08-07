@@ -66,6 +66,22 @@ JSON kaydına yazılmaz; ticket sahibi SHA-256'nın sınırlı özetidir. Her ti
 ayrı atomik kilit kullanır. Eski v2 workflow dosyası yerinde ve okunabilir
 kalır; v3 yalnız gözlemci migration marker'ı yazar.
 
+## ADR-012 — Project Memory Contract (0.5)
+
+Pala 0.5 zorunlu bir proje hafızası sözleşmesi ekler. Oturum kaynağı sohbet
+geçmişi değil klasördeki güncel kayıttır. Zorunlu okuma sırası:
+`AGENTS.md` → CURRENT_STATUS → PROGRESS → aktif plan → TOOLING_DECISIONS →
+DEBUGGING → git durumu. SessionStart hâlâ ADR-002 progressive disclosure
+kuralına uyar: yalnız yollar, ticket skalerleri, araç özeti ve uyumsuzluk
+bayrağı verir (≤800 karakter); belge gövdesi enjekte edilmez. Araç durumları
+(`installed` / `recommended` / `installed_unverified` / `not_installed` /
+`unavailable`) ticket doğrulama enum’larından ayrıdır. “Bitti” yalnız yapılandırılmış
+kanıt etiketleriyle (`passed`, `not-run`, `blocked`, `configured-not-verified`,
+`failed`, `timeout`) iddia edilir. Aktif ticket ile sonraki iş uyumsuzsa
+workflow ve CURRENT_STATUS uyarılır. İsteğe bağlı yerel katalog
+`Desktop\Codex\pala-catalog.json` secretsızdır; portable kurulumun parçası
+değildir. 0.5A Truth Core (PR #5 snapshot) bu ADR’nin kapsamı dışındadır.
+
 ## ADR-011 — OSS katkısı tek kapı, salt-okunur scout ve ayrı yazma yetkisidir
 
 Açık kaynak katkısı Pala içinde ayrı bir agent platformuna dönüşmez. GitHub

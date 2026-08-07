@@ -1,7 +1,7 @@
 # Pala Project Studio
 
 ![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
-[![Release v0.4.4](https://img.shields.io/badge/release-v0.4.4-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.4.4)
+[![Release v0.5.0](https://img.shields.io/badge/release-v0.5.0-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.5.0)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Pala Project Studio, Codex'in uzun soluklu yazılım projelerinde aktif işi
@@ -10,14 +10,15 @@ eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bul
 aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
 göre katmanlandırır.
 
-- Güncel kararlı sürüm `v0.4.4`'tür. Windows kurucusu, taşınabilir ZIP,
-  `Update` ve `Doctor` akışları gerçek kurulumda doğrulanmıştır.
+- Güncel sürüm `v0.5.0`'dır (Project Memory Contract). Windows kurucusu, taşınabilir ZIP,
+  `Update` ve `Doctor` akışları 0.4.x üzerinde doğrulanmıştır; 0.5 bellek sözleşmesi
+  yerel `verify` ile kanıtlanır.
 
 ## Hızlı başlangıç
 
 En güncel, taşınabilir sürümü indir:
 
-[Pala Project Studio 0.4.4'ü indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.4.4.zip)
+[Pala Project Studio 0.5.0'ı indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.5.0.zip)
 
 ZIP'i açtıktan sonra içindeki klasörde şu komutu çalıştır:
 
