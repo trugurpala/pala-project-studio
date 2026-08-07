@@ -40,6 +40,7 @@ if str(SCRIPTS) not in sys.path:
 import pala_catalog
 import pala_hook
 import pala_memory
+import pala_report
 import pala_state
 import pala_tool_memory
 
@@ -150,6 +151,37 @@ class MemoryContractTests(unittest.TestCase):
             projects = pala_catalog.list_projects(cdir)
             self.assertEqual(len(projects), 1)
             self.assertEqual(projects[0]["next_action"], "B")
+
+    def test_report_renders_static_html(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "AGENTS.md").write_text("# Agents\n", encoding="utf-8")
+            (root / "reports").mkdir()
+            (root / "reports" / "CURRENT_STATUS.md").write_text(
+                "# Status\n", encoding="utf-8"
+            )
+            target = pala_report.write_report(root)
+            self.assertTrue(target.is_file())
+            markup = target.read_text(encoding="utf-8")
+            self.assertIn("<!doctype html>", markup)
+            self.assertIn("Okuma sirasi", markup)
+            self.assertIn("Proje katalogu", markup)
+            # No network/external assets.
+            self.assertNotIn("http://", markup)
+            self.assertNotIn("https://", markup)
+            self.assertNotIn("<script", markup)
+
+    def test_report_escapes_untrusted_text(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "proj"
+            root.mkdir()
+            (root / "reports").mkdir()
+            (root / "reports" / "CURRENT_STATUS.md").write_text(
+                "# Status\n- Next: <img src=x onerror=alert(1)>\n", encoding="utf-8"
+            )
+            markup = pala_report.render_html(root)
+            self.assertNotIn("<img src=x", markup)
+            self.assertIn("&lt;img", markup)
 
     def test_catalog_summary_is_human_readable(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

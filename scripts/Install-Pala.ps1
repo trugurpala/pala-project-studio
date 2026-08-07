@@ -164,6 +164,7 @@ $executable = $pythonCommand[0]
 if ($Mode -eq "Status") {
     $stateScript = Join-Path $PSScriptRoot "pala_state.py"
     $catalogScript = Join-Path $PSScriptRoot "pala_catalog.py"
+    $reportScript = Join-Path $PSScriptRoot "pala_report.py"
     $projectRoot = (Get-Location).Path
     Write-Host "[Pala] Durum: $projectRoot"
     $memoryArgs = @()
@@ -175,6 +176,16 @@ if ($Mode -eq "Status") {
     if ($pythonCommand.Count -gt 1) { $summaryArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
     $summaryArgs += @($catalogScript, "summary", "--cwd", $projectRoot)
     & $executable @summaryArgs
+    if (-not $WhatIfPreference) {
+        $reportArgs = @()
+        if ($pythonCommand.Count -gt 1) { $reportArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
+        $reportArgs += @($reportScript, "--cwd", $projectRoot)
+        $reportPath = (& $executable @reportArgs 2>&1 | Out-String).Trim()
+        if ($reportPath -and (Test-Path -LiteralPath $reportPath -PathType Leaf)) {
+            Write-Host "[Pala] Durum sayfasi: $reportPath"
+            Invoke-Item -LiteralPath $reportPath
+        }
+    }
     exit 0
 }
 
