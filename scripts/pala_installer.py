@@ -703,6 +703,7 @@ def doctor_installation(
         "healthy": healthy,
         "status": "ready" if healthy else "attention_required",
         "plugin": bundle["plugin"],
+        "adapters": bundle.get("adapters", {}),
         "codex": codex,
         "python": {
             "ready": python_ready,

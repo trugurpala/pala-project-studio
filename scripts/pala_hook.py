@@ -109,6 +109,8 @@ def session_context(
     profiles: object = None,
     reconciliation: dict[str, object] | None = None,
     health: dict[str, str] | None = None,
+    memory: dict[str, object] | None = None,
+    tools_summary: str | None = None,
 ) -> dict[str, object]:
     status = documents.get("status")
     plan = documents.get("plan")
@@ -130,16 +132,24 @@ def session_context(
         f"git={health.get('git', 'unknown')}; "
         f"hook={health.get('hook', 'running')}. "
     )
+    coherence = (memory or {}).get("ticket_coherence") if isinstance(memory, dict) else None
+    mismatch = bool(isinstance(coherence, dict) and coherence.get("mismatch"))
+    tools = tools_summary or "tools=n/a"
     message = (
-        f"{prefix}{health_text}Pala project kind={kind}. Read status first: status={status or project}; "
-        f"inspect only the active ticket section in plan={plan}. active={active or 'none'}; "
-        f"next={next_action or 'reconcile first'}; dirty={str(dirty).lower()}; "
-        f"blockers={blocker_count}; reconcile={str(needs_reconcile).lower()}"
-        f"({reason_count}). Run /hooks if hook safety changed. "
+        f"{prefix}{health_text}Pala project kind={kind}. "
+        f"Memory read_order=AGENTS>CURRENT_STATUS>PROGRESS>plan>TOOLING>DEBUG>git. "
+        f"Read status first: status={status or project}; "
+        f"inspect only the active ticket section in plan={plan}. "
+        f"active={active or 'none'}; next={next_action or 'reconcile first'}; "
+        f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
+        f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
+        f"ticket_mismatch={str(mismatch).lower()}; {tools}. "
         "Do not re-plan completed scope. Continue authorized local "
         "work; use the full gate only at the plan's milestone/release boundary, then "
         "checkpoint one coherent ticket."
     )
+    if len(message) > 800:
+        message = message[:797] + "..."
     return {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
@@ -190,6 +200,29 @@ def main() -> int:
         compacted = event.get("source") == "compact" or bool(
             workflow and workflow.get("needs_reconcile")
         )
+        memory = None
+        tools_summary = None
+        try:
+            from pala_memory import contract_context
+            from pala_tool_memory import short_hook_summary, tool_memory_report
+
+            memory = contract_context(root, documents, workflow)
+            profiles = payload.get("profiles")
+            tools = tool_memory_report(
+                profiles=list(profiles) if isinstance(profiles, list) else []
+            )
+            tools_summary = short_hook_summary(tools)
+            if (
+                isinstance(memory.get("ticket_coherence"), dict)
+                and memory["ticket_coherence"].get("mismatch")
+            ):
+                if workflow is not None:
+                    workflow = dict(workflow)
+                    workflow["memory_mismatch"] = memory["ticket_coherence"]
+                    workflow["needs_reconcile"] = True
+        except (OSError, ValueError, TypeError, ImportError):
+            memory = None
+            tools_summary = None
         emit(
             session_context(
                 documents,
@@ -199,6 +232,8 @@ def main() -> int:
                 payload.get("profiles"),
                 reconciliation,
                 local_health(root),
+                memory,
+                tools_summary,
             )
         )
         return 0

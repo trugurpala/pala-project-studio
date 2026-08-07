@@ -7,10 +7,28 @@ Prefer existing documents and register their real paths:
 | Instructions | `AGENTS.override.md`, `AGENTS.md` | `AGENTS.md` |
 | Product | `PROJECT.md`, `docs/SCOPE.md`, README | `docs/codex/PROJECT.md` |
 | Plan | `PLAN.md`, `docs/IMPLEMENTATION_PLAN.md`, `TASKS.md`, `ROADMAP.md` | `docs/codex/PLAN.md` |
-| Status | `STATUS.md`, `PROGRESS.md`, `reports/CURRENT_STATUS.md` | `docs/codex/STATUS.md` |
+| Status | `reports/CURRENT_STATUS.md`, `STATUS.md`, `PROJECT_STATE.md` | `reports/CURRENT_STATUS.md` |
+| Progress | `PROGRESS.md`, `docs/PROGRESS.md` | `PROGRESS.md` |
+| Tooling | `TOOLING_DECISIONS.md`, `docs/TOOLING_DECISIONS.md` | `TOOLING_DECISIONS.md` |
+| Debugging | `DEBUGGING.md`, `docs/vibe-os/TROUBLESHOOTING.md`, `docs/DEBUGGING.md` | `DEBUGGING.md` |
 | Decisions | `DECISIONS.md`, `docs/PRODUCT_DECISIONS.md`, `docs/adr/` | `docs/codex/DECISIONS.md` |
 | Open source | `OPEN_SOURCE.md`, `docs/OPEN_SOURCE.md`, notices | `docs/codex/OPEN_SOURCE.md` |
 | Owner demo | `reports/OWNER_DEMO.md`, `DEMO.md` | `reports/OWNER_DEMO.md` |
+
+## Project Memory Contract (0.5)
+
+Forced bootstrap order every Implementation session:
+
+1. `AGENTS.md`
+2. Status (`reports/CURRENT_STATUS.md` preferred)
+3. `PROGRESS.md`
+4. Active plan — active ticket section only
+5. `TOOLING_DECISIONS.md`
+6. `DEBUGGING.md`
+7. Git status (`--short --branch`)
+
+Run `context --cwd .` and follow `read_order`. Do not trust chat history over these files.
+See [project-memory-contract.md](project-memory-contract.md) and `docs/PALA_0_5_MEMORY_CONTRACT.md`.
 
 The product document owns users, outcome, scope, non-goals, architecture,
 trust boundaries, and definition of done. The plan owns ordered milestones and
@@ -29,9 +47,12 @@ documents.
 
 Run `register` once with the selected paths, `begin` before implementation, and
 `checkpoint --tier narrow|ticket|milestone|release` after a coherent outcome.
-Run `context` at session start. Workflow schema v2 stores bounded evidence plus
+Evidence lines must look like `unittest=passed` or `install=configured-not-verified`.
+Soft words (`done`, `bitti`, `ok`) alone are refused. Run `context` at session start.
+Workflow schema v2 stores bounded evidence plus
 hashes of registered documents and a Git fingerprint. A changed plan, status,
-HEAD, or worktree after checkpoint normally requires reconciliation. One safe
+HEAD, or worktree after checkpoint normally requires reconciliation. Ticket vs
+next-action mismatches are written into CURRENT_STATUS. One safe
 exception exists: a descendant commit that exactly materializes the
 checkpointed path/content snapshot and leaves no other working-tree change is
 accepted as the same outcome. A later, divergent, or extra commit still

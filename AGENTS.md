@@ -11,13 +11,14 @@
 
 1. Kullanıcının güncel açık talimatı.
 2. `PROJECT.md` ve `DECISIONS.md`.
-3. `PLAN.md` ve `STATUS.md`.
+3. Memory contract: `AGENTS.md` → CURRENT_STATUS → PROGRESS → plan → TOOLING_DECISIONS → DEBUGGING → git.
 4. Skill ve referans belgeleri.
 
-- Kalıcı kuralları `AGENTS.md`, değişen işi `PLAN.md` ve `STATUS.md` içinde tut.
+- Kalıcı kuralları `AGENTS.md`, değişen işi plan/status/progress içinde tut.
 - Skill gövdesini kısa tut; ayrıntıyı doğrudan bağlı referanslara ve deterministik scriptlere taşı.
 - Pala hiçbir hook içinde test, build, commit, push veya ağ çağrısını kendiliğinden başlatmaz.
 - Ölçülmemiş hız, token veya kalite yüzdesi raporlama.
+- Soft “bitti/done/ok” kanıt sayılmaz; `name=passed|not-run|blocked|configured-not-verified` kullan.
 
 ## Kalite ve güvenlik
 
