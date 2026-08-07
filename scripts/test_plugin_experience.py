@@ -312,6 +312,16 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertNotIn("Remove-Item -Path $installRoot -Recurse", wrapper)
         self.assertNotIn("Copy-Item -Path (Join-Path $pluginRoot", wrapper)
 
+    def test_windows_status_mode_propagates_subcommand_exit_codes(self) -> None:
+        wrapper = (PLUGIN_ROOT / "scripts" / "Install-Pala.ps1").read_text(
+            encoding="utf-8"
+        )
+        status_start = wrapper.index('if ($Mode -eq "Status")')
+        status_block = wrapper[status_start : wrapper.index("$arguments = @()", status_start)]
+        self.assertIn("$statusExit = $LASTEXITCODE", status_block)
+        self.assertIn("exit $statusExit", status_block)
+        self.assertNotIn("exit 0", status_block)
+
     def test_windows_installer_contains_expected_ollama_probe_stderr(self) -> None:
         wrapper = (PLUGIN_ROOT / "scripts" / "Install-Pala.ps1").read_text(
             encoding="utf-8"

@@ -179,21 +179,28 @@ if ($Mode -eq "Status") {
     if ($pythonCommand.Count -gt 1) { $memoryArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
     $memoryArgs += @($stateScript, "memory", "--cwd", $projectRoot)
     & $executable @memoryArgs
+    $statusExit = $LASTEXITCODE
     Write-Host ""
     $summaryArgs = @()
     if ($pythonCommand.Count -gt 1) { $summaryArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
     $summaryArgs += @($catalogScript, "summary", "--cwd", $projectRoot)
     & $executable @summaryArgs
+    if ($statusExit -eq 0 -and $null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+        $statusExit = $LASTEXITCODE
+    }
     if (-not $WhatIfPreference) {
         $reportArgs = @()
         if ($pythonCommand.Count -gt 1) { $reportArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
         $reportArgs += @($reportScript, "--cwd", $projectRoot, "--open")
         $reportOut = (& $executable @reportArgs 2>&1 | Out-String).Trim()
+        if ($statusExit -eq 0 -and $null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+            $statusExit = $LASTEXITCODE
+        }
         if ($reportOut) {
             Write-Host "[Pala] Durum sayfasi: $reportOut"
         }
     }
-    exit 0
+    exit $statusExit
 }
 
 $arguments = @()

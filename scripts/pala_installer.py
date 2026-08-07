@@ -112,36 +112,63 @@ def read_json(path: Path) -> dict[str, object] | None:
     return value if isinstance(value, dict) else None
 
 
+def _host_path(value: str | os.PathLike[str]) -> Path:
+    """Build a Path with the host OS concrete class.
+
+    Unit tests may mock ``os.name`` to exercise Windows discovery on Linux CI.
+    ``pathlib.Path`` follows the mocked name and raises ``NotImplementedError``
+    for ``WindowsPath`` on non-Windows hosts, so prefer the class that matches
+    the imported ``os.path`` implementation.
+    """
+    text = os.fspath(value)
+    if os.sep == "\\":
+        from pathlib import WindowsPath
+
+        return WindowsPath(text)
+    from pathlib import PosixPath
+
+    return PosixPath(text)
+
+
+def resolve_windows_codex_candidates(
+    *,
+    environ: dict[str, str] | None = None,
+) -> list[str]:
+    """Return off-PATH Windows Codex candidate paths as plain strings."""
+    env = environ if environ is not None else os.environ
+    home = env.get("USERPROFILE") or os.path.expanduser("~")
+    local = env.get("LOCALAPPDATA") or os.path.join(home, "AppData", "Local")
+    appdata = env.get("APPDATA") or os.path.join(home, "AppData", "Roaming")
+    candidates = [
+        os.path.join(local, "Programs", "codex", "codex.exe"),
+        os.path.join(local, "Programs", "Codex", "codex.exe"),
+        os.path.join(appdata, "npm", "codex.cmd"),
+        os.path.join(home, ".codex", "bin", "codex.exe"),
+        os.path.join(home, ".local", "bin", "codex.exe"),
+    ]
+    openai_bin = os.path.join(local, "OpenAI", "Codex", "bin")
+    if os.path.isdir(openai_bin):
+        try:
+            for name in sorted(os.listdir(openai_bin)):
+                exe = os.path.join(openai_bin, name, "codex.exe")
+                if os.path.isfile(exe):
+                    candidates.append(exe)
+        except OSError:
+            pass
+    return candidates
+
+
 def resolve_codex_executable() -> Path | None:
     """Locate Codex CLI even when Windows desktop install is off PATH."""
     found = shutil.which("codex")
     if found:
-        return Path(found)
+        return _host_path(found)
     if os.name != "nt":
         return None
-    home = Path(os.environ.get("USERPROFILE", Path.home()))
-    local = Path(os.environ.get("LOCALAPPDATA", home / "AppData" / "Local"))
-    appdata = Path(os.environ.get("APPDATA", home / "AppData" / "Roaming"))
-    candidates: list[Path] = [
-        local / "Programs" / "codex" / "codex.exe",
-        local / "Programs" / "Codex" / "codex.exe",
-        appdata / "npm" / "codex.cmd",
-        home / ".codex" / "bin" / "codex.exe",
-        home / ".local" / "bin" / "codex.exe",
-    ]
-    openai_bin = local / "OpenAI" / "Codex" / "bin"
-    if openai_bin.is_dir():
+    for candidate in resolve_windows_codex_candidates():
         try:
-            for child in sorted(openai_bin.iterdir()):
-                exe = child / "codex.exe"
-                if exe.is_file():
-                    candidates.append(exe)
-        except OSError:
-            pass
-    for path in candidates:
-        try:
-            if path.is_file():
-                return path
+            if os.path.isfile(candidate):
+                return _host_path(candidate)
         except OSError:
             continue
     return None

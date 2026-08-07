@@ -167,13 +167,18 @@ class InstallerCoreTests(unittest.TestCase):
             nested.mkdir(parents=True)
             exe = nested / "codex.exe"
             exe.write_bytes(b"MZ")
+            environ = {
+                "LOCALAPPDATA": str(root),
+                "APPDATA": str(root / "Roaming"),
+                "USERPROFILE": str(root),
+            }
+            self.assertIn(
+                str(exe),
+                self.installer.resolve_windows_codex_candidates(environ=environ),
+            )
             with patch.object(self.installer.shutil, "which", return_value=None), patch.dict(
                 os.environ,
-                {
-                    "LOCALAPPDATA": str(root),
-                    "APPDATA": str(root / "Roaming"),
-                    "USERPROFILE": str(root),
-                },
+                environ,
                 clear=False,
             ), patch.object(self.installer.os, "name", "nt"):
                 resolved = self.installer.resolve_codex_executable()
