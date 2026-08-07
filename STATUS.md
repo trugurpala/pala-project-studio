@@ -1,22 +1,22 @@
 # Pala Project Studio Durumu
 
 - Güncelleme: 2026-08-07
-- Aktif milestone: M20 — Gerçeklik + vibe ilk 10 dk (`in_progress` bellek/canary).
-- Aktif ticket: Yok (yeni özellik yok; bellek uzlaştırma + owner canary).
+- Aktif milestone: M20 — Gerçeklik + vibe ilk 10 dk (`completed` bellek/release;
+  skill canary insan adımı açık).
+- Aktif ticket: Yok (yeni özellik yok).
 - Plugin/manifest sürümü: `0.7.1+codex.20260807190000` (kaynak `main`).
-- Son GitHub release asset (M20 öncesi): `v0.4.4` (`passed`).
-- `v0.7.1` release: M20 release-truth ile `main` Quality + yerel
-  `verify.py` kanıtına dayanarak üretilir; asset yokken “shipped” sayılmaz.
-- Kod hattı: PR #9 merge ile `main`e alındı.
-  - Merge commit: `51b8ddca60777bfaae1a6e12867089d7eeba3730`
-  - PR URL: https://github.com/trugurpala/pala-project-studio/pull/9
-- `main` Quality (merge sonrası): run `31197621102` — Windows + Ubuntu
+- Son GitHub release: `v0.7.1` (`passed`).
+  - URL: https://github.com/trugurpala/pala-project-studio/releases/tag/v0.7.1
+  - Asset: `pala-project-studio-0.7.1.zip`
+  - SHA-256: `4CD388A40392B7C8AAE0A1A742307993F829F116FB3D4F08989FB1A009230A9D`
+  - Target: `c028bea32d159d16ab0b6734d36c12e73c9a53ac`
+- Kod hattı: PR #9 + M20 docs PR #10 `main`de.
+  - PR #9: https://github.com/trugurpala/pala-project-studio/pull/9
+  - PR #10: https://github.com/trugurpala/pala-project-studio/pull/10
+- `main` Quality (PR #9 merge): run `31197621102` — Windows + Ubuntu
   `success` (`passed`).
   - https://github.com/trugurpala/pala-project-studio/actions/runs/31197621102
-- Yerel `py -3 scripts/verify.py` (M20 docs dalı): `passed`;
-  reproducible ZIP SHA-256
-  `4CD388A40392B7C8AAE0A1A742307993F829F116FB3D4F08989FB1A009230A9D`.
-
+- Yerel `py -3 scripts/verify.py` (release ZIP): `passed`; aynı SHA yukarıda.
 ## 0.5–0.7.1 kaynak özeti (kodda landed; STATUS drift giderildi)
 
 | Sürüm | Kapsam | Kanıt |

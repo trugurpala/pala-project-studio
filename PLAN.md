@@ -241,9 +241,9 @@ owner canary ve release iddiası kanıt etiketli.
   (`STATUS.md`).
 - [x] Hook trust: `blocked` (Doctor `hook=blocked`); yeni sohbet skill tetik
   `not-run` — insan: Codex `/hooks` + yeni sohbet.
-- [ ] Release truth: `v0.7.1` GitHub ZIP+SHA — verify
-  `4CD388A40392B7C8AAE0A1A742307993F829F116FB3D4F08989FB1A009230A9D` +
-  main Quality `31197621102` kanıtıyla create (badge zaten 0.7.1).
+- [x] Release truth: `v0.7.1` GitHub ZIP+SHA oluşturuldu
+  (`4CD388A40392B7C8AAE0A1A742307993F829F116FB3D4F08989FB1A009230A9D`;
+  target `c028bea`; Quality `31197621102`).
 
 ### M20 içinde özetlenen landed iş (önceden plansız drift)
 
