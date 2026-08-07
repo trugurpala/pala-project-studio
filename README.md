@@ -141,8 +141,10 @@ codex plugin marketplace add trugurpala/pala-project-studio
 codex plugin add pala-project-studio@pala-project-studio
 ```
 
-“Her yerde çalışır” sözleşmesi, ChatGPT Plus sohbet sınırları ve multi-host
-gerçekliği: [PALA_EVERYWHERE.md](docs/PALA_EVERYWHERE.md).
+Vibe coder ilk 10 dakika (Codex içi çağrı, Plus sohbet değil):
+[VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md). “Her yerde çalışır”
+sözleşmesi ve multi-host gerçekliği:
+[PALA_EVERYWHERE.md](docs/PALA_EVERYWHERE.md).
 
 ## Güvenli uzman işçileri
 

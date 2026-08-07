@@ -82,6 +82,7 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "docs" / "PALA_0_7_LOCAL_STORE.md",
         plugin_root / "docs" / "PALA_EVERYWHERE.md",
         plugin_root / "docs" / "PALA_INTERNAL_PROVISION.md",
+        plugin_root / "docs" / "VIBE_FIRST_SESSION.md",
     ]
     for directory in ("hooks", "skills"):
         candidates.extend(

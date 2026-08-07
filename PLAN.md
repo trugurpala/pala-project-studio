@@ -223,3 +223,39 @@
 - [x] PR #6 üzerinde tam `Quality` kapısını Ubuntu + Windows'ta geçir:
   run `31131516966` (#36) iki matrix job'unda `success`, her ortamda `169` test;
   ikinci bağımsız run `31155100116` (#37) de `success`.
+
+## M20 — Gerçeklik + vibe ilk 10 dk
+
+Yeni özellik yok. Amaç: STATUS/PLAN = `main` gerçekliği; vibe yolu tek sayfa;
+owner canary ve release iddiası kanıt etiketli.
+
+- [x] PR #9'u `main`e merge et; merge sonrası Quality `31197621102`
+  Windows + Ubuntu `success` (`passed`). Merge:
+  `51b8ddca60777bfaae1a6e12867089d7eeba3730`.
+- [x] STATUS / PLAN / PROGRESS'i 0.5–0.7.1 kod gerçekliğiyle uzlaştır;
+  soft “done” yerine `passed|not-run|blocked` kullan.
+- [x] Tek sayfa vibe sözleşmesi: `docs/VIBE_FIRST_SESSION.md` (Codex içi çağrı;
+  ChatGPT Plus sohbet değil).
+- [x] Owner Windows canary (otomatik kısım): Install / Doctor
+  (`plugin_ready`/`healthy`) / Status HTML / SQLite path — `passed`
+  (`STATUS.md`).
+- [x] Hook trust: `blocked` (Doctor `hook=blocked`); yeni sohbet skill tetik
+  `not-run` — insan: Codex `/hooks` + yeni sohbet.
+- [ ] Release truth: `v0.7.1` GitHub ZIP+SHA — verify
+  `4CD388A40392B7C8AAE0A1A742307993F829F116FB3D4F08989FB1A009230A9D` +
+  main Quality `31197621102` kanıtıyla create (badge zaten 0.7.1).
+
+### M20 içinde özetlenen landed iş (önceden plansız drift)
+
+- 0.5 hafıza sözleşmesi + plain memory CLI (ADR-012).
+- 0.6 durum sayfası / `pala_report` ilk yüzey (ADR-013/014).
+- 0.7 yerel SQLite store + catalog/provision/timeline (ADR-015).
+- 0.7.1 Windows Codex keşfi + Doctor core/experts (ADR-016).
+
+### M10 artıkları (açık; vibe canary blokörü değil)
+
+- [ ] RTK sabit release + SHA + Codex-native rewrite adaptörü.
+- [ ] RTK girdilerini koru; tehlikeli komut rewrite yok.
+- [ ] code-review-graph `uv` izole sabit kurulum (Pala adaptörü).
+- [ ] Context7 / Playwright MCP keşif + `codex mcp add` (çakışmayı ezmeden).
+- [ ] OpenSpec bulunan projeyi ticket'a bağla; yoksa ikinci plan sistemi kurma.
