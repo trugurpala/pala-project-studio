@@ -20,10 +20,10 @@ Milestone log. Append completed outcomes with evidence labels
 - Plugin/manifest `0.7.1+codex.20260807190000` kaynak `main`de — `passed`.
 - STATUS/PLAN drift uzlaştırması (0.5–0.7.1 + M10 artıkları): bu turda yazıldı.
 - Vibe ilk 10 dk belgesi `docs/VIBE_FIRST_SESSION.md`: bu turda eklendi.
-- Yerel `verify.py` (M20 docs): `passed`; ZIP SHA-256
+- Yerel `verify.py` (M20 docs/release): `passed`; ZIP SHA-256
   `4CD388A40392B7C8AAE0A1A742307993F829F116FB3D4F08989FB1A009230A9D`.
-- Son bilinen gerçek release asset (öncesi): `v0.4.4` — `passed`.
-- `v0.7.1` GitHub release: M20 sonunda create (kanıt: main Quality + verify).
+- GitHub release `v0.7.1` asset `pala-project-studio-0.7.1.zip`: `passed`
+  (digest eşleşti; target `c028bea`).
 - Owner Install: `passed`.
 - Owner Doctor (`plugin_ready`/`healthy`/`experts_ready`): `passed`.
 - Owner Status HTML + SQLite
