@@ -1,7 +1,7 @@
 # Pala Project Studio
 
 ![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
-[![Release v0.5.0](https://img.shields.io/badge/release-v0.5.0-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.5.0)
+[![Release v0.6.0](https://img.shields.io/badge/release-v0.6.0-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.6.0)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Pala Project Studio, Codex'in uzun soluklu yazılım projelerinde aktif işi
@@ -10,15 +10,15 @@ eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bul
 aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
 göre katmanlandırır.
 
-- Güncel sürüm `v0.5.0`'dır (Project Memory Contract). Windows kurucusu, taşınabilir ZIP,
-  `Update` ve `Doctor` akışları 0.4.x üzerinde doğrulanmıştır; 0.5 bellek sözleşmesi
-  yerel `verify` ile kanıtlanır.
+- Güncel sürüm `v0.6.0`'dır (Durum Sayfası Ana Yüzey). Windows kurucusu, taşınabilir ZIP,
+  `Update` ve `Doctor` akışları 0.4.x üzerinde doğrulanmıştır; bellek sözleşmesi ve
+  durum sayfası yerel `verify` ile kanıtlanır.
 
 ## Hızlı başlangıç
 
 En güncel, taşınabilir sürümü indir:
 
-[Pala Project Studio 0.5.0'ı indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.5.0.zip)
+[Pala Project Studio 0.6.0'ı indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.6.0.zip)
 
 ZIP'i açtıktan sonra içindeki klasörde şu komutu çalıştır:
 
@@ -28,6 +28,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 
 Pala kurulum sırasında ne yapacağını açıkça gösterir. `-WhatIf` ile önce
 önizleyebilir, `-Mode Doctor` ile kurulumun sağlığını kontrol edebilirsin.
+
+Durum sayfasını (sol menülü yerel HTML) üretip açmak için:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Status
+```
 
 Kayıtlı bir projede hafızayı insan dilinde görmek için:
 

@@ -9,6 +9,7 @@ import sys
 import tempfile
 import unittest
 from argparse import Namespace
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 _CATALOG_TMP: tempfile.TemporaryDirectory | None = None
@@ -160,16 +161,93 @@ class MemoryContractTests(unittest.TestCase):
             (root / "reports" / "CURRENT_STATUS.md").write_text(
                 "# Status\n", encoding="utf-8"
             )
-            target = pala_report.write_report(root)
+            target = pala_report.write_report(
+                root,
+                update={
+                    "status": "current",
+                    "installed_version": "0.6.0",
+                    "available_version": "0.6.0",
+                    "url": None,
+                },
+            )
             self.assertTrue(target.is_file())
             markup = target.read_text(encoding="utf-8")
             self.assertIn("<!doctype html>", markup)
             self.assertIn("Okuma sirasi", markup)
             self.assertIn("Proje katalogu", markup)
-            # No network/external assets.
-            self.assertNotIn("http://", markup)
-            self.assertNotIn("https://", markup)
+            self.assertIn('name="pala-nav"', markup)
+            self.assertIn("id=\"nav-current\"", markup)
             self.assertNotIn("<script", markup)
+            self.assertNotIn("<link", markup)
+            self.assertNotIn('src="http', markup)
+            self.assertNotIn("src='http", markup)
+
+    def test_report_sidebar_lists_catalog_projects(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            cdir = Path(temp) / "Codex"
+            os.environ["PALA_CATALOG_ROOT"] = str(cdir)
+            a = Path(temp) / "alpha"
+            b = Path(temp) / "beta"
+            a.mkdir()
+            b.mkdir()
+            (a / "package.json").write_text("{}\n", encoding="utf-8")
+            (b / "pyproject.toml").write_text("[project]\nname='b'\n", encoding="utf-8")
+            pala_catalog.upsert_project(a, catalog_dir=cdir, phase="A", next_action="a")
+            pala_catalog.upsert_project(b, catalog_dir=cdir, phase="B", next_action="b")
+            markup = pala_report.render_html(
+                a,
+                update={"status": "current", "installed_version": "0.6.0"},
+            )
+            self.assertIn('id="nav-0"', markup)
+            self.assertIn('id="nav-1"', markup)
+            self.assertIn('id="panel-0"', markup)
+            self.assertIn('id="panel-1"', markup)
+            self.assertIn("alpha", markup)
+            self.assertIn("beta", markup)
+
+    def test_freshness_buckets(self) -> None:
+        now = datetime(2026, 8, 7, tzinfo=timezone.utc)
+        self.assertEqual(
+            pala_report.freshness((now - timedelta(hours=12)).isoformat(), now),
+            "fresh",
+        )
+        self.assertEqual(
+            pala_report.freshness((now - timedelta(days=3)).isoformat(), now),
+            "aging",
+        )
+        self.assertEqual(
+            pala_report.freshness((now - timedelta(days=10)).isoformat(), now),
+            "stale",
+        )
+        self.assertEqual(pala_report.freshness(None, now), "stale")
+
+    def test_report_currency_banner_from_cache(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "AGENTS.md").write_text("# A\n", encoding="utf-8")
+            available = pala_report.render_html(
+                root,
+                update={
+                    "status": "update-available",
+                    "installed_version": "0.5.0",
+                    "available_version": "0.6.0",
+                    "url": "https://github.com/trugurpala/pala-project-studio/releases/tag/v0.6.0",
+                },
+                update_checked_at="2026-08-07T12:00:00+00:00",
+            )
+            self.assertIn("Guncelleme var", available)
+            self.assertIn("0.6.0", available)
+            self.assertIn("https://github.com/trugurpala/pala-project-studio/releases", available)
+            current = pala_report.render_html(
+                root,
+                update={
+                    "status": "current",
+                    "installed_version": "0.6.0",
+                    "available_version": "0.6.0",
+                    "url": None,
+                },
+            )
+            self.assertIn("Pala guncel", current)
 
     def test_report_escapes_untrusted_text(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -179,7 +257,9 @@ class MemoryContractTests(unittest.TestCase):
             (root / "reports" / "CURRENT_STATUS.md").write_text(
                 "# Status\n- Next: <img src=x onerror=alert(1)>\n", encoding="utf-8"
             )
-            markup = pala_report.render_html(root)
+            markup = pala_report.render_html(
+                root, update={"status": "unavailable", "installed_version": "0.6.0"}
+            )
             self.assertNotIn("<img src=x", markup)
             self.assertIn("&lt;img", markup)
 
@@ -236,6 +316,8 @@ class MemoryContractTests(unittest.TestCase):
         self.assertIn("ticket_mismatch=true", message)
         self.assertIn("tools=3ok/2gap", message)
         self.assertIn("read_order=", message)
+        self.assertIn("pala_report.py --open", message)
+        self.assertIn("durum sayfasini ac", message)
 
     def test_register_creates_memory_stubs(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

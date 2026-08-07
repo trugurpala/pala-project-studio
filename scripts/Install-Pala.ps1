@@ -179,11 +179,10 @@ if ($Mode -eq "Status") {
     if (-not $WhatIfPreference) {
         $reportArgs = @()
         if ($pythonCommand.Count -gt 1) { $reportArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
-        $reportArgs += @($reportScript, "--cwd", $projectRoot)
-        $reportPath = (& $executable @reportArgs 2>&1 | Out-String).Trim()
-        if ($reportPath -and (Test-Path -LiteralPath $reportPath -PathType Leaf)) {
-            Write-Host "[Pala] Durum sayfasi: $reportPath"
-            Invoke-Item -LiteralPath $reportPath
+        $reportArgs += @($reportScript, "--cwd", $projectRoot, "--open")
+        $reportOut = (& $executable @reportArgs 2>&1 | Out-String).Trim()
+        if ($reportOut) {
+            Write-Host "[Pala] Durum sayfasi: $reportOut"
         }
     }
     exit 0

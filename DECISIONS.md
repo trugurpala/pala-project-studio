@@ -102,6 +102,19 @@ yeni bileşen yerine mevcut `pala_state.py memory` ve `pala_catalog.py summary`
 gibi okunur çıktıları zenginleştirmektir. Ağır bir UI kararı ayrı bir ADR ve
 sözleşme testi gerektirir.
 
+## ADR-014 — Durum sayfası zorunlu ilk yüzey (0.6)
+
+Pala 0.6, ADR-013 faz kapısının ilk gerçeklemesi olarak sunucusuz bir yerel
+HTML durum sayfasını zorunlu ilk yüzey yapar. Skill Implementation modunda
+oturumun ilk işi `pala_report.py --cwd . --open` ile sayfayı üretip açmaktır.
+Sayfa tek statik dosyadır (`.codex/pala-status.html`): inline CSS, CSS-only sol
+menü (radio + `:checked`), harici asset/script yok. Sol menü aktif proje ile
+katalogdaki diğer projeleri listeler; her kayıtta tazelik rozeti
+(`fresh`/`aging`/`stale`) vardır. Pala sürüm güncelliği `pala_update` 24 saat
+önbelleğiyle banner olarak gösterilir; ağ yalnız agent/Status yolunda ve günde
+en fazla bir kez çalışır. Hook içinde ağ veya tarayıcı açma yoktur (ADR-007);
+SessionStart yalnız `pala_report.py --open` dürtüsü verir.
+
 ## ADR-011 — OSS katkısı tek kapı, salt-okunur scout ve ayrı yazma yetkisidir
 
 Açık kaynak katkısı Pala içinde ayrı bir agent platformuna dönüşmez. GitHub
