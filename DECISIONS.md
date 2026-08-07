@@ -1,8 +1,15 @@
 # Pala Project Studio Kararları
 
-## ADR-001 — Skills + hooks + deterministic scripts
+## ADR-001 — Varsayılan yüzey: skills + hooks + deterministic scripts
 
-Pala 0.3, ayrı MCP sunucusu eklemeyecek. Mevcut yerel proje yürütme işi için skill, güvenilir hook ve deterministik Python scriptleri yeterlidir. Bu seçim kurulum, ağ, kimlik doğrulama ve context maliyetini düşük tutar. Haricî canlı veri gerektiğinde mevcut GitHub veya sağlayıcı connector'ları koşullu kullanılır.
+Pala'nın **varsayılan** yürütme yüzeyi skill, güvenilir hook ve deterministik
+Python scriptleridir; bu, kurulum, ağ, kimlik doğrulama ve context maliyetini
+düşük tutar. Bu bir "sonsuza dek yasak" değil, düşük bağımlılıklı başlangıç
+tercihidir. Ayrı MCP sunucusu, kalıcı servis veya görsel yüzey (dashboard/UI)
+çekirdeğe **kendiliğinden** eklenmez; ancak açık bir faz kararıyla (ADR-013)
+tek-kapı, yerel-first, secretsız ve hook-içinde-ağ-yok sınırlarını koruyarak
+açılabilir. Haricî canlı veri gerektiğinde mevcut GitHub veya sağlayıcı
+connector'ları koşullu kullanılır.
 
 ## ADR-002 — Progressive disclosure
 
@@ -81,6 +88,19 @@ kanıt etiketleriyle (`passed`, `not-run`, `blocked`, `configured-not-verified`,
 workflow ve CURRENT_STATUS uyarılır. İsteğe bağlı yerel katalog
 `Desktop\Codex\pala-catalog.json` secretsızdır; portable kurulumun parçası
 değildir. 0.5A Truth Core (PR #5 snapshot) bu ADR’nin kapsamı dışındadır.
+
+## ADR-013 — Görsel yüzey faz kapısı (ileride açılabilir)
+
+Pala'ya görsel bir yüzey (yerel dashboard / read-only durum ekranı) eklemek
+yasak değildir; bir **faz kararına** bağlıdır. Böyle bir yüzey ancak şu
+sınırların hepsini korursa çekirdeğe alınabilir: (1) tek kurulum kapısı bozulmaz;
+(2) yerel-first kalır, uzak servis veya telemetri gerektirmez; (3) secret,
+transcript veya gerçek proje verisi paketlenmez; (4) hook davranışı değişmez —
+hook içinde ağ/test/build yok; (5) mevcut deterministik script'ler tek kaynak
+gerçek olmaya devam eder, yüzey yalnız onları okur/tetikler. İlk uygun adım,
+yeni bileşen yerine mevcut `pala_state.py memory` ve `pala_catalog.py summary`
+gibi okunur çıktıları zenginleştirmektir. Ağır bir UI kararı ayrı bir ADR ve
+sözleşme testi gerektirir.
 
 ## ADR-011 — OSS katkısı tek kapı, salt-okunur scout ve ayrı yazma yetkisidir
 
