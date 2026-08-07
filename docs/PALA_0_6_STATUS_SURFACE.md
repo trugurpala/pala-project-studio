@@ -37,3 +37,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Sta
 - Deterministik script'ler tek kaynak gerçek olmaya devam eder
 
 See also: `DECISIONS.md` ADR-013 / ADR-014.
+
+## İç kurulum (provision)
+
+Ajans / self-host senaryosu için URL ile yerel clone+kayıt:
+
+`docs/PALA_INTERNAL_PROVISION.md` · `py -3 scripts\pala_provision.py provision --url <https-git> --parent <dir>`

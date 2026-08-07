@@ -41,6 +41,17 @@ Kayıtlı bir projede hafızayı insan dilinde görmek için:
 py -3 scripts\pala_state.py memory --cwd .
 ```
 
+
+Bir GitHub/GitLab HTTPS URL'sinden projeyi yerel klasöre alıp Pala kataloğuna
+yazmak (iç kurulum / provision):
+
+```powershell
+py -3 scripts\pala_provision.py provision --url https://github.com/org/repo.git --parent $env:USERPROFILE\Desktop\Cursor --dry-run
+```
+
+Ayrıntı: [İç kurulum](docs/PALA_INTERNAL_PROVISION.md).
+
+
 ## Ne sağlar?
 
 - Mevcut `AGENTS.md`, ürün, plan, durum ve karar belgelerini yeniden kullanır.

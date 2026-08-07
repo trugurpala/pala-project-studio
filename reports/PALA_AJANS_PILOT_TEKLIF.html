@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Pala Studio — Ajans Pilotu</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color: #1a1d24;
+    background: #fff;
+    font-size: 11pt;
+    line-height: 1.45;
+  }
+  h1 { font-size: 22pt; margin: 0 0 6px; letter-spacing: -0.02em; }
+  h2 {
+    font-size: 12pt;
+    margin: 18px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid #1a1d24;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  h3 { font-size: 11pt; margin: 12px 0 4px; }
+  p { margin: 0 0 8px; }
+  .sub { color: #4a5160; font-size: 11pt; margin-bottom: 4px; }
+  .meta { color: #6b7280; font-size: 9.5pt; margin-bottom: 16px; }
+  .tag {
+    display: inline-block;
+    border: 1px solid #1a1d24;
+    padding: 2px 8px;
+    font-size: 9pt;
+    margin-right: 6px;
+    margin-bottom: 10px;
+  }
+  ul { margin: 0 0 8px; padding-left: 18px; }
+  li { margin-bottom: 3px; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 8px 0 12px;
+  }
+  .card {
+    border: 1px solid #d5d8de;
+    padding: 10px 12px;
+    border-radius: 2px;
+  }
+  .card strong { display: block; margin-bottom: 4px; }
+  .quote {
+    margin: 12px 0;
+    padding: 12px 14px;
+    background: #f3f4f6;
+    border-left: 3px solid #1a1d24;
+    font-style: italic;
+  }
+  .cta {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 2px solid #1a1d24;
+  }
+  .foot {
+    margin-top: 20px;
+    font-size: 9pt;
+    color: #6b7280;
+  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media print {
+    .page-break { page-break-before: always; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="tag">Pala Studio</div>
+  <div class="tag">Ajans Pilotu</div>
+  <div class="tag">2 hafta</div>
+
+  <h1>Pala Studio — Ajans Pilotu</h1>
+  <p class="sub">Teslimat disiplini · Proje hafızası · Kanıtlı “bitti”</p>
+  <p class="meta">Codex kullanan yazılım / web / uygulama ajansları için · Gizli · Abartısız</p>
+
+  <h2>1. Sorun</h2>
+  <ul>
+    <li>“Nerede kalmıştık?” — oturum ve kişi değişince iş kaybolur.</li>
+    <li>Kanıtsız “bitti” — müşteri demosunda utanç ve yeniden iş.</li>
+    <li>El değiştiren projede kimse tek doğruyu bilmez.</li>
+  </ul>
+  <p>Ajansın sorunu AI hızı değil; <strong>hafıza ve dürüst teslimat</strong>.</p>
+
+  <h2>2. Ne değil / ne</h2>
+  <div class="grid">
+    <div class="card">
+      <strong>Değil</strong>
+      ChatGPT sihri · “dünya değişir” · ölçülmemiş %X hız · her AI’ya tek tık kurulum
+    </div>
+    <div class="card">
+      <strong>Ne</strong>
+      Codex’te proje hafızası · “bitti = kanıt” kuralı · durum sayfası (Status) · tek kurulum kapısı
+    </div>
+  </div>
+
+  <h2>3. Pilot kapsamında</h2>
+  <ul>
+    <li>1 ekip (yaklaşık 3–8 kişi)</li>
+    <li>1 canlı müşteri / iç proje</li>
+    <li>Kurulum (Install-Pala) + Status + memory şablonları</li>
+    <li>“Bitti = kanıt” kuralının ekibe net anlatımı</li>
+    <li>2 hafta · 1 ara check-in · 1 kapanış görüşmesi</li>
+  </ul>
+
+  <p><strong>İç kurulum:</strong> URL ver → Pala provision (yerel clone/fetch + katalog + makine kaydı). Bulut veritabanı veya ChatGPT tek tık kurulum değil; ajans kendi projelerinde ve Pala'nın kendisinde aynı deterministik kapıyı kullanır. Komut: <code>py -3 scripts\pala_provision.py provision --url …</code></p>
+
+  <h2>4. Sizin tarafta</h2>
+  <ul>
+    <li>Codex kullanan en az 1–2 kişi</li>
+    <li>Pilot için seçilmiş gerçek bir proje</li>
+    <li>Status’a bakacak 1 karar verici (ajans sahibi / lead)</li>
+  </ul>
+
+  <div class="page-break"></div>
+
+  <h2>5. Başarı ölçüsü (abartısız)</h2>
+  <ul>
+    <li>Status’tan “aktif iş + sonraki adım” okunabiliyor</li>
+    <li>En az 1 ticket kanıtlı checkpoint ile kapanmış</li>
+    <li>Ekip “nerede kaldık?”u sohbet yerine dosya / Status’tan cevaplıyor</li>
+  </ul>
+
+  <h2>6. Pilot sonrası</h2>
+  <div class="two-col">
+    <div class="card">
+      <strong>Studio</strong>
+      Aylık kurulum desteği · şablonlar · Status disiplini · kısa check-in
+    </div>
+    <div class="card">
+      <strong>Ajans</strong>
+      3–10 kişilik ekip · eğitim · “bitti = kanıt” operasyon kuralı
+    </div>
+  </div>
+  <p>Devam zorunlu değil. Pilot bitince karar sizin.</p>
+
+  <h2>7. Ters kapanış</h2>
+  <div class="quote">
+    Alma zorunluluğu yok. Her sabah “nerede kalmıştık?”a devam etmek de bir tercih.
+    Pilot, o tercihi pahalı bulan ajanslar içindir.
+  </div>
+
+  <h2>8. Sonraki adım</h2>
+  <div class="cta">
+    <strong>15 dakikalık keşif görüşmesi</strong><br>
+    Pilot proje + tarih netleştirilir. Uygun değilse zorlanmazsınız.<br><br>
+    İletişim: _______________________________ &nbsp;&nbsp; Tarih: _______________
+  </div>
+
+  <p class="foot">
+    Pala Project Studio — açık kaynak çekirdek (MIT) · Satılan şey: kurulum, disiplin, omuz.
+    Bu belge vaat değil; pilot çerçevesidir. Codex dışı platformlar bu pilotun kapsamında değildir.
+  </p>
+
+</body>
+</html>
