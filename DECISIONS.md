@@ -1,8 +1,15 @@
 # Pala Project Studio Kararları
 
-## ADR-001 — Skills + hooks + deterministic scripts
+## ADR-001 — Varsayılan yüzey: skills + hooks + deterministic scripts
 
-Pala 0.3, ayrı MCP sunucusu eklemeyecek. Mevcut yerel proje yürütme işi için skill, güvenilir hook ve deterministik Python scriptleri yeterlidir. Bu seçim kurulum, ağ, kimlik doğrulama ve context maliyetini düşük tutar. Haricî canlı veri gerektiğinde mevcut GitHub veya sağlayıcı connector'ları koşullu kullanılır.
+Pala'nın **varsayılan** yürütme yüzeyi skill, güvenilir hook ve deterministik
+Python scriptleridir; bu, kurulum, ağ, kimlik doğrulama ve context maliyetini
+düşük tutar. Bu bir "sonsuza dek yasak" değil, düşük bağımlılıklı başlangıç
+tercihidir. Ayrı MCP sunucusu, kalıcı servis veya görsel yüzey (dashboard/UI)
+çekirdeğe **kendiliğinden** eklenmez; ancak açık bir faz kararıyla (ADR-013)
+tek-kapı, yerel-first, secretsız ve hook-içinde-ağ-yok sınırlarını koruyarak
+açılabilir. Haricî canlı veri gerektiğinde mevcut GitHub veya sağlayıcı
+connector'ları koşullu kullanılır.
 
 ## ADR-002 — Progressive disclosure
 
@@ -81,6 +88,54 @@ kanıt etiketleriyle (`passed`, `not-run`, `blocked`, `configured-not-verified`,
 workflow ve CURRENT_STATUS uyarılır. İsteğe bağlı yerel katalog
 `Desktop\Codex\pala-catalog.json` secretsızdır; portable kurulumun parçası
 değildir. 0.5A Truth Core (PR #5 snapshot) bu ADR’nin kapsamı dışındadır.
+
+## ADR-013 — Görsel yüzey faz kapısı (ileride açılabilir)
+
+Pala'ya görsel bir yüzey (yerel dashboard / read-only durum ekranı) eklemek
+yasak değildir; bir **faz kararına** bağlıdır. Böyle bir yüzey ancak şu
+sınırların hepsini korursa çekirdeğe alınabilir: (1) tek kurulum kapısı bozulmaz;
+(2) yerel-first kalır, uzak servis veya telemetri gerektirmez; (3) secret,
+transcript veya gerçek proje verisi paketlenmez; (4) hook davranışı değişmez —
+hook içinde ağ/test/build yok; (5) mevcut deterministik script'ler tek kaynak
+gerçek olmaya devam eder, yüzey yalnız onları okur/tetikler. İlk uygun adım,
+yeni bileşen yerine mevcut `pala_state.py memory` ve `pala_catalog.py summary`
+gibi okunur çıktıları zenginleştirmektir. Ağır bir UI kararı ayrı bir ADR ve
+sözleşme testi gerektirir.
+
+## ADR-014 — Durum sayfası zorunlu ilk yüzey (0.6)
+
+Pala 0.6, ADR-013 faz kapısının ilk gerçeklemesi olarak sunucusuz bir yerel
+HTML durum sayfasını zorunlu ilk yüzey yapar. Skill Implementation modunda
+oturumun ilk işi `pala_report.py --cwd . --open` ile sayfayı üretip açmaktır.
+Sayfa tek statik dosyadır (`.codex/pala-status.html`): inline CSS, CSS-only sol
+menü (radio + `:checked`), harici asset/script yok. Sol menü aktif proje ile
+katalogdaki diğer projeleri listeler; her kayıtta tazelik rozeti
+(`fresh`/`aging`/`stale`) vardır. Pala sürüm güncelliği `pala_update` 24 saat
+önbelleğiyle banner olarak gösterilir; ağ yalnız agent/Status yolunda ve günde
+en fazla bir kez çalışır. Hook içinde ağ veya tarayıcı açma yoktur (ADR-007);
+SessionStart yalnız `pala_report.py --open` dürtüsü verir.
+
+## ADR-015 — Yerel SQLite store (0.7)
+
+Pala 0.7, projeler-arası katalog, URL provision kayıtları ve olay geçmişini
+makine-yerel tek bir SQLite dosyasında tutar: `Desktop\Codex\pala.sqlite`
+(`PALA_CATALOG_ROOT` / `PALA_DB_PATH` ile taşınır). Gerekçe: eşzamanlı oturum
+yazımlarında JSON son-yazan-kazanır kaybını önlemek, "dün ne yaptım?" için
+zaman çizelgesi tutmak ve bayat/blokajlı sorguları ucuzlaştırmak. Bu bulut veya
+çok kiracılı bir DB değildir; secret/transcript yazılmaz; hook DB'ye yazmaz
+(yalnız okur/dürtüler). `pala-catalog.json` ve `INDEX.md` DB'den yeniden üretilen
+export olarak kalır; bozulursa `.bak` JSON'dan `migrate_from_json` ile geri
+dönülür. Durum sayfası (ADR-014) bu store'dan timeline, progress ve provision
+özetini okur.
+
+## ADR-016 — Windows Codex keşfi ve core/experts ayrımı (0.7.1)
+
+Pala 0.7.1, “her Windows Codex makinesinde kurulum” sürtünmesini iki somut
+adımla düşürür: (1) `resolve_codex_executable` PATH yanında bilinen OpenAI
+desktop / npm konumlarını tarar; (2) Doctor `healthy`/`plugin_ready` çekirdeği
+(Python, Git, Codex, plugin) ile `experts_ready` (Node/uv/uzmanlar) ayrılır —
+uzman eksikliği çekirdek sağlığını düşürmez. Git URL marketplace kapısı
+dokümante edilir; ChatGPT Plus düz sohbet kurulum yüzeyi değildir.
 
 ## ADR-011 — OSS katkısı tek kapı, salt-okunur scout ve ayrı yazma yetkisidir
 

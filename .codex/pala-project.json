@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "managed_by": "pala-project-finisher",
-  "registered_at": "2026-08-05T13:58:28.567415+00:00",
+  "registered_at": "2026-08-07T14:46:56.436967+00:00",
   "project_kind": "existing",
   "profiles": [
     "project-intake",
@@ -15,7 +15,12 @@
     "project": "PROJECT.md",
     "plan": "PLAN.md",
     "status": "STATUS.md",
+    "progress": "PROGRESS.md",
+    "tooling": "TOOLING_DECISIONS.md",
+    "debugging": "DEBUGGING.md",
     "decisions": "DECISIONS.md",
-    "open_source": "OPEN_SOURCE.md"
-  }
+    "open_source": "OPEN_SOURCE.md",
+    "demo": null
+  },
+  "memory_contract_version": 1
 }

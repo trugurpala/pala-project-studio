@@ -77,6 +77,11 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / ".github" / "workflows" / "quality.yml",
         plugin_root / "docs" / "CODEX_SCOPE_AND_LIMITS.md",
         plugin_root / "docs" / "PALA_0_4_SINGLE_DOOR.md",
+        plugin_root / "docs" / "PALA_0_5_MEMORY_CONTRACT.md",
+        plugin_root / "docs" / "PALA_0_6_STATUS_SURFACE.md",
+        plugin_root / "docs" / "PALA_0_7_LOCAL_STORE.md",
+        plugin_root / "docs" / "PALA_EVERYWHERE.md",
+        plugin_root / "docs" / "PALA_INTERNAL_PROVISION.md",
     ]
     for directory in ("hooks", "skills"):
         candidates.extend(

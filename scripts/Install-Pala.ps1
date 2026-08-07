@@ -4,7 +4,7 @@
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [ValidateSet("Install", "Doctor", "Repair", "Update", "Uninstall")]
+    [ValidateSet("Install", "Doctor", "Repair", "Update", "Uninstall", "Status")]
     [string]$Mode = "Install"
 )
 
@@ -84,12 +84,20 @@ function Show-PalaResult([pscustomobject]$Payload) {
         $pluginStatus = $Payload.plugin.status
         $codexStatus = $Payload.codex.status
         Write-Host "[Pala] Doctor: healthy=$($Payload.healthy), plugin=$pluginStatus, codex=$codexStatus"
+        if ($null -ne $Payload.plugin_ready) {
+            Write-Host "[Pala] Cekirdek(plugin_ready)=$($Payload.plugin_ready), uzmanlar(experts_ready)=$($Payload.experts_ready)"
+        }
         Write-Host "[Pala] Python=$($Payload.python.ready), Git=$($Payload.git.ready), Codex CLI=$($Payload.codex_cli.ready), Node=$($Payload.node.ready), uv=$($Payload.uv.ready)"
+        if ($null -ne $Payload.codex_cli.hint -and "$($Payload.codex_cli.hint)".Trim().Length -gt 0) {
+            Write-Host "[Pala] $($Payload.codex_cli.hint)"
+        }
         if ($null -ne $Payload.project.project_registration) {
             Write-Host "[Pala] Proje kaydi=$($Payload.project.project_registration.registered), hook=$($Payload.project.hook_safety.status)"
-            if ($Payload.project.hook_safety.status -ne "passed") {
-                Write-Host "[Pala] Hook guveni icin Codex'te /hooks komutunu acin; otomatik bypass yapilmadi."
-            }
+        }
+        if ($null -ne $Payload.hooks_next_step -and "$($Payload.hooks_next_step)".Trim().Length -gt 0) {
+            Write-Host "[Pala] $($Payload.hooks_next_step)"
+        } elseif ($null -ne $Payload.project.hook_safety -and $Payload.project.hook_safety.status -ne "passed") {
+            Write-Host "[Pala] Hook guveni icin Codex'te /hooks komutunu acin; otomatik bypass yapilmadi."
         }
         return
     }
@@ -160,6 +168,41 @@ if (-not (Test-Path -LiteralPath $core -PathType Leaf)) {
 
 $pythonCommand = Resolve-PalaPython
 $executable = $pythonCommand[0]
+
+if ($Mode -eq "Status") {
+    $stateScript = Join-Path $PSScriptRoot "pala_state.py"
+    $catalogScript = Join-Path $PSScriptRoot "pala_catalog.py"
+    $reportScript = Join-Path $PSScriptRoot "pala_report.py"
+    $projectRoot = (Get-Location).Path
+    Write-Host "[Pala] Durum: $projectRoot"
+    $memoryArgs = @()
+    if ($pythonCommand.Count -gt 1) { $memoryArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
+    $memoryArgs += @($stateScript, "memory", "--cwd", $projectRoot)
+    & $executable @memoryArgs
+    $statusExit = $LASTEXITCODE
+    Write-Host ""
+    $summaryArgs = @()
+    if ($pythonCommand.Count -gt 1) { $summaryArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
+    $summaryArgs += @($catalogScript, "summary", "--cwd", $projectRoot)
+    & $executable @summaryArgs
+    if ($statusExit -eq 0 -and $null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+        $statusExit = $LASTEXITCODE
+    }
+    if (-not $WhatIfPreference) {
+        $reportArgs = @()
+        if ($pythonCommand.Count -gt 1) { $reportArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
+        $reportArgs += @($reportScript, "--cwd", $projectRoot, "--open")
+        $reportOut = (& $executable @reportArgs 2>&1 | Out-String).Trim()
+        if ($statusExit -eq 0 -and $null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+            $statusExit = $LASTEXITCODE
+        }
+        if ($reportOut) {
+            Write-Host "[Pala] Durum sayfasi: $reportOut"
+        }
+    }
+    exit $statusExit
+}
+
 $arguments = @()
 if ($pythonCommand.Count -gt 1) { $arguments += $pythonCommand[1..($pythonCommand.Count - 1)] }
 $arguments += @($core, $Mode.ToLowerInvariant(), "--source", $pluginRoot, "--project-root", (Get-Location).Path)

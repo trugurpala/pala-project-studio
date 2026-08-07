@@ -12,3 +12,5 @@ build/
 !.env.example
 .codex/plugin-data/
 .codex/pala-workflow.json
+.codex/pala-status.html
+.codex/pala-project.json

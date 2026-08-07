@@ -7,6 +7,7 @@ import importlib.util
 import io
 import hashlib
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -14,6 +15,44 @@ import sys
 from argparse import Namespace
 from pathlib import Path
 from unittest.mock import patch
+
+_CATALOG_TMP: tempfile.TemporaryDirectory | None = None
+_CATALOG_PREV: str | None = None
+_DB_PREV: str | None = None
+_REG_PREV: str | None = None
+
+
+def setUpModule() -> None:
+    """Isolate the cross-project catalog so tests never touch the real one."""
+    global _CATALOG_TMP, _CATALOG_PREV, _DB_PREV, _REG_PREV
+    _CATALOG_PREV = os.environ.get("PALA_CATALOG_ROOT")
+    _DB_PREV = os.environ.get("PALA_DB_PATH")
+    _REG_PREV = os.environ.get("PALA_PROVISION_REGISTRY")
+    _CATALOG_TMP = tempfile.TemporaryDirectory()
+    os.environ["PALA_CATALOG_ROOT"] = _CATALOG_TMP.name
+    os.environ["PALA_DB_PATH"] = str(Path(_CATALOG_TMP.name) / "pala.sqlite")
+    os.environ["PALA_PROVISION_REGISTRY"] = str(
+        Path(_CATALOG_TMP.name) / "provision-registry.json"
+    )
+
+
+def tearDownModule() -> None:
+    global _CATALOG_TMP, _CATALOG_PREV, _DB_PREV, _REG_PREV
+    if _CATALOG_PREV is None:
+        os.environ.pop("PALA_CATALOG_ROOT", None)
+    else:
+        os.environ["PALA_CATALOG_ROOT"] = _CATALOG_PREV
+    if _DB_PREV is None:
+        os.environ.pop("PALA_DB_PATH", None)
+    else:
+        os.environ["PALA_DB_PATH"] = _DB_PREV
+    if _REG_PREV is None:
+        os.environ.pop("PALA_PROVISION_REGISTRY", None)
+    else:
+        os.environ["PALA_PROVISION_REGISTRY"] = _REG_PREV
+    if _CATALOG_TMP is not None:
+        _CATALOG_TMP.cleanup()
+        _CATALOG_TMP = None
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:

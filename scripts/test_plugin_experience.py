@@ -102,7 +102,7 @@ class UserExperienceContractTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        self.assertTrue(manifest["version"].startswith("0.5.0+codex."))
+        self.assertTrue(manifest["version"].startswith("0.7.1+codex."))
         self.assertEqual(
             manifest["repository"],
             "https://github.com/trugurpala/pala-project-studio",
@@ -299,7 +299,10 @@ class UserExperienceContractTests(unittest.TestCase):
         compact = "".join(wrapper.split())
 
         self.assertIn("scripts\\Install-Pala.ps1", entry)
-        self.assertIn('ValidateSet("Install","Doctor","Repair","Update","Uninstall")', compact)
+        self.assertIn(
+            'ValidateSet("Install","Doctor","Repair","Update","Uninstall","Status")',
+            compact,
+        )
         self.assertIn("pala_installer.py", wrapper)
         self.assertIn("pala_expert_installer.py", wrapper)
         self.assertIn("managed-tools.lock.json", wrapper)
@@ -308,6 +311,16 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertIn("--dry-run", wrapper)
         self.assertNotIn("Remove-Item -Path $installRoot -Recurse", wrapper)
         self.assertNotIn("Copy-Item -Path (Join-Path $pluginRoot", wrapper)
+
+    def test_windows_status_mode_propagates_subcommand_exit_codes(self) -> None:
+        wrapper = (PLUGIN_ROOT / "scripts" / "Install-Pala.ps1").read_text(
+            encoding="utf-8"
+        )
+        status_start = wrapper.index('if ($Mode -eq "Status")')
+        status_block = wrapper[status_start : wrapper.index("$arguments = @()", status_start)]
+        self.assertIn("$statusExit = $LASTEXITCODE", status_block)
+        self.assertIn("exit $statusExit", status_block)
+        self.assertNotIn("exit 0", status_block)
 
     def test_windows_installer_contains_expected_ollama_probe_stderr(self) -> None:
         wrapper = (PLUGIN_ROOT / "scripts" / "Install-Pala.ps1").read_text(

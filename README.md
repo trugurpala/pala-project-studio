@@ -1,7 +1,7 @@
 # Pala Project Studio
 
 ![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
-[![Release v0.5.0](https://img.shields.io/badge/release-v0.5.0-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.5.0)
+[![Release v0.7.1](https://img.shields.io/badge/release-v0.7.1-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.7.1)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Pala Project Studio, Codex'in uzun soluklu yazılım projelerinde aktif işi
@@ -10,15 +10,16 @@ eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bul
 aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
 göre katmanlandırır.
 
-- Güncel sürüm `v0.5.0`'dır (Project Memory Contract). Windows kurucusu, taşınabilir ZIP,
-  `Update` ve `Doctor` akışları 0.4.x üzerinde doğrulanmıştır; 0.5 bellek sözleşmesi
-  yerel `verify` ile kanıtlanır.
+- Güncel sürüm `v0.7.1`'dir (her yerde kur: Windows Codex PATH keşfi + core/experts
+  ayrımı; 0.7 yerel store üzerine). Windows kurucusu, taşınabilir ZIP, `Update` ve
+  `Doctor` akışları 0.4.x üzerinde doğrulanmıştır; bellek sözleşmesi, durum sayfası
+  ve yerel store `verify` ile kanıtlanır.
 
 ## Hızlı başlangıç
 
 En güncel, taşınabilir sürümü indir:
 
-[Pala Project Studio 0.5.0'ı indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.5.0.zip)
+[Pala Project Studio 0.7.1'ı indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.7.1.zip)
 
 ZIP'i açtıktan sonra içindeki klasörde şu komutu çalıştır:
 
@@ -28,6 +29,33 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 
 Pala kurulum sırasında ne yapacağını açıkça gösterir. `-WhatIf` ile önce
 önizleyebilir, `-Mode Doctor` ile kurulumun sağlığını kontrol edebilirsin.
+
+Durum sayfasını (sol menülü yerel HTML) üretip açmak için:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Status
+```
+
+Panel açılınca: **Şimdi** (sonraki iş), okuma sırası ilerlemesi (`N/7`), son
+olaylar ve URL kurulumları. Yerel store: `%USERPROFILE%\Desktop\Codex\pala.sqlite`
+([0.7 yerel store](docs/PALA_0_7_LOCAL_STORE.md)).
+
+Kayıtlı bir projede hafızayı insan dilinde görmek için:
+
+```powershell
+py -3 scripts\pala_state.py memory --cwd .
+```
+
+
+Bir GitHub/GitLab HTTPS URL'sinden projeyi yerel klasöre alıp Pala kataloğuna
+yazmak (iç kurulum / provision):
+
+```powershell
+py -3 scripts\pala_provision.py provision --url https://github.com/org/repo.git --parent $env:USERPROFILE\Desktop\Cursor --dry-run
+```
+
+Ayrıntı: [İç kurulum](docs/PALA_INTERNAL_PROVISION.md).
+
 
 ## Ne sağlar?
 
@@ -41,6 +69,10 @@ Pala kurulum sırasında ne yapacağını açıkça gösterir. `-WhatIf` ile ön
   ve varsa gerçek tarayıcı ekran kanıtı bırakır.
 - Hook içinde test, build, ağ veya GitHub işlemi çalıştırmaz.
 - Commit, push, PR, release ve deploy için ayrı kullanıcı yetkisini korur.
+
+Bu depoyu fork/PR ile geliştirmek için [CONTRIBUTING.md](CONTRIBUTING.md) ve
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) dosyalarına bak. Güvenlik bildirimleri:
+[SECURITY.md](SECURITY.md).
 
 Pala daha fazla token veya daha geniş bir Codex bağlamı oluşturamaz. Katkısı,
 gereksiz belgeleri her turda tekrar yüklemeyi ve ağır doğrulamayı yanlış yerde
@@ -101,6 +133,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Uni
 Kurulum aynı oturumda doğrulanır. Yeni skill ve hook'ların güvenilir biçimde
 yüklenmesi için kurulumdan sonra yeni bir Codex sohbeti açılır. Hook güveni
 eksikse kurucu güvenlik kontrolünü atlamaz; Codex'te `/hooks` komutunu gösterir.
+
+Saf Codex CLI ile git URL kapısı (Python kurucu olmadan):
+
+```powershell
+codex plugin marketplace add trugurpala/pala-project-studio
+codex plugin add pala-project-studio@pala-project-studio
+```
+
+“Her yerde çalışır” sözleşmesi, ChatGPT Plus sohbet sınırları ve multi-host
+gerçekliği: [PALA_EVERYWHERE.md](docs/PALA_EVERYWHERE.md).
 
 ## Güvenli uzman işçileri
 

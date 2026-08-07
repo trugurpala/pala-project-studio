@@ -137,16 +137,16 @@ def session_context(
     tools = tools_summary or "tools=n/a"
     message = (
         f"{prefix}{health_text}Pala project kind={kind}. "
+        f"Once durum sayfasini ac: pala_report.py --open. "
         f"Memory read_order=AGENTS>CURRENT_STATUS>PROGRESS>plan>TOOLING>DEBUG>git. "
         f"Read status first: status={status or project}; "
-        f"inspect only the active ticket section in plan={plan}. "
+        f"active ticket only in plan={plan}. "
         f"active={active or 'none'}; next={next_action or 'reconcile first'}; "
         f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
         f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
         f"ticket_mismatch={str(mismatch).lower()}; {tools}. "
-        "Do not re-plan completed scope. Continue authorized local "
-        "work; use the full gate only at the plan's milestone/release boundary, then "
-        "checkpoint one coherent ticket."
+        "Do not re-plan completed scope. Continue authorized local work; "
+        "full gate only at milestone/release; then checkpoint one ticket."
     )
     if len(message) > 800:
         message = message[:797] + "..."

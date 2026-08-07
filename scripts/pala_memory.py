@@ -225,3 +225,66 @@ def contract_context(
         "git": git_status_summary(root),
         "evidence_policy_version": 1,
     }
+
+
+_PURPOSE_LABELS = {
+    "instructions": "AGENTS / talimat",
+    "status": "güncel durum",
+    "progress": "ilerleme",
+    "plan": "plan",
+    "tooling": "araç kararları",
+    "debugging": "debug günlüğü",
+    "git": "git durumu",
+}
+
+
+def plain_memory_report(
+    root: Path,
+    *,
+    documents: dict[str, object] | None = None,
+    workflow: dict[str, object] | None = None,
+    tool_counts: dict[str, object] | None = None,
+) -> str:
+    """Human-readable memory snapshot for vibe / owner use (not JSON)."""
+    memory = contract_context(root, documents, workflow)
+    coherence = memory.get("ticket_coherence")
+    if not isinstance(coherence, dict):
+        coherence = {}
+    git = memory.get("git")
+    if not isinstance(git, dict):
+        git = {}
+    lines = [
+        "Pala hafıza durumu",
+        "==================",
+        f"Kök: {root}",
+        f"Aktif ticket: {coherence.get('active') or 'yok'}",
+        f"Sonraki iş: {coherence.get('inferred_next') or 'yok'}",
+    ]
+    if coherence.get("mismatch"):
+        lines.append(f"Ticket uyumu: SORUN — {coherence.get('note')}")
+    else:
+        lines.append("Ticket uyumu: tamam")
+    lines.append("")
+    lines.append("Okuma sırası (zorunlu):")
+    read_order = memory.get("read_order")
+    if isinstance(read_order, list):
+        for index, item in enumerate(read_order, start=1):
+            if not isinstance(item, dict):
+                continue
+            purpose = str(item.get("purpose") or "")
+            label = _PURPOSE_LABELS.get(purpose, purpose)
+            path = item.get("path") or "(yok)"
+            mark = "var" if item.get("exists") else "eksik"
+            lines.append(f"  {index}. {label}: {path} [{mark}]")
+    lines.append("")
+    branch = git.get("branch") or "?"
+    dirty = git.get("dirty_count", 0)
+    lines.append(f"Git: {branch} · değişen dosya: {dirty}")
+    if isinstance(tool_counts, dict) and tool_counts:
+        parts = [f"{key}={value}" for key, value in sorted(tool_counts.items())]
+        lines.append("Araç özeti: " + ", ".join(parts))
+    lines.append("")
+    lines.append(
+        "İpucu: sohbet geçmişine güvenme; yukarıdaki dosyaları sırayla oku."
+    )
+    return "\n".join(lines) + "\n"

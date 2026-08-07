@@ -823,6 +823,30 @@ def load_workflow(root: Path) -> dict[str, object]:
     return payload
 
 
+def _record_store_event(
+    root: Path,
+    kind: str,
+    *,
+    detail: str = "",
+    evidence: str = "",
+) -> None:
+    """Best-effort history write; never raises into caller workflows."""
+    try:
+        import pala_db
+        from pala_catalog import db_path, _project_id
+
+        pala_db.add_event(
+            kind,
+            project_id=_project_id(root),
+            project_name=root.name,
+            detail=detail,
+            evidence=evidence,
+            path=db_path(),
+        )
+    except (OSError, ValueError, TypeError, KeyError, ImportError):
+        pass
+
+
 def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -> None:
     if not ticket.strip() or not goal.strip():
         raise ValueError("ticket and goal must be non-empty")
@@ -832,6 +856,11 @@ def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -
         result = WorkflowStore(root).claim(ticket=ticket, goal=goal, session=session)
         if result.status == "owned_by_other":
             raise ValueError("ticket is owned by another active session")
+        _record_store_event(
+            root,
+            "begin",
+            detail=f"{ticket.strip()}: {goal.strip()}"[:300],
+        )
         return
     from pala_store import WorkflowStore
 
@@ -859,6 +888,11 @@ def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     write_json(root / WORKFLOW, payload)
+    _record_store_event(
+        root,
+        "begin",
+        detail=f"{ticket.strip()}: {goal.strip()}"[:300],
+    )
 
 
 def checkpoint_work(
@@ -920,6 +954,11 @@ def checkpoint_work(
     write_json(root / WORKFLOW, payload)
     if status_rel and coherence.get("mismatch"):
         append_status_mismatch(root / status_rel, coherence)
+        _record_store_event(
+            root,
+            "mismatch",
+            detail=str(coherence.get("note") or "ticket mismatch")[:300],
+        )
     # Best-effort catalog upsert (local Desktop\Codex); never fails checkpoint.
     try:
         from pala_catalog import upsert_project
@@ -943,6 +982,15 @@ def checkpoint_work(
         )
     except (OSError, ValueError, TypeError, KeyError):
         pass
+    evidence_text = "; ".join(
+        f"{item.get('name')}={item.get('status')}" for item in evidence[:4]
+    )
+    _record_store_event(
+        root,
+        "checkpoint",
+        detail=next_action.strip()[:300],
+        evidence=evidence_text[:500],
+    )
 
 
 def discover(root: Path) -> dict[str, object]:
@@ -1040,6 +1088,7 @@ def register(args: argparse.Namespace, root: Path) -> int:
         upsert_project(root, phase="registered", next_action="begin first ticket")
     except (OSError, ValueError, TypeError):
         pass
+    _record_store_event(root, "register", detail="project registered")
     print(str(manifest_path))
     return 0
 
@@ -1156,10 +1205,12 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     subparsers = result.add_subparsers(dest="command", required=True)
-    for command in ("discover", "validate", "instructions", "context"):
+    for command in ("discover", "validate", "instructions", "context", "memory"):
         child = subparsers.add_parser(command)
         child.add_argument("--cwd", default=".")
         if command == "context":
+            child.add_argument("--session-key")
+        if command == "memory":
             child.add_argument("--session-key")
     register_parser = subparsers.add_parser("register")
     register_parser.add_argument("--cwd", default=".")
@@ -1228,6 +1279,46 @@ def main() -> int:
                 )
             )
             return 0
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+    if args.command == "memory":
+        try:
+            from pala_memory import plain_memory_report
+
+            try:
+                report = context_report(root, getattr(args, "session_key", None))
+                documents = dict(load_manifest(root).get("documents") or {})
+                workflow = {
+                    "active_ticket": report.get("active_ticket"),
+                    "next_action": report.get("next_action"),
+                }
+                tool_counts = None
+                tool_memory = report.get("tool_memory")
+                if isinstance(tool_memory, dict) and isinstance(
+                    tool_memory.get("counts"), dict
+                ):
+                    tool_counts = tool_memory["counts"]
+                coherence = report.get("ticket_coherence")
+                mismatch = (
+                    isinstance(coherence, dict) and bool(coherence.get("mismatch"))
+                )
+            except (OSError, ValueError, json.JSONDecodeError):
+                discovery = discover(root)
+                documents = dict(discovery.get("documents") or {})
+                workflow = {}
+                tool_counts = None
+                mismatch = False
+            print(
+                plain_memory_report(
+                    root,
+                    documents=documents,
+                    workflow=workflow,
+                    tool_counts=tool_counts,
+                ),
+                end="",
+            )
+            return 1 if mismatch else 0
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             print(str(exc), file=sys.stderr)
             return 2
