@@ -14,22 +14,38 @@ from pathlib import Path
 
 _CATALOG_TMP: tempfile.TemporaryDirectory | None = None
 _CATALOG_PREV: str | None = None
+_DB_PREV: str | None = None
+_REG_PREV: str | None = None
 
 
 def setUpModule() -> None:
     """Isolate the cross-project catalog so tests never touch the real one."""
-    global _CATALOG_TMP, _CATALOG_PREV
+    global _CATALOG_TMP, _CATALOG_PREV, _DB_PREV, _REG_PREV
     _CATALOG_PREV = os.environ.get("PALA_CATALOG_ROOT")
+    _DB_PREV = os.environ.get("PALA_DB_PATH")
+    _REG_PREV = os.environ.get("PALA_PROVISION_REGISTRY")
     _CATALOG_TMP = tempfile.TemporaryDirectory()
     os.environ["PALA_CATALOG_ROOT"] = _CATALOG_TMP.name
+    os.environ["PALA_DB_PATH"] = str(Path(_CATALOG_TMP.name) / "pala.sqlite")
+    os.environ["PALA_PROVISION_REGISTRY"] = str(
+        Path(_CATALOG_TMP.name) / "provision-registry.json"
+    )
 
 
 def tearDownModule() -> None:
-    global _CATALOG_TMP, _CATALOG_PREV
+    global _CATALOG_TMP, _CATALOG_PREV, _DB_PREV, _REG_PREV
     if _CATALOG_PREV is None:
         os.environ.pop("PALA_CATALOG_ROOT", None)
     else:
         os.environ["PALA_CATALOG_ROOT"] = _CATALOG_PREV
+    if _DB_PREV is None:
+        os.environ.pop("PALA_DB_PATH", None)
+    else:
+        os.environ["PALA_DB_PATH"] = _DB_PREV
+    if _REG_PREV is None:
+        os.environ.pop("PALA_PROVISION_REGISTRY", None)
+    else:
+        os.environ["PALA_PROVISION_REGISTRY"] = _REG_PREV
     if _CATALOG_TMP is not None:
         _CATALOG_TMP.cleanup()
         _CATALOG_TMP = None
@@ -165,8 +181,8 @@ class MemoryContractTests(unittest.TestCase):
                 root,
                 update={
                     "status": "current",
-                    "installed_version": "0.6.0",
-                    "available_version": "0.6.0",
+                    "installed_version": "0.7.0",
+                    "available_version": "0.7.0",
                     "url": None,
                 },
             )
@@ -175,12 +191,69 @@ class MemoryContractTests(unittest.TestCase):
             self.assertIn("<!doctype html>", markup)
             self.assertIn("Okuma sirasi", markup)
             self.assertIn("Proje katalogu", markup)
+            self.assertIn("Simdi:", markup)
+            self.assertIn("hazir", markup)
+            self.assertIn("Son olaylar", markup)
+            self.assertIn("Son URL kurulumlari", markup)
             self.assertIn('name="pala-nav"', markup)
-            self.assertIn("id=\"nav-current\"", markup)
+            self.assertIn('id="nav-current"', markup)
             self.assertNotIn("<script", markup)
             self.assertNotIn("<link", markup)
             self.assertNotIn('src="http', markup)
             self.assertNotIn("src='http", markup)
+
+    def test_report_shows_timeline_and_empty_states(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            cdir = Path(temp) / "Codex"
+            cdir.mkdir()
+            os.environ["PALA_CATALOG_ROOT"] = str(cdir)
+            os.environ["PALA_DB_PATH"] = str(cdir / "pala.sqlite")
+            os.environ["PALA_PROVISION_REGISTRY"] = str(
+                cdir / "provision-registry.json"
+            )
+            root = Path(temp) / "proj"
+            root.mkdir()
+            (root / "AGENTS.md").write_text("# A\n", encoding="utf-8")
+            import pala_db
+
+            pala_db.add_event(
+                "checkpoint",
+                project_name="proj",
+                detail="Continue F2-T2",
+                path=cdir / "pala.sqlite",
+            )
+            markup = pala_report.render_html(
+                root,
+                update={"status": "current", "installed_version": "0.7.0"},
+            )
+            self.assertIn("Continue F2-T2", markup)
+            self.assertIn("checkpoint", markup)
+            self.assertIn("Henuz URL kurulumu yok", markup)
+            self.assertIn("Henuz kayitli proje yok", markup)
+
+    def test_report_progress_counts_ready_slots(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "AGENTS.md").write_text("# A\n", encoding="utf-8")
+            (root / "reports").mkdir()
+            (root / "reports" / "CURRENT_STATUS.md").write_text(
+                "# Status\n- Next: F2-T2 write tests\n", encoding="utf-8"
+            )
+            model = pala_report.build_status_model(
+                root,
+                update={"status": "current", "installed_version": "0.7.0"},
+            )
+            progress = model["progress"]
+            self.assertIsInstance(progress, dict)
+            self.assertGreaterEqual(int(progress["ready"]), 2)
+            self.assertEqual(int(progress["total"]), 7)
+            markup = pala_report.render_html(
+                root,
+                update={"status": "current", "installed_version": "0.7.0"},
+            )
+            self.assertRegex(markup, r"\d+/7 hazir")
+            self.assertIn("Simdi:", markup)
+            self.assertIn("F2-T2", markup)
 
     def test_report_sidebar_lists_catalog_projects(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

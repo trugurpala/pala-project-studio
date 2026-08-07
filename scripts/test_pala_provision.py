@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -14,6 +15,33 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+
+_CATALOG_TMP: tempfile.TemporaryDirectory | None = None
+_ENV_PREV: dict[str, str | None] = {}
+
+
+def setUpModule() -> None:
+    global _CATALOG_TMP
+    _CATALOG_TMP = tempfile.TemporaryDirectory()
+    for name in ("PALA_CATALOG_ROOT", "PALA_DB_PATH", "PALA_PROVISION_REGISTRY"):
+        _ENV_PREV[name] = os.environ.get(name)
+    os.environ["PALA_CATALOG_ROOT"] = _CATALOG_TMP.name
+    os.environ["PALA_DB_PATH"] = str(Path(_CATALOG_TMP.name) / "pala.sqlite")
+    os.environ["PALA_PROVISION_REGISTRY"] = str(
+        Path(_CATALOG_TMP.name) / "provision-registry.json"
+    )
+
+
+def tearDownModule() -> None:
+    global _CATALOG_TMP
+    for name, value in _ENV_PREV.items():
+        if value is None:
+            os.environ.pop(name, None)
+        else:
+            os.environ[name] = value
+    if _CATALOG_TMP is not None:
+        _CATALOG_TMP.cleanup()
+        _CATALOG_TMP = None
 
 
 def load_module():
@@ -116,6 +144,8 @@ class PalaProvisionTests(unittest.TestCase):
             registry = Path(temp) / "Pala" / "provision-registry.json"
             catalog = Path(temp) / "catalog"
             catalog.mkdir()
+            os.environ["PALA_DB_PATH"] = str(catalog / "pala.sqlite")
+            os.environ["PALA_CATALOG_ROOT"] = str(catalog)
             report = pala_provision.provision(
                 url="https://github.com/example/demo-repo.git",
                 parent=parent,
@@ -128,15 +158,18 @@ class PalaProvisionTests(unittest.TestCase):
             self.assertEqual(report["last_status"], "provisioned")
             dest = parent / "demo-repo"
             self.assertTrue((dest / ".git").is_dir())
-            payload = json.loads(registry.read_text(encoding="utf-8"))
-            self.assertEqual(payload["schema_version"], 1)
-            self.assertEqual(len(payload["installs"]), 1)
-            self.assertEqual(payload["installs"][0]["last_status"], "provisioned")
+            import pala_db
+
+            rows = pala_db.recent_provisions(path=catalog / "pala.sqlite")
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["status"], "provisioned")
             catalog_file = catalog / "pala-catalog.json"
             self.assertTrue(catalog_file.is_file())
             projects = json.loads(catalog_file.read_text(encoding="utf-8"))["projects"]
             self.assertEqual(projects[0]["phase"], "provisioned")
             self.assertTrue(any(c[0][:2] == ["git", "clone"] for c in runner.calls))
+            events = pala_db.recent_events(limit=5, path=catalog / "pala.sqlite")
+            self.assertTrue(any(item["kind"] == "provision" for item in events))
 
     def test_existing_repo_fetches_without_reset(self) -> None:
         runner = FakeRunner()

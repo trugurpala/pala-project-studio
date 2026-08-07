@@ -823,6 +823,30 @@ def load_workflow(root: Path) -> dict[str, object]:
     return payload
 
 
+def _record_store_event(
+    root: Path,
+    kind: str,
+    *,
+    detail: str = "",
+    evidence: str = "",
+) -> None:
+    """Best-effort history write; never raises into caller workflows."""
+    try:
+        import pala_db
+        from pala_catalog import db_path, _project_id
+
+        pala_db.add_event(
+            kind,
+            project_id=_project_id(root),
+            project_name=root.name,
+            detail=detail,
+            evidence=evidence,
+            path=db_path(),
+        )
+    except (OSError, ValueError, TypeError, KeyError, ImportError):
+        pass
+
+
 def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -> None:
     if not ticket.strip() or not goal.strip():
         raise ValueError("ticket and goal must be non-empty")
@@ -832,6 +856,11 @@ def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -
         result = WorkflowStore(root).claim(ticket=ticket, goal=goal, session=session)
         if result.status == "owned_by_other":
             raise ValueError("ticket is owned by another active session")
+        _record_store_event(
+            root,
+            "begin",
+            detail=f"{ticket.strip()}: {goal.strip()}"[:300],
+        )
         return
     from pala_store import WorkflowStore
 
@@ -859,6 +888,11 @@ def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     write_json(root / WORKFLOW, payload)
+    _record_store_event(
+        root,
+        "begin",
+        detail=f"{ticket.strip()}: {goal.strip()}"[:300],
+    )
 
 
 def checkpoint_work(
@@ -920,6 +954,11 @@ def checkpoint_work(
     write_json(root / WORKFLOW, payload)
     if status_rel and coherence.get("mismatch"):
         append_status_mismatch(root / status_rel, coherence)
+        _record_store_event(
+            root,
+            "mismatch",
+            detail=str(coherence.get("note") or "ticket mismatch")[:300],
+        )
     # Best-effort catalog upsert (local Desktop\Codex); never fails checkpoint.
     try:
         from pala_catalog import upsert_project
@@ -943,6 +982,15 @@ def checkpoint_work(
         )
     except (OSError, ValueError, TypeError, KeyError):
         pass
+    evidence_text = "; ".join(
+        f"{item.get('name')}={item.get('status')}" for item in evidence[:4]
+    )
+    _record_store_event(
+        root,
+        "checkpoint",
+        detail=next_action.strip()[:300],
+        evidence=evidence_text[:500],
+    )
 
 
 def discover(root: Path) -> dict[str, object]:
@@ -1040,6 +1088,7 @@ def register(args: argparse.Namespace, root: Path) -> int:
         upsert_project(root, phase="registered", next_action="begin first ticket")
     except (OSError, ValueError, TypeError):
         pass
+    _record_store_event(root, "register", detail="project registered")
     print(str(manifest_path))
     return 0
 

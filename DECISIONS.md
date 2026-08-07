@@ -115,6 +115,28 @@ katalogdaki diğer projeleri listeler; her kayıtta tazelik rozeti
 en fazla bir kez çalışır. Hook içinde ağ veya tarayıcı açma yoktur (ADR-007);
 SessionStart yalnız `pala_report.py --open` dürtüsü verir.
 
+## ADR-015 — Yerel SQLite store (0.7)
+
+Pala 0.7, projeler-arası katalog, URL provision kayıtları ve olay geçmişini
+makine-yerel tek bir SQLite dosyasında tutar: `Desktop\Codex\pala.sqlite`
+(`PALA_CATALOG_ROOT` / `PALA_DB_PATH` ile taşınır). Gerekçe: eşzamanlı oturum
+yazımlarında JSON son-yazan-kazanır kaybını önlemek, "dün ne yaptım?" için
+zaman çizelgesi tutmak ve bayat/blokajlı sorguları ucuzlaştırmak. Bu bulut veya
+çok kiracılı bir DB değildir; secret/transcript yazılmaz; hook DB'ye yazmaz
+(yalnız okur/dürtüler). `pala-catalog.json` ve `INDEX.md` DB'den yeniden üretilen
+export olarak kalır; bozulursa `.bak` JSON'dan `migrate_from_json` ile geri
+dönülür. Durum sayfası (ADR-014) bu store'dan timeline, progress ve provision
+özetini okur.
+
+## ADR-016 — Windows Codex keşfi ve core/experts ayrımı (0.7.1)
+
+Pala 0.7.1, “her Windows Codex makinesinde kurulum” sürtünmesini iki somut
+adımla düşürür: (1) `resolve_codex_executable` PATH yanında bilinen OpenAI
+desktop / npm konumlarını tarar; (2) Doctor `healthy`/`plugin_ready` çekirdeği
+(Python, Git, Codex, plugin) ile `experts_ready` (Node/uv/uzmanlar) ayrılır —
+uzman eksikliği çekirdek sağlığını düşürmez. Git URL marketplace kapısı
+dokümante edilir; ChatGPT Plus düz sohbet kurulum yüzeyi değildir.
+
 ## ADR-011 — OSS katkısı tek kapı, salt-okunur scout ve ayrı yazma yetkisidir
 
 Açık kaynak katkısı Pala içinde ayrı bir agent platformuna dönüşmez. GitHub

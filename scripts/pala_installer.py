@@ -112,13 +112,51 @@ def read_json(path: Path) -> dict[str, object] | None:
     return value if isinstance(value, dict) else None
 
 
+def resolve_codex_executable() -> Path | None:
+    """Locate Codex CLI even when Windows desktop install is off PATH."""
+    found = shutil.which("codex")
+    if found:
+        return Path(found)
+    if os.name != "nt":
+        return None
+    home = Path(os.environ.get("USERPROFILE", Path.home()))
+    local = Path(os.environ.get("LOCALAPPDATA", home / "AppData" / "Local"))
+    appdata = Path(os.environ.get("APPDATA", home / "AppData" / "Roaming"))
+    candidates: list[Path] = [
+        local / "Programs" / "codex" / "codex.exe",
+        local / "Programs" / "Codex" / "codex.exe",
+        appdata / "npm" / "codex.cmd",
+        home / ".codex" / "bin" / "codex.exe",
+        home / ".local" / "bin" / "codex.exe",
+    ]
+    openai_bin = local / "OpenAI" / "Codex" / "bin"
+    if openai_bin.is_dir():
+        try:
+            for child in sorted(openai_bin.iterdir()):
+                exe = child / "codex.exe"
+                if exe.is_file():
+                    candidates.append(exe)
+        except OSError:
+            pass
+    for path in candidates:
+        try:
+            if path.is_file():
+                return path
+        except OSError:
+            continue
+    return None
+
+
 def run_codex_json(arguments: list[str]) -> dict[str, object]:
-    executable = shutil.which("codex")
+    executable = resolve_codex_executable()
     if executable is None:
-        raise RuntimeError("Codex CLI is not available on PATH")
+        raise RuntimeError(
+            "Codex CLI is not available on PATH or known Windows install locations "
+            "(%%LOCALAPPDATA%%\\OpenAI\\Codex\\bin, %%APPDATA%%\\npm\\codex.cmd)"
+        )
     try:
         completed = subprocess.run(
-            [executable, *arguments],
+            [str(executable), *arguments],
             check=False,
             capture_output=True,
             text=True,
@@ -685,23 +723,32 @@ def doctor_installation(
         )
     python_ready = (major, minor) >= (3, 10)
     git_path = shutil.which("git")
-    codex_path = shutil.which("codex")
+    on_path = shutil.which("codex")
+    resolved = resolve_codex_executable()
+    codex_path = str(resolved) if resolved is not None else None
     node_path = shutil.which("node")
     uv_path = shutil.which("uv")
     project = project_doctor(install_root, project_root)
-    healthy = bool(
+    plugin_ready = bool(
         bundle["healthy"]
         and codex.get("healthy")
         and python_ready
         and git_path
-        and codex_path
-        and node_path
-        and uv_path
+        and resolved is not None
+    )
+    experts_ready = bool(node_path and uv_path)
+    healthy = plugin_ready
+    hooks_next = (
+        "Codex'te yeni sohbet acin ve /hooks ile Pala hook guvenini verin; "
+        "otomatik bypass yok."
     )
     return {
         "schema_version": SCHEMA_VERSION,
         "healthy": healthy,
+        "plugin_ready": plugin_ready,
+        "experts_ready": experts_ready,
         "status": "ready" if healthy else "attention_required",
+        "hooks_next_step": hooks_next,
         "plugin": bundle["plugin"],
         "adapters": bundle.get("adapters", {}),
         "codex": codex,
@@ -711,7 +758,21 @@ def doctor_installation(
             "executable": sys.executable,
         },
         "git": {"ready": bool(git_path), "executable": git_path},
-        "codex_cli": {"ready": bool(codex_path), "executable": codex_path},
+        "codex_cli": {
+            "ready": resolved is not None,
+            "executable": codex_path,
+            "on_path": bool(on_path),
+            "resolved_via": (
+                "path"
+                if on_path
+                else ("probe" if resolved is not None else None)
+            ),
+            "hint": (
+                None
+                if on_path or resolved is None
+                else f"Codex bulundu ama PATH'te degil: {codex_path}"
+            ),
+        },
         "node": {"ready": bool(node_path), "executable": node_path},
         "uv": {"ready": bool(uv_path), "executable": uv_path},
         "project": project,

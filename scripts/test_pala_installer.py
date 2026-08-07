@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import zipfile
 import shutil
 import sys
@@ -158,6 +159,90 @@ class InstallerCoreTests(unittest.TestCase):
 
             self.assertTrue(doctor["healthy"])
             self.assertEqual(doctor["adapters"]["rtk"]["state"], "missing")
+
+    def test_resolve_codex_finds_openai_desktop_bin_when_not_on_path(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-codex-probe-") as temp:
+            root = Path(temp)
+            nested = root / "OpenAI" / "Codex" / "bin" / "deadbeef"
+            nested.mkdir(parents=True)
+            exe = nested / "codex.exe"
+            exe.write_bytes(b"MZ")
+            with patch.object(self.installer.shutil, "which", return_value=None), patch.dict(
+                os.environ,
+                {
+                    "LOCALAPPDATA": str(root),
+                    "APPDATA": str(root / "Roaming"),
+                    "USERPROFILE": str(root),
+                },
+                clear=False,
+            ), patch.object(self.installer.os, "name", "nt"):
+                resolved = self.installer.resolve_codex_executable()
+            self.assertEqual(resolved, exe)
+
+    def test_doctor_core_healthy_without_node_uv_experts(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root / "source")
+            install_root = root / "home" / "plugins" / "pala-project-studio"
+            state_root = root / "local" / "Pala"
+            self.installer.install_bundle(source, install_root, state_root)
+
+            marketplaces = [{"name": "pala-project-studio", "root": str(install_root)}]
+            installed = [
+                {
+                    "pluginId": self.installer.PLUGIN_ID,
+                    "name": "pala-project-studio",
+                    "marketplaceName": "pala-project-studio",
+                    "version": "0.4.0+codex.test",
+                    "installed": True,
+                    "enabled": True,
+                }
+            ]
+
+            def invoke(arguments: list[str]) -> dict[str, object]:
+                command = tuple(arguments)
+                if command == ("plugin", "marketplace", "list", "--json"):
+                    return {"marketplaces": list(marketplaces)}
+                if command == ("plugin", "list", "--json"):
+                    return {"installed": list(installed)}
+                raise AssertionError(f"unexpected Codex command: {command}")
+
+            def tool_lookup(name: str) -> str | None:
+                if name in {"git", "codex"}:
+                    return f"C:\\\\tools\\\\{name}.exe"
+                return None
+
+            with patch.object(self.installer.sys, "version_info", (3, 11, 0)), patch.object(
+                self.installer.shutil, "which", side_effect=tool_lookup
+            ), patch.object(
+                self.installer,
+                "resolve_codex_executable",
+                return_value=Path(r"C:\tools\codex.exe"),
+            ), patch.object(
+                self.installer,
+                "project_doctor",
+                return_value={
+                    "available": True,
+                    "project_root": str(root),
+                    "project_registration": {"registered": True},
+                    "hook_safety": {"status": "passed"},
+                },
+            ):
+                report = self.installer.doctor_installation(
+                    source,
+                    install_root,
+                    state_root,
+                    root,
+                    invoke=invoke,
+                )
+
+            self.assertTrue(report["plugin_ready"])
+            self.assertFalse(report["experts_ready"])
+            self.assertTrue(report["healthy"])
+            self.assertFalse(report["node"]["ready"])
+            self.assertFalse(report["uv"]["ready"])
+            self.assertIn("hooks_next_step", report)
+            self.assertIn("/hooks", report["hooks_next_step"])
 
     def test_doctor_reports_verified_pala_owned_expert_artifact(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-experts-") as temp:

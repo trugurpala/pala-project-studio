@@ -84,12 +84,20 @@ function Show-PalaResult([pscustomobject]$Payload) {
         $pluginStatus = $Payload.plugin.status
         $codexStatus = $Payload.codex.status
         Write-Host "[Pala] Doctor: healthy=$($Payload.healthy), plugin=$pluginStatus, codex=$codexStatus"
+        if ($null -ne $Payload.plugin_ready) {
+            Write-Host "[Pala] Cekirdek(plugin_ready)=$($Payload.plugin_ready), uzmanlar(experts_ready)=$($Payload.experts_ready)"
+        }
         Write-Host "[Pala] Python=$($Payload.python.ready), Git=$($Payload.git.ready), Codex CLI=$($Payload.codex_cli.ready), Node=$($Payload.node.ready), uv=$($Payload.uv.ready)"
+        if ($null -ne $Payload.codex_cli.hint -and "$($Payload.codex_cli.hint)".Trim().Length -gt 0) {
+            Write-Host "[Pala] $($Payload.codex_cli.hint)"
+        }
         if ($null -ne $Payload.project.project_registration) {
             Write-Host "[Pala] Proje kaydi=$($Payload.project.project_registration.registered), hook=$($Payload.project.hook_safety.status)"
-            if ($Payload.project.hook_safety.status -ne "passed") {
-                Write-Host "[Pala] Hook guveni icin Codex'te /hooks komutunu acin; otomatik bypass yapilmadi."
-            }
+        }
+        if ($null -ne $Payload.hooks_next_step -and "$($Payload.hooks_next_step)".Trim().Length -gt 0) {
+            Write-Host "[Pala] $($Payload.hooks_next_step)"
+        } elseif ($null -ne $Payload.project.hook_safety -and $Payload.project.hook_safety.status -ne "passed") {
+            Write-Host "[Pala] Hook guveni icin Codex'te /hooks komutunu acin; otomatik bypass yapilmadi."
         }
         return
     }

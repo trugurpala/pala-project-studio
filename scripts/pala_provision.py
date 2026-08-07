@@ -5,12 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
 from argparse import Namespace
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 from urllib.parse import urlparse
@@ -33,12 +31,10 @@ def default_parent() -> Path:
 
 
 def default_registry_path() -> Path:
-    override = os.environ.get("PALA_PROVISION_REGISTRY")
-    if override:
-        return Path(override)
-    profile = Path(os.environ.get("USERPROFILE", Path.home()))
-    local = Path(os.environ.get("LOCALAPPDATA", profile / "AppData" / "Local"))
-    return local / "Pala" / REGISTRY_NAME
+    """Legacy JSON path kept for migration and dry-run reporting only."""
+    import pala_db
+
+    return pala_db.legacy_registry_path()
 
 
 def pala_version() -> str:
@@ -95,30 +91,6 @@ def folder_name_from_url(url: str, override: str | None = None) -> str:
     return leaf
 
 
-def _load_registry(path: Path) -> dict[str, object]:
-    if not path.is_file():
-        return {"schema_version": SCHEMA_VERSION, "installs": []}
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {"schema_version": SCHEMA_VERSION, "installs": []}
-    if not isinstance(payload, dict):
-        return {"schema_version": SCHEMA_VERSION, "installs": []}
-    installs = payload.get("installs")
-    if not isinstance(installs, list):
-        installs = []
-    return {"schema_version": SCHEMA_VERSION, "installs": installs}
-
-
-def _write_registry(path: Path, payload: dict[str, object]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-
-
 def upsert_registry(
     *,
     registry_path: Path,
@@ -126,33 +98,44 @@ def upsert_registry(
     installed_path: Path,
     status: str,
     version: str | None = None,
+    registered: bool = False,
+    catalog_root: Path | None = None,
 ) -> dict[str, object]:
-    payload = _load_registry(registry_path)
-    installs = list(payload.get("installs", []))
-    entry = {
-        "source_url": source_url,
-        "installed_path": str(installed_path.resolve()),
-        "installed_at": datetime.now(timezone.utc).isoformat(),
-        "pala_version": version or pala_version(),
-        "last_status": status[:80],
+    """Write provision into the SQLite store; JSON path is migrate-only."""
+    import pala_db
+    from pala_catalog import db_path as catalog_db_path
+
+    db = catalog_db_path(catalog_root)
+    try:
+        pala_db.migrate_from_json(registry_path=registry_path, path=db)
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        pass
+    entry = pala_db.upsert_provision(
+        source_url=source_url,
+        install_path=str(installed_path.resolve()),
+        status=status[:80],
+        pala_version=version or pala_version(),
+        registered=registered,
+        path=db,
+    )
+    try:
+        pala_db.add_event(
+            "provision",
+            project_name=installed_path.name,
+            detail=f"{status}: {source_url}"[:300],
+            evidence=str(installed_path.resolve())[:500],
+            path=db,
+        )
+    except (OSError, ValueError, TypeError):
+        pass
+    return {
+        "source_url": entry.get("source_url"),
+        "installed_path": entry.get("install_path"),
+        "installed_at": entry.get("created_at"),
+        "pala_version": entry.get("pala_version"),
+        "last_status": entry.get("status"),
+        "registered": bool(entry.get("registered")),
     }
-    replaced = False
-    target = str(installed_path.resolve())
-    for idx, existing in enumerate(installs):
-        if not isinstance(existing, dict):
-            continue
-        if existing.get("installed_path") == target or existing.get("source_url") == source_url:
-            merged = dict(existing)
-            merged.update(entry)
-            installs[idx] = merged
-            entry = merged
-            replaced = True
-            break
-    if not replaced:
-        installs.append(entry)
-    out = {"schema_version": SCHEMA_VERSION, "installs": installs}
-    _write_registry(registry_path, out)
-    return entry
 
 
 def run_git(
@@ -293,6 +276,8 @@ def provision(
             source_url=safe_url,
             installed_path=dest,
             status=status,
+            registered=bool(register and register_result.get("ok")),
+            catalog_root=cdir,
         )
     elif dry_run:
         status = "dry-run"
@@ -307,6 +292,7 @@ def provision(
                 source_url=safe_url,
                 installed_path=dest,
                 status="error",
+                catalog_root=catalog_root,
             )
 
     report: dict[str, object] = {
