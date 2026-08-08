@@ -6,4 +6,5 @@
 - Opened `DEMO-003` for Status panel copy after seed.
 - Seed path: `py -3 scripts/pala_demo.py seed --demo-root examples/demo-software-project`.
 - Closed `DEMO-003` / `DEMO-004`: Status HTML proof via
-  `pala_demo.prove_status_html` (`passed` — Şimdi + DEMO-003 + register/begin/checkpoint).
+  `pala_demo.prove_status_html` (`passed` — Şimdi + ticket + register/begin/checkpoint).
+- Closed `DEMO-005`: `reports/OWNER_DEMO.md` owner handoff (`passed`, no fake screenshots).

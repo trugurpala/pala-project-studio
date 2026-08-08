@@ -7,29 +7,26 @@
 
 ## M2 — Status surface demo (`completed`)
 
-- [x] DEMO-003: Wire Status “Şimdi” panel copy so active ticket DEMO-003 and
+- [x] DEMO-003: Wire Status “Şimdi” panel copy so active ticket and
   next action are visible after `pala_demo.py seed`
 - [x] DEMO-004: Add three timeline events (register, begin, checkpoint)
 
-## M3 — Optional polish (`planned`)
+## M3 — Optional polish (`completed`)
 
-- [ ] DEMO-005: Owner handoff note (no fake browser screenshots)
+- [x] DEMO-005: Owner handoff note (no fake browser screenshots)
 
-### Örnek ajan kartları (DEMO-005 polish — isteğe bağlı)
-
-Aktif ticket `DEMO-005` kalır; aşağıdaki alt kartlar paralel polish için
-format örneğidir. Bir ajan tek ID seçer.
+### Ajan kartları (DEMO-005 — kapandı)
 
 #### DEMO-005-A — Handoff metni
 - **Sahip ajan:** Ajan-Demo-A
 - **Amaç:** Kısa owner handoff notu (sahte ekran görüntüsü yok).
-- **Dosyalar:** `STATUS.md`, `PROGRESS.md`
+- **Dosyalar:** `STATUS.md`, `PROGRESS.md`, `reports/OWNER_DEMO.md`
 - **Bitti sayılır:** Tek sonraki iş net; kanıt etiketi dürüst.
-- **Kanıt:** `not-run`
+- **Kanıt:** `passed`
 
 #### DEMO-005-B — Plan netliği
 - **Sahip ajan:** Ajan-Demo-B
-- **Amaç:** PLAN kart formatı okunaklı kalsın; DEMO-003 seed kanıtı bozulmasın.
+- **Amaç:** PLAN kart formatı okunaklı kalsın; seed kanıtı bozulmasın.
 - **Dosyalar:** `PLAN.md`
-- **Bitti sayılır:** Status HTML hâlâ DEMO-003 + 3 olay gösterir.
-- **Kanıt:** `not-run`
+- **Bitti sayılır:** Status HTML hâlâ ticket + 3 olay gösterir.
+- **Kanıt:** `passed`

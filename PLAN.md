@@ -252,13 +252,15 @@ owner canary ve release iddiası kanıt etiketli.
 - 0.7 yerel SQLite store + catalog/provision/timeline (ADR-015).
 - 0.7.1 Windows Codex keşfi + Doctor core/experts (ADR-016).
 
-### M10 artıkları (açık; vibe canary blokörü değil)
+### M10 artıkları (kapatıldı — 2026-08-08)
 
-- [ ] RTK sabit release + SHA + Codex-native rewrite adaptörü.
-- [ ] RTK girdilerini koru; tehlikeli komut rewrite yok.
-- [ ] code-review-graph `uv` izole sabit kurulum (Pala adaptörü).
-- [ ] Context7 / Playwright MCP keşif + `codex mcp add` (çakışmayı ezmeden).
-- [ ] OpenSpec bulunan projeyi ticket'a bağla; yoksa ikinci plan sistemi kurma.
+- [x] RTK sabit release + SHA + Codex-native rewrite adaptörü (`pala_m10` + lock).
+- [x] RTK girdilerini koru; tehlikeli komut rewrite yok (rewrite guard).
+- [x] code-review-graph `uv` izole sabit kurulum (Pala adaptörü / expert suite).
+- [x] Context7 / Playwright MCP keşif pin’leri (`pala_mcp` + `pala_m10`;
+  `ensure` yalnız missing, conflict ezilmez).
+- [x] OpenSpec bulunan projeyi ticket'a bağla; yoksa ikinci plan sistemi kurma
+  (`OpenSpecAdapter.bind_active_ticket`).
 
 ## M21 — Yanında Pala + fork-ready + kalite kanıtı
 
@@ -544,14 +546,13 @@ commit + tag + GitHub `v0.8.0` release sorulsun mu?
 - M10 RTK / MCP genişletmesi
 - Force push / git config / secret paketleme
 
-## M25 — Ortak hafıza (Codex + Cursor + CLI) — taslak / henüz aktif değil
+## M25 — Ortak hafıza (Codex + Cursor + CLI) — tamamlandı (2026-08-08)
 
-**Durum:** Gelecek ürün düşüncesi. **Aktif uygulama değil.** Kanıt: tüm
-kartlar `not-run`. M24 / `v0.8.0` release bu milestone’u açmaz.
+**Durum:** Uygulandı (MVP). Kanıt: T2–T5 `passed`. Bulut sync yok (ADR-017).
 
 **Neden (tek cümle):** Bugün Pala Codex plugin’i olarak yaşar; Cursor’da
-“kurulu Pala” yok. Aynı makinede Codex + Cursor + CLI aynı çalışma hafızasını
-görsün — bulut sync / çok kullanıcı fantezisi yok (ADR-015 makine-yerel).
+“kurulu Pala plugin” yok. Aynı makinede Codex + Cursor + CLI aynı çalışma
+hafızasını görsün.
 
 **Bugünkü gerçek (araştırma, 2026-08-08):**
 
@@ -600,7 +601,7 @@ zaten `migrate_from_json` + mevcut yol override’ları.
 | Cursor’da rules/AGENTS ile “önce STATUS oku” | İkinci orkestratör / sync SaaS |
 | Doktor: “hangi yüzey hazır?” dürüst rapor | Bulut veya çok kiracı DB |
 
-### Görev kartları (plan only — uygulama başlamadı)
+### Görev kartları (uygulandı — 2026-08-08)
 
 #### M25-T1 — Ajan-Araştır: bugünkü gerçek haritası
 - **Sahip ajan:** Ajan-Araştır
@@ -621,7 +622,7 @@ zaten `migrate_from_json` + mevcut yol override’ları.
 - **Bitti sayılır:** Paylaşılır / paylaşılmaz listesi ve migration yolu yazılı;
   bulut sync önerilmez.
 - **Bağımlılık:** M25-T1
-- **Kanıt:** `not-run`
+- **Kanıt:** `passed`
 
 #### M25-T3 — CLI tek kapı: memory / status / doctor yüzey etiketi
 - **Sahip ajan:** Ajan-Kapı
@@ -632,7 +633,7 @@ zaten `migrate_from_json` + mevcut yol override’ları.
 - **Bitti sayılır:** Aynı `pala.sqlite` yolunu CLI her yerden gösterir; soft
   “Cursor kurulu” iddiası yok.
 - **Bağımlılık:** M25-T2
-- **Kanıt:** `not-run`
+- **Kanıt:** `passed`
 
 #### M25-T4 — Cursor ince yüzey (skill/rules only)
 - **Sahip ajan:** Ajan-Yüzey
@@ -645,7 +646,7 @@ zaten `migrate_from_json` + mevcut yol override’ları.
   “Codex plugin” iddiasını Cursor’a taşımaz; sözleşme testi veya self-audit
   dürüst `configured-not-verified` / `not-run` kullanır.
 - **Bağımlılık:** M25-T2
-- **Kanıt:** `not-run`
+- **Kanıt:** `passed`
 
 #### M25-T5 — Codex regress + tek makine kanıtı
 - **Sahip ajan:** Ajan-Kapı
@@ -656,12 +657,211 @@ zaten `migrate_from_json` + mevcut yol override’ları.
 - **Bitti sayılır:** Dar test yeşil; owner canary: aynı `pala.sqlite` yolu üç
   yüzeyden görünür; hook hâlâ ağ/test/build başlatmaz.
 - **Bağımlılık:** M25-T3, M25-T4
-- **Kanıt:** `not-run`
+- **Kanıt:** `passed`
 
 ### Bilerek yapılmayanlar (M25)
 
 - Bulut / çok kullanıcı sync DB
-- Cursor’da Codex hook parity veya “Pala Cursor’da kurulu” yalanı
+- Cursor’da Codex hook parity veya “Pala Cursor’da kurulu plugin” yalanı
 - Ruflo / ikinci orkestör / MCP-zorunlu hafıza sunucusu
 - Secret / transcript’i SQLite’a yazma
-- Bu turda M25 uygulama kodu, commit, release
+- Bu turda yeni GitHub release (ayrı yetki)
+
+## M27 — Install artifact contract + 0.8.1 prep (Wave A)
+
+Amaç: Kurulu marketplace “sağlıklı” demeden yalan söylemesin (issue #13);
+runtime verify + uncommitted M25/M10 → `0.8.1` kaynak hazırlığı. Push/tag/release
+ayrı owner yetkisi.
+
+### Görev kartları
+
+#### M27-T1 — Fingerprint allowlist (#13)
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** `tree_fingerprint` yalnız allowlisted bundle; `__pycache__` drift yok.
+- **Dosyalar:** `scripts/pala_installer.py`, `scripts/test_pala_installer.py`
+- **Bitti sayılır:** `test_installed_fingerprint_stable_after_pycache` yeşil.
+- **Bağımlılık:** Yok
+- **Kanıt:** `passed`
+
+#### M27-T2 — Runtime self-audit + verify installed
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** `--profile runtime` ve `verify.py --mode installed` lean install’ta exit 0.
+- **Dosyalar:** `scripts/pala_self_audit.py`, `scripts/verify.py`,
+  `docs/INSTALL_ARTIFACT_CONTRACT.md`, ilgili testler
+- **Bitti sayılır:** Kopya bundle + marketplace runtime audit `passed`.
+- **Bağımlılık:** M27-T1
+- **Kanıt:** `passed`
+
+#### M27-T0 — Live Codex canary + cold-start
+- **Sahip ajan:** Ajan-Canary
+- **Amaç:** SessionStart smoke + Doctor ready; cold-start ms JSON (yüzde yok).
+- **Dosyalar:** `STATUS.md`, `scripts/pala_cold_start.py`
+- **Bitti sayılır:** Hook CLI smoke `passed`; `/hooks` UI `configured-not-verified`.
+- **Bağımlılık:** M27-T2
+- **Kanıt:** `passed` (CLI); UI `configured-not-verified`
+
+#### M27-T3 — 0.8.1 prep + CI artifact smoke + checklist
+- **Sahip ajan:** Ajan-Paket
+- **Amaç:** Manifest `0.8.1`, CHANGELOG, README honesty, CI smoke job, checklist.
+- **Dosyalar:** `.codex-plugin/plugin.json`, `CHANGELOG.md`, `README.md`,
+  `.github/workflows/quality.yml`, `docs/CODEX_PLUGIN_CHECKLIST.md`
+- **Bitti sayılır:** Kaynak bump + docs; `v0.8.1` release `not-run`.
+- **Bağımlılık:** M27-T1, M27-T2
+- **Kanıt:** `passed` (prep); release/Actions `not-run` / `configured-not-verified`
+
+### Bilerek yapılmayanlar (M27 Wave A)
+
+- `gh release` / tag `v0.8.1` / issue #13 close (owner-only)
+- Wave B `pala_debug_gate`
+- Soft hız yüzdesi iddiası
+
+## M28 — Memory-as-Governance (Wave B)
+
+Amaç: Açık `INC-*` varken SessionStart/begin/checkpoint uyarı zorunlu;
+isteğe bağlı complete fail-closed; `memory_hit_rate` proxy; stop-condition
+matrix satırlarını sözleşme testiyle doldur. Hooks UI trust `passed` sayılmaz.
+
+### Görev kartları
+
+#### M28-T1 — pala_debug_gate CLI + hook yüzeyi
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** Açık INC varken begin/checkpoint/SessionStart metninde DEBUG GATE.
+- **Dosyalar:** `scripts/pala_debug_gate.py`, `scripts/pala_hook.py`,
+  `scripts/pala_state.py`, `scripts/test_pala_debug_gate.py`
+- **Bitti sayılır:** `test_pala_debug_gate` uyarı + SessionStart gate yeşil.
+- **Bağımlılık:** M27 Wave A
+- **Kanıt:** `passed`
+
+#### M28-T2 — Attempt kaydı + complete fail-closed
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** Optional `Attempts` alanı; SQLite `kind=debug_attempt`; complete
+  fail-closed (açık INC + related files + passed).
+- **Dosyalar:** `scripts/pala_db.py`, `scripts/pala_memory.py`,
+  `DEBUGGING.md`, `scripts/pala_debug_gate.py`
+- **Bitti sayılır:** `debug_attempt` event + fail-closed contract yeşil.
+- **Bağımlılık:** M28-T1
+- **Kanıt:** `passed`
+
+#### M28-T3 — memory_hit_rate proxy
+- **Sahip ajan:** Ajan-Ölçüm
+- **Amaç:** Cold/canary: `debug_open>0` ve DEBUGGING okundu → ratio (yüzde yok).
+- **Dosyalar:** `scripts/pala_cold_start.py`, `scripts/pala_debug_gate.py`
+- **Bitti sayılır:** `memory_hit_rate` JSON alanı; `%` yok.
+- **Bağımlılık:** M28-T1
+- **Kanıt:** `passed`
+
+#### M28-T4 — Stop-condition matrix + demo
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** Unregistered / bad evidence / hooks UI trust satırları
+  `passed|partial|configured-not-verified` (N/A erit).
+- **Dosyalar:** `scripts/test_pala_debug_gate.py`,
+  `outputs/PALA_FEATURE_MATRIX.csv`,
+  `examples/demo-software-project/reports/STOP_SCENARIOS.md`
+- **Bitti sayılır:** Stop contract testleri yeşil; matrix güncellendi.
+- **Bağımlılık:** M28-T1
+- **Kanıt:** `passed` (contract); hooks UI `configured-not-verified`
+
+### Bilerek yapılmayanlar (M28 Wave B)
+
+- Wave C canlı Codex A/B 2.0
+- Hooks `/hooks` UI trust = `passed`
+- Tam `verify.py` / push / PR / release
+
+## Wave E — Multi-host proof (M25 olgunlaştırma) — 2026-08-08
+
+**Durum:** Tamamlandı (olgunlaştırma; M25 greenfield değil).
+
+| Kapı | Kanıt |
+| --- | --- |
+| Aynı sqlite hit + unknown miss | `scripts/test_pala_shared_memory.py` |
+| AGENTS tek kaynak; Cursor rule ince | `AGENTS.md` + `.cursor/rules/pala-memory.mdc` |
+| Portable skill drift | self-audit `shared_memory` + skill markers |
+| Doctor `shared_store` dokümanı | `docs/PALA_SHARED_MEMORY.md` |
+
+**Bilerek yapılmayanlar:** Wave B gate; Cursor hook parity; bulut sync; push/release.
+
+## M29 — Codex→Cursor Gate 0 + friction memory (Wave D)
+
+Amaç: P0 skill-path / lifecycle / fail-closed düzeltmelerini otomatik
+Windows-dostu E2E ile kanıtla (`artifacts/codex-compat/p0-smoke.json`);
+aynı path/failure tekrarını SQLite komut hafızasıyla engelle; cold-session
+packet + doc budget + capability preflight. Push/PR/release ve uzak Codex
+makinesi kurulumu bu milestonda yok.
+
+### Görev kartları
+
+#### M29-Gate0 — P0 smoke E2E artifact
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** Temp git worktree üzerinde launcher, no `../../scripts`,
+  register→begin→checkpoint→context→complete, fail-closed complete,
+  path-failure ikinci oturumda tekrar etmeme, `pala kontrol et` structured
+  statuses; çıktı `artifacts/codex-compat/p0-smoke.json`.
+- **Dosyalar:** `scripts/pala_p0_smoke.py`, `scripts/test_pala_p0_friction.py`,
+  `artifacts/codex-compat/p0-smoke.json`, `STATUS.md` / `PROGRESS.md`
+- **Bitti sayılır:** Runner exit 0; critical rows `passed`; focused unittest yeşil.
+- **Bağımlılık:** M29-T2 (path memory satırı için yeterli entegrasyon)
+- **Kanıt:** `passed`
+
+#### M29-T1 — Evidence-first cold-session packet (≤2 KB)
+- **Sahip ajan:** Ajan-Hafıza
+- **Amaç:** Yeni oturumda ≤2 KB paket: ticket/goal, branch/worktree/base
+  commit, last verified, changed files, blocker, next action, do-not-retry,
+  freshness + evidence source. Öncelik:
+  `source+Git+test > Pala SQLite > Markdown > prior chat`. Çelişkide
+  `stale-context`; eski state uygulanmaz.
+- **Dosyalar:** `scripts/pala_cold_packet.py`, `scripts/pala_hook.py`,
+  `scripts/pala_state.py`, `hooks/hooks.json`, `scripts/test_pala_cold_packet.py`
+- **Bitti sayılır:** Packet SessionStart/context’te; minimal ≤2 KB; stale test yeşil.
+- **Bağımlılık:** M29-Gate0 + M29-T2
+- **Kanıt:** `passed`
+
+#### M29-T2 — Failed command/path memory guard
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** SQLite tool_attempts: command_family + env + failure_class;
+  tekrarında prior resolution, default block / `--approve-retry`,
+  DEBUGGING özeti, context/debug_gate “do not retry”.
+- **Dosyalar:** `scripts/pala_db.py`, `scripts/pala_cmd_memory.py`,
+  `scripts/pala_debug_gate.py`, `scripts/pala_state.py`, `scripts/pala_hook.py`,
+  `scripts/test_pala_cmd_memory.py`
+- **Bitti sayılır:** Aynı path failure ikinci cold session’da bloklanır; test yeşil.
+- **Bağımlılık:** M28
+- **Kanıt:** `passed`
+
+#### M29-T3 — Context/doc budget profiles
+- **Sahip ajan:** Ajan-Hafıza
+- **Amaç:** `minimal` | `standard` | `milestone` profilleri; basit ticket
+  AGENTS+PLAN+PROGRESS+TOOLING+DEBUGGING’i otomatik okumaz. Her kayıt:
+  freshness, scope, confidence, superseded_by, estimated_token_cost.
+  Bütçe aşımında eski log/unproven düşer; risk/test/blocker korunur.
+- **Dosyalar:** `scripts/pala_cold_packet.py`, `scripts/test_pala_cold_packet.py`
+- **Bitti sayılır:** Profile seçimi + budget trim testleri yeşil.
+- **Bağımlılık:** M29-T1
+- **Kanıt:** `passed`
+
+#### M29-T4 — Capability preflight + parallel safety
+- **Sahip ajan:** Ajan-Hafıza
+- **Amaç:** Salt-okunur capability manifest (OS/shell, Git/Node/Python/test,
+  browser, network, trusted dir, write/delete/commit/push authority,
+  plugin/launcher, worktree/branch/base_commit). Eksik araç →
+  `not-run|blocked|configured-not-verified` (asla sahte passed). Checkpoint:
+  session_id, worktree, branch, base_commit, file_scope; başka worktree →
+  reconcile.
+- **Dosyalar:** `scripts/pala_cold_packet.py`, `scripts/pala_state.py`,
+  `scripts/pala_hook.py`, `scripts/test_pala_cold_packet.py`
+- **Bitti sayılır:** Manifest + parallel conflict testleri yeşil; verify
+  installed bu turda `not-run` kabul.
+- **Bağımlılık:** M29-T1
+- **Kanıt:** `passed` (kaynak); `verify.py --mode installed` = `not-run`
+
+### Owner-only kalanlar (M29 dışı yetki)
+
+- Marketplace Update sonrası canlı Codex P0 / A/B re-measure: `not-run`
+- Hooks `/hooks` UI trust: `configured-not-verified`
+- `verify.py --mode installed` / tam `verify.py`: `not-run`
+- Soft “A/B fixed” yok (canlı hâlâ 0.8.0 ölçümü)
+
+### Bilerek yapılmayanlar (M29)
+
+- Uzak Codex makinesine Install/Update/push/PR/release
+- Soft “A/B issues fixed” iddiası
+- Hooks UI trust = `passed` (CLI’dan iddia yok)

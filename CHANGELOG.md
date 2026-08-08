@@ -7,8 +7,66 @@ Versioning follows the plugin manifest (`0.x.y+codex.…`) and GitHub tags `v0.x
 
 ## [Unreleased]
 
-### Notes
-- M25 (Cursor/CLI ortak hafıza) DRAFT — uygulama yok.
+### Added
+- M29 Gate 0 P0 smoke runner `scripts/pala_p0_smoke.py` →
+  `artifacts/codex-compat/p0-smoke.json` (launcher, lifecycle, fail-closed,
+  path-memory, kontrol-et statuses).
+- M29-T2 command/path failure memory: `scripts/pala_cmd_memory.py` + SQLite
+  `tool_attempts` (block blind retries; `--approve-retry`; DEBUGGING summary;
+  context/SessionStart `do not retry` hint).
+- M29-T1/T3/T4 cold-session packet: `scripts/pala_cold_packet.py`
+  (evidence-first ≤2 KB minimal profile; `stale-context`; doc budgets
+  minimal|standard|milestone; capability preflight; parallel worktree
+  checkpoint fields). Wired into SessionStart + `pala_state context`.
+
+### Changed
+- Skill/report/state guidance stays plugin-root-aware via `pala_paths`
+  (no `../../scripts` from project cwd).
+- SessionStart `additionalContextLimit` / `SESSION_CONTEXT_LIMIT` raised to
+  2048 to fit presence + cold packet snippet.
+
+### Evidence (source application close — Codex conditional acceptance)
+- Gate0+M29 kaynak kabul; yeni P1 yok; push/PR/release/install bu turda yok.
+- Source SHA `10dd7de617d7198e06ea2f42ec3829fbd215a532` (working tree dirty).
+- `p0-smoke.json` SHA-256 `a5ce3bbf9c6d1dce285858a367964b1d6c48bc135ab944cc8f0feb231c0cbcda`.
+- Gate 0: `py -3 scripts/pala_p0_smoke.py` exit 0; overall passed 9/9.
+- Combined unittest Ran 69 / OK exit 0
+  (`test_pala_cold_packet` + `cmd_memory` + `p0_friction` + `debug_gate` + `memory`).
+- `py -3 scripts/verify.py --mode installed` exit 0.
+- Tam verify source full = `not-run`.
+- Marketplace on Codex machine still `0.8.0+…` = canlı doğrulanmamış;
+  Hooks UI `configured-not-verified`; soft “A/B fixed” yok.
+
+## [0.8.1] - 2026-08-08
+
+### Added
+- M25 shared memory: ADR-017, `pala_shared_memory.py`, Doctor `shared_store`,
+  `portable/cursor/` skill + `.cursor/rules/pala-memory.mdc`.
+- Wave E multi-host proof: hit/miss helpers, portable skill drift audit,
+  `docs/PALA_SHARED_MEMORY.md` (Doctor `shared_store` surface).
+- M10 canary module `pala_m10.py` (RTK lock/rewrite, MCP pins, OpenSpec bind,
+  code-review-graph uv suite membership).
+- Runtime install verification: `pala_self_audit --profile runtime`,
+  `verify.py --mode installed`, `docs/INSTALL_ARTIFACT_CONTRACT.md`.
+- Cold-start timing script `pala_cold_start.py` (milliseconds only; no %).
+- Demo `DEMO-005` owner handoff (`reports/OWNER_DEMO.md`).
+- `docs/CODEX_PLUGIN_CHECKLIST.md` + artifact E2E CI smoke job.
+
+### Changed
+- `code-review-graph` included in Pala uv-isolated expert suite.
+- Closed stale GitHub PR `#5` (superseded by mainline 0.5–0.8.0).
+- Doctor self-audit hint points at `--profile runtime` for marketplace roots.
+
+### Fixed
+- Issue #13: `tree_fingerprint` hashes allowlisted bundle files only; `__pycache__`
+  no longer false-`drifted` healthy installs.
+- `PYTHONUTF8` code-intel test no longer fails when parent env already sets it.
+
+### Evidence
+- GitHub tag/release `v0.8.1`: `not-run` (owner yetkisi ayrı)
+- Primary download stays on published `v0.8.0` until release.
+- Source application phase closed under Codex conditional acceptance
+  (Gate0+M29); see [Unreleased] Evidence bindings for fresh SHA/hashes.
 
 ## [0.8.0] - 2026-08-08
 

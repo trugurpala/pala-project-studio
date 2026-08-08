@@ -7,8 +7,11 @@ No secrets, tokens, transcripts, or real user plugin data.
 
 Each incident uses heading `### INC-YYYYMMDD-slug` and these fields:
 Symptoms, Root cause, Fix criteria, Proved by, Related files, Date, Status.
+Optional: Attempts (append-only notes when a fix is tried; SQLite
+`kind=debug_attempt` mirrors light attempts).
 Status may be `open`, `fixed`, or `wontfix`; fixed requires evidence labels
 (passed | not-run | blocked | configured-not-verified), not soft done/ok.
+When open INC exist, SessionStart/begin/checkpoint emit DEBUG GATE warnings.
 
 ## Incidents
 
@@ -77,3 +80,29 @@ Status may be `open`, `fixed`, or `wontfix`; fixed requires evidence labels
   `scripts/test_pala_tools.py`, `scripts/test_plugin_experience.py`
 - **Date:** 2026-08-08
 - **Status:** fixed (`passed`)
+
+### INC-20260808-script-path-cwd
+- **Symptoms:** Live A/B / “pala kontrol et” agents ran skill-relative
+  `../../scripts/pala_report.py` from the user project cwd → script not found;
+  begin without `--goal` English argparse noise; complete failed with opaque
+  `ticket record not found` after begin without v3 ticket row.
+- **Root cause:** Skill instructed skill-tree-relative script paths; begin
+  without `--session-key` wrote only v2 workflow JSON; complete always needs
+  v3 ticket + session.
+- **Fix criteria:** Skill/refs never instruct `../../scripts/` from project
+  cwd; document marketplace `%LOCALAPPDATA%\Pala\marketplace\scripts` + repo
+  `scripts/` + `PALA_SCRIPTS_DIR`; `resolve_pala_scripts_dir`; Turkish
+  `--goal` error; begin always claims v3 ticket (`pala-local` default);
+  complete prints actionable recovery (begin/register/session); no soft-pass.
+- **Proved by:** `py -3 -m unittest scripts.test_pala_p0_friction
+  scripts.test_pala_cmd_memory -v` → 18 ok; `py -3 scripts/pala_p0_smoke.py`
+  → `artifacts/codex-compat/p0-smoke.json` overall `passed` (9 rows); full
+  `verify.py` `not-run`.
+- **Related files:** `skills/pala-project-finisher/SKILL.md`,
+  `skills/pala-project-finisher/references/code-intelligence.md`,
+  `scripts/pala_paths.py`, `scripts/pala_state.py`, `scripts/pala_cmd_memory.py`,
+  `scripts/pala_p0_smoke.py`, `scripts/test_pala_p0_friction.py`,
+  `scripts/test_plugin_experience.py`
+- **Date:** 2026-08-08
+- **Status:** fixed (`passed` focused + Gate0 smoke; full gate `not-run`;
+  live marketplace A/B re-measure `not-run`)

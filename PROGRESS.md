@@ -143,3 +143,180 @@ Phase 0 + Phase 1 uygulandı; yayın yok.
   https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0
 - T6 Evidence docs: `passed` (bu tur)
 - M25 uygulama: yok (bilerek)
+
+## Yol haritası uygulaması — canary + M25 + M10 + küçükler (2026-08-08)
+
+- Owner Install/Doctor canary: `passed` (`/hooks` UI: `configured-not-verified`)
+- M25-T2 ADR-017 + `pala_shared_memory`: `passed`
+- M25-T3 Doctor/memory `shared_store`: `passed`
+- M25-T4 `portable/cursor` + `.cursor/rules/pala-memory.mdc`: `passed`
+- M25-T5 üç host aynı DB testleri: `passed`
+- M10 `pala_m10` canary + code-review-graph uv suite: `passed`
+- DEMO-005 `reports/OWNER_DEMO.md`: `passed`
+- PR `#5` closed (stale 0.5A): `passed`
+- Tam `verify.py`: `passed` (242 test + self-audit; ZIP SHA-256
+  `B54977BDA834618C79664995CDF4D11FC537F68816AB9DEAEBC162680FBA5C22`)
+
+## A/B Su Takip + Status HTML (2026-08-08)
+
+- Bench: `Desktop/PalaAB/` (v0.8.0 tag only): `passed`
+- 5 çift × 2 oturum, isolation gate: `passed` (quasi-experiment builders)
+- quality_% ≈ 7.3; wall cost_% negatif (install overhead): karar **koşullu**
+- `outputs/PALA_AB_BACKTEST.md` + `PALA_AB_RESULTS.json` +
+  `PALA_FEATURE_MATRIX.csv`: `passed` (push yok)
+- `pala_view` a11y/responsive + contract test + browser smoke: `passed`
+- Restore Install/Doctor healthy/ready/hook_safety=passed: `passed`
+- `/hooks` UI trust: `configured-not-verified`
+
+## Wave D — Status decision strip (2026-08-08)
+
+- Status HTML üst şerit (5 sinyal): `passed` (contract tests)
+- Timeline `debug_attempt` / `checkpoint` ayrımı (view): `passed`
+- `tabindex=-1` kaldırıldı (SFNSP): `passed`
+- Browser smoke: `not-run` (cursor-ide-browser navigate/tab unavailable; HTML generated via `pala_report.py`)
+- Generated HTML markers (decision-strip / skip / no tabindex=-1): `passed` (file inspect)
+
+## M27 Wave A — Install artifact + 0.8.1 prep (2026-08-08)
+
+- Fingerprint allowlist (`tree_fingerprint` ← `bundle_files`): `passed`
+  (`test_installed_fingerprint_stable_after_pycache`)
+- `pala_self_audit --profile runtime` on marketplace: `passed` (exit 0)
+- `verify.py --mode installed` on copy_bundle: `passed`
+- PYTHONUTF8 parent-env test: `passed`
+- README honesty: primary ZIP stays `pala-project-studio-0.8.0.zip` while
+  STATUS `v0.8.1` `not-run`: `passed`
+- Manifest `0.8.1+codex.20260808124500`: `passed` (kaynak)
+- Install from source → Doctor `healthy=True` `plugin_ready=True`
+  `plugin=ready` after runtime audit (no false drifted): `passed`
+  (stdout: `PYTHONIOENCODING=utf-8`)
+- SessionStart CLI smoke (`pala_hook.py`): `passed` (`Pala burada` prefix)
+- Codex `/hooks` UI trust: `configured-not-verified`
+- Cold-start n=3 median_ms overall `208` (doctor `1746`, memory `208`,
+  report `154`): `passed` (ms only; no %)
+- Artifact CI job YAML in `quality.yml`: `configured-not-verified` (needs push)
+- `v0.8.1` tag/release + issue #13 close: `not-run` (owner-only)
+- Focused unittest suite (Wave A modules): `passed` (15 ok)
+
+## M28 Wave B — Memory-as-Governance (2026-08-08)
+
+- `pala_debug_gate` CLI + SessionStart/begin/checkpoint DEBUG GATE: `passed`
+- Optional `Attempts` field + SQLite `kind=debug_attempt`: `passed`
+- Complete fail-closed (open INC + related files + passed claim): `passed`
+- `memory_hit_rate` proxy in cold-start JSON (ratio; no %): `passed`
+- Stop-condition contracts (unregistered / soft evidence / hooks UI label):
+  `passed` (contract); hooks UI trust `configured-not-verified`
+- Demo stop scenarios note:
+  `examples/demo-software-project/reports/STOP_SCENARIOS.md`: `passed`
+- Feature matrix stop rows updated: `passed` (local outputs; push `not-run`)
+- Focused unittest `scripts.test_pala_debug_gate`: `passed` (17 ok)
+- Tam `verify.py` / Wave C live A/B / push/PR/release: `not-run`
+
+## Wave E — Multi-host shared memory proof (2026-08-08)
+
+- M25 çekirdek (ADR-017, `pala_shared_memory`, portable/cursor, Doctor
+  `shared_store`) zaten vardı — yeniden yazılmadı.
+- Hit/miss API + contract tests: `classify_host_access`, same-path hit,
+  unknown-host miss, Doctor block shape: `passed`
+- `AGENTS.md` multi-host tek kaynak notu; `.cursor/rules/pala-memory.mdc` ince
+  hatırlatıcı: `passed`
+- Portable skill drift markers + self-audit `shared_memory` güçlendirme: `passed`
+- `docs/PALA_SHARED_MEMORY.md` (Doctor `shared_store` + hit/miss): `passed`
+- Focused: `py -3 -m unittest scripts.test_pala_shared_memory
+  scripts.test_pala_self_audit -v` → **16 ok** (`passed`)
+
+## Premium kontrol et surface (2026-08-08)
+
+- Skill Task Mode `kontrol et` / `rapor` / `denetle` numbered checklist
+  (presence → report → discover → STATUS/PLAN → DEBUGGING → gates → Status HTML):
+  `passed`
+- `pala_report` prints `.codex/pala-status.html` + `açmak için:` file:// hint:
+  `passed`
+- Status HTML decision strip (prior): `passed`
+- Focused: `test_kontrol_et_readonly_checklist_markers` +
+  `test_report_prints_status_html_path_and_open_hint`: `passed`
+- P0 friction (script path / begin `--goal` / complete recovery): `passed`
+  (`scripts.test_pala_p0_friction` 8 ok + UX contract path test)
+- INC-20260808-script-path-cwd: fixed (`passed` focused; full `verify.py`
+  `not-run`)
+- Live Codex `pala kontrol et` smoke: `not-run`
+
+## Wave C — Codex live A/B early-stop ingest (2026-08-08)
+
+- Owner Codex live A/B (temp profiles, marketplace `0.8.0+codex.20260808021500`,
+  gpt-5.6-terra high): early-stop ingest `passed`
+- Completed: control n=3, pala n=2; blind eval `not-run` (no fake scores)
+- Decision: worth keeping as handoff/checkpoint aid; **not** speed/reliability
+  upgrade yet
+- Cost (pala vs control completed): tokens +49.97%, commands +60.61%,
+  duration +26.79%
+- Tests mean (directional): control 8 vs pala 10.5; handoff understanding mean
+  control 170s vs pala 390s
+- Features: presence/register/context/checkpoint/handoff `passed`; begin
+  `partial`; DEBUGGING `partial`; complete `failed`; same-error non-repetition
+  `failed` (`../../scripts` on 0.8.0)
+- Outputs overwritten: `outputs/PALA_AB_BACKTEST.md`,
+  `outputs/PALA_AB_RESULTS.json` (`experiment_class=controlled-ab-early-stop`,
+  `source=codex-live-early-stop`), `outputs/PALA_FEATURE_MATRIX.csv`
+- Note: Cursor `0.8.1` source P0 path/begin/complete fixes landed **after** this
+  A/B; next action = marketplace Update/reinstall
+- Focused unittest (ingest): `passed` (9 ok —
+  `test_pala_p0_friction` + `test_kontrol_et_readonly_checklist_markers`)
+- Hooks UI trust: `configured-not-verified`; full `verify.py`: `not-run`
+- Push/PR/release/commit: `not-run`
+
+## M29 — Gate 0 + cmd memory (2026-08-08)
+
+- PLAN kartları: M29-Gate0 / T1–T4 eklendi
+- `scripts/pala_cmd_memory.py` + `pala_db.tool_attempts`: `passed`
+- Context / debug_gate / SessionStart `do not retry` hint: `passed` (focused)
+- `scripts/pala_p0_smoke.py` → `artifacts/codex-compat/p0-smoke.json`: `passed`
+  (overall + 9 rows; launcher, no `../../scripts`, lifecycle+recover, fail-closed,
+  path-memory block, kontrol-et presence/report/discover/HTML)
+- Focused: `test_pala_p0_friction` + `test_pala_cmd_memory`: `passed` (18 ok)
+- Memory suite (`test_pala_*memory*`): `passed` (36 ok shared+memory+cmd)
+- Soft “A/B fixed” iddiası yok (canlı hâlâ 0.8.0 A/B)
+
+## M29 — Cold packet + budget + capability (2026-08-08)
+
+- M29-T1 `scripts/pala_cold_packet.py` evidence-first packet (≤2 KB minimal):
+  `passed` — SessionStart snippet + `pala_state context` cold_packet;
+  `stale-context` when Git HEAD ≠ checkpoint; hooks limit 2048
+- M29-T3 profiles `minimal|standard|milestone` + budget trim (never drop
+  blocker/test/do-not-retry): `passed`
+- M29-T4 capability manifest + parallel checkpoint fields
+  (session_id/worktree/branch/base_commit/file_scope) + worktree reconcile:
+  `passed`
+- Focused: `scripts.test_pala_cold_packet` **13 ok** (`passed`)
+- Regression: cold+cmd+p0+debug_gate+memory **69 ok** (`passed`)
+- Gate0 re-run `pala_p0_smoke.py`: `passed` (9 rows)
+- Live marketplace A/B re-measure: `passed` (Pala-Pc mini n=1+1; see below)
+- Hooks UI / tam `verify.py`: `configured-not-verified` / `not-run`
+- Push/PR/release: `not-run`
+
+## Source application close — Codex conditional acceptance (2026-08-08)
+
+- Uygulama aşaması kapandı (Gate0+M29 kaynak kabul); yeni P1 yok;
+  push/PR/release/install bu turda yok.
+- Source SHA `10dd7de617d7198e06ea2f42ec3829fbd215a532` (working tree dirty).
+- `artifacts/codex-compat/p0-smoke.json` SHA-256 `a5ce3bbf9c6d1dce285858a367964b1d6c48bc135ab944cc8f0feb231c0cbcda`.
+- Gate 0 fresh: `py -3 scripts/pala_p0_smoke.py` exit 0; overall passed 9/9.
+- Combined focused: Ran 69 / OK exit 0.
+- `verify.py --mode installed` exit 0 (`passed`).
+- Tam verify source full = `not-run`.
+- Hooks UI `configured-not-verified`; soft full-product “A/B fixed” yok.
+
+## Pala-Pc live sync + kontrol smoke + mini A/B (2026-08-08)
+
+- Install-Pala `-Mode Install`: already-ready marketplace `0.8.1+codex.20260808124500`
+  (`passed`; experts may attention — core ok).
+- Temp `CODEX_HOME=Desktop/PalaAB/profiles/live-08x`: plugin enabled `0.8.1+…`
+  (`passed`). Control profile `live-08x-ctrl` without Pala.
+- `pala kontrol et` smoke: `passed` →
+  `artifacts/codex-compat/live-kontrol-smoke.json`
+  (presence after fixture register; report; discover; Status HTML;
+  hooks UI `configured-not-verified`).
+- Mini live A/B n=1+1 Su Takip: class `controlled-ab-mini` (`passed` focus):
+  path `../../scripts` exec=0; complete fail-closed + close;
+  outputs `outputs/PALA_AB_LIVE_MINI.md` +
+  `Desktop/PalaAB/meta/live-mini-08x/result.json`.
+- Soft full-product “A/B fixed”: **yok**. Next owner: hooks UI trust.

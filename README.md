@@ -17,9 +17,10 @@ eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bul
 aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
 göre katmanlandırır.
 
-- Kaynak / GitHub sürüm **0.8.0** (M21–M24: presence + fork demo + self-audit +
-  hata beyni + ajan görev kartları). Release:
+- Son yayımlanmış GitHub sürüm **0.8.0** (M21–M24). Release:
   [v0.8.0](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0).
+- Kaynak ağaç **0.8.1** hazırlığı (M25/M10 + issue #13 install artifact): GitHub
+  `v0.8.1` henüz `not-run` (yayın ayrı yetki).
 - Değişiklik günlüğü: [CHANGELOG.md](CHANGELOG.md) · Destek: [SUPPORT.md](SUPPORT.md)
   · Doküman dizini: [docs/README.md](docs/README.md)
 - Fork paketi: [docs/FORK_PACK.md](docs/FORK_PACK.md)

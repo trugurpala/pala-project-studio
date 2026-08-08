@@ -1,0 +1,162 @@
+{
+  "ingested_at": "2026-08-08T14:12:00+03:00",
+  "source": "codex-live-early-stop",
+  "experiment_class": "controlled-ab-early-stop",
+  "experiment": "pala-ab-codex-live-handoff",
+  "early_stop": true,
+  "blind_eval": "not-run",
+  "decision": {
+    "tr": "Handoff/checkpoint yardımcısı olarak tutmaya değer; hız/güvenilirlik yükseltmesi henüz değil.",
+    "en": "Worth keeping as handoff/checkpoint aid; not yet a speed or reliability upgrade.",
+    "verdict": "conditional-keep-handoff-not-speed"
+  },
+  "environment": {
+    "host_note": "Owner Codex workspace; temp profiles under work/pala-ab-backtest",
+    "isolation": "temp-profiles-control-vs-pala; main Pala install not uninstalled",
+    "model": "gpt-5.6-terra",
+    "reasoning_effort": "high",
+    "pala_measured": {
+      "manifest_version": "0.8.0+codex.20260808021500",
+      "channel": "local-marketplace",
+      "note": "Cursor tree shipped P0 path/begin/complete fixes as 0.8.1 source AFTER this A/B; agents need Update/reinstall to receive them"
+    },
+    "workload": "Su Takip + handoff; 2 cold sessions per run; fail-then-fix intent",
+    "completed_n": {
+      "control": 3,
+      "pala": 2
+    },
+    "planned_pairs": 3,
+    "planned_runs": 6,
+    "session_time_limit_minutes": 30
+  },
+  "rows": [
+    {
+      "arm": "control",
+      "status": "completed",
+      "n": 3,
+      "blind_score": null,
+      "notes": "Completed before early-stop; no per-run blind IDs assigned"
+    },
+    {
+      "arm": "pala",
+      "status": "completed",
+      "n": 2,
+      "blind_score": null,
+      "notes": "Completed before early-stop; skill ../../scripts failed repeatedly; complete failed; begin partial"
+    },
+    {
+      "arm": "mixed",
+      "status": "not-run",
+      "n": 0,
+      "blind_score": null,
+      "notes": "Remaining planned arms skipped by early-stop"
+    }
+  ],
+  "summaries": {
+    "control_completed_n": 3,
+    "pala_completed_n": 2,
+    "tests_mean_control": 8.0,
+    "tests_mean_pala": 10.5,
+    "tests_note": "directional only; not blind",
+    "handoff_understanding_mean_s": {
+      "control": 170,
+      "pala": 390
+    },
+    "blind_quality_mean": null,
+    "blind_quality_pct": null
+  },
+  "comparisons": {
+    "basis": "pala vs control completed arms only",
+    "token_pct": 49.97,
+    "commands_pct": 60.61,
+    "duration_pct": 26.79,
+    "formula_note": "positive % = Pala higher (more tokens/commands/time); not a cost-win claim",
+    "tests_mean_delta": 2.5,
+    "handoff_understanding_mean_delta_s": 220
+  },
+  "feature_matrix": [
+    {
+      "feature": "Presence / SessionStart",
+      "result": "passed",
+      "notes": "Hook loaded; skill invoked on Pala arm"
+    },
+    {
+      "feature": "Project register",
+      "result": "passed",
+      "notes": ""
+    },
+    {
+      "feature": "Context / read order",
+      "result": "passed",
+      "notes": ""
+    },
+    {
+      "feature": "Checkpoint",
+      "result": "passed",
+      "notes": ""
+    },
+    {
+      "feature": "Handoff docs",
+      "result": "passed",
+      "notes": "Cross-session STATUS/PLAN/DEBUGGING trail used"
+    },
+    {
+      "feature": "Begin",
+      "result": "partial",
+      "notes": "--goal friction / retry"
+    },
+    {
+      "feature": "DEBUGGING.md error brain",
+      "result": "partial",
+      "notes": "Present; did not prevent product-path repeat"
+    },
+    {
+      "feature": "Complete",
+      "result": "failed",
+      "notes": "SQLite ticket missing / lifecycle break"
+    },
+    {
+      "feature": "Avoid repeating known errors",
+      "result": "failed",
+      "notes": "../../scripts path broken on every Pala run measured"
+    },
+    {
+      "feature": "Blind rubric score",
+      "result": "not-run",
+      "notes": "early-stop"
+    },
+    {
+      "feature": "Hooks UI trust",
+      "result": "configured-not-verified",
+      "notes": "human /hooks step"
+    }
+  ],
+  "priorities": {
+    "P0": [
+      "Skill script path ../../scripts (0.8.0 measured; fixed in 0.8.1 source post-A/B)",
+      "complete / ticket recovery",
+      "begin --goal DX"
+    ],
+    "P1": [
+      "Token/command/duration overhead on Pala completed runs",
+      "Handoff understanding time (pala 390s vs control 170s mean)"
+    ],
+    "P2": [
+      "Finish blind eval with balanced n",
+      "Hooks /hooks UI trust verification"
+    ]
+  },
+  "limitations": [
+    "early-stop before full 3-pair matrix and before blind scoring",
+    "control n=3 pala n=2 asymmetry",
+    "no blind quality_% — do not invent scores",
+    "measured marketplace 0.8.0 only; Cursor 0.8.1 P0 fixes not in this measurement",
+    "small n; no statistical certainty",
+    "benchmark harness CLI stdin hang is transport, not Pala product quality",
+    "prior Desktop PalaAB quasi-experiment (n=5+5) is separate and must not be relabeled as this live A/B"
+  ],
+  "post_ab_cursor_note": {
+    "p0_path_begin_complete": "shipped in Cursor tree 0.8.1 source after this A/B",
+    "next_action": "marketplace Update/reinstall so live agents receive P0 skill path fixes"
+  }
+}
