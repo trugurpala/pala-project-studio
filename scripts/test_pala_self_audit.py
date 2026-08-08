@@ -45,6 +45,7 @@ class SelfAuditUnitTests(unittest.TestCase):
                 "soft_claims",
                 "debugging_brain",
                 "agent_tasks",
+                "shared_memory",
                 "manifest",
             }.issubset(names)
         )
@@ -55,6 +56,19 @@ class SelfAuditUnitTests(unittest.TestCase):
         result = pala_self_audit.audit_agent_tasks(PLUGIN_ROOT)
         self.assertEqual(result["status"], "passed")
         self.assertIn("cards=", result.get("detail", ""))
+
+    def test_runtime_profile_passes_on_copied_bundle(self) -> None:
+        from pala_installer import copy_bundle
+
+        with tempfile.TemporaryDirectory(prefix="pala-runtime-audit-") as temp:
+            dest = Path(temp) / "install"
+            copy_bundle(PLUGIN_ROOT, dest)
+            payload = pala_self_audit.run_audit(dest, profile="runtime")
+            self.assertEqual(payload["status"], "passed", payload)
+            names = {c["name"] for c in payload["checks"]}
+            self.assertIn("presence", names)
+            self.assertIn("hook_safety", names)
+            self.assertNotIn("fork_pack", names)
 
     def test_cli_emits_json(self) -> None:
         code, text = pala_self_audit.run_cli(["--root", str(PLUGIN_ROOT)])

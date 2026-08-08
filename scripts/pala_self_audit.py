@@ -205,25 +205,110 @@ def audit_manifest(root: Path) -> dict[str, str]:
     return _check("manifest", "passed", version)
 
 
-def run_audit(root: Path | None = None) -> dict[str, object]:
+def audit_shared_memory(root: Path) -> dict[str, str]:
+    decisions = (root / "DECISIONS.md").read_text(encoding="utf-8")
+    agents = root / "AGENTS.md"
+    shared = root / "scripts" / "pala_shared_memory.py"
+    portable = root / "portable" / "cursor" / "SKILL.md"
+    rule = root / ".cursor" / "rules" / "pala-memory.mdc"
+    shared_doc = root / "docs" / "PALA_SHARED_MEMORY.md"
+    if "ADR-017" not in decisions:
+        return _check("shared_memory", "failed", "ADR-017 missing from DECISIONS.md")
+    if not agents.is_file():
+        return _check("shared_memory", "failed", "AGENTS.md missing (single rules source)")
+    if not shared.is_file():
+        return _check("shared_memory", "failed", "pala_shared_memory.py missing")
+    if not portable.is_file():
+        return _check("shared_memory", "failed", "portable/cursor/SKILL.md missing")
+    if not rule.is_file():
+        return _check("shared_memory", "failed", "cursor pala-memory rule missing")
+    if not shared_doc.is_file():
+        return _check("shared_memory", "failed", "docs/PALA_SHARED_MEMORY.md missing")
+    from pala_shared_memory import (
+        CURSOR_RULE_MAX_BODY_LINES,
+        cursor_rule_body_lines,
+        portable_skill_drift,
+    )
+
+    skill_text = portable.read_text(encoding="utf-8")
+    missing = portable_skill_drift(skill_text)
+    if missing:
+        return _check(
+            "shared_memory",
+            "failed",
+            "portable skill drift: " + ", ".join(missing),
+        )
+    skill = skill_text.casefold()
+    if "hooks" not in skill:
+        return _check("shared_memory", "failed", "portable skill must mention hooks boundary")
+    rule_text = rule.read_text(encoding="utf-8")
+    body = cursor_rule_body_lines(rule_text)
+    if len(body) > CURSOR_RULE_MAX_BODY_LINES:
+        return _check(
+            "shared_memory",
+            "failed",
+            f"cursor rule too thick ({len(body)}>{CURSOR_RULE_MAX_BODY_LINES})",
+        )
+    if "agents.md" not in rule_text.casefold():
+        return _check("shared_memory", "failed", "cursor rule must point at AGENTS.md")
+    agents_text = agents.read_text(encoding="utf-8").casefold()
+    if "adr-017" not in agents_text and "tek kaynak" not in agents_text:
+        if "single source" not in agents_text and "multi-host" not in agents_text:
+            return _check(
+                "shared_memory",
+                "failed",
+                "AGENTS.md must declare multi-host / single-source role",
+            )
+    doc = shared_doc.read_text(encoding="utf-8").casefold()
+    if "shared_store" not in doc or "hit" not in doc or "miss" not in doc:
+        return _check(
+            "shared_memory",
+            "failed",
+            "PALA_SHARED_MEMORY.md must document hit/miss + shared_store",
+        )
+    return _check("shared_memory", "passed", "ADR-017 + Wave E multi-host proof")
+
+
+RUNTIME_CHECKS = (
+    "presence",
+    "hook_safety",
+    "soft_claims",
+    "manifest",
+)
+
+
+def run_audit(root: Path | None = None, profile: str = "source") -> dict[str, object]:
     root = (root or PLUGIN_ROOT).resolve()
-    checks = [
-        audit_presence(root),
-        audit_hook_safety(root),
-        audit_fork_pack(root),
-        audit_demo_seed(root),
-        audit_soft_claims(root),
-        audit_debugging_brain(root),
-        audit_agent_tasks(root),
-        audit_manifest(root),
-    ]
+    if profile not in {"source", "runtime"}:
+        raise ValueError("profile must be source or runtime")
+    builders = {
+        "presence": audit_presence,
+        "hook_safety": audit_hook_safety,
+        "fork_pack": audit_fork_pack,
+        "demo_seed": audit_demo_seed,
+        "soft_claims": audit_soft_claims,
+        "debugging_brain": audit_debugging_brain,
+        "agent_tasks": audit_agent_tasks,
+        "shared_memory": audit_shared_memory,
+        "manifest": audit_manifest,
+    }
+    if profile == "runtime":
+        checks = [builders[name](root) for name in RUNTIME_CHECKS]
+    else:
+        checks = [builder(root) for builder in builders.values()]
     failed = [item for item in checks if item["status"] == "failed"]
     overall = "failed" if failed else "passed"
     if overall == "passed":
-        summary_tr = (
-            "Pala self-audit geçti: presence, fork paketi, demo seed, soft-claim, "
-            "debugging-brain ve agent_tasks kapıları yeşil."
-        )
+        if profile == "runtime":
+            summary_tr = (
+                "Pala runtime self-audit geçti: presence, hook_safety, "
+                "soft_claims ve manifest kapıları yeşil."
+            )
+        else:
+            summary_tr = (
+                "Pala self-audit geçti: presence, fork paketi, demo seed, soft-claim, "
+                "debugging-brain ve agent_tasks kapıları yeşil."
+            )
     else:
         failed_names = ", ".join(item["name"] for item in failed[:5])
         summary_tr = (
@@ -235,6 +320,7 @@ def run_audit(root: Path | None = None) -> dict[str, object]:
         "summary_tr": summary_tr,
         "checks": checks,
         "root": str(root),
+        "profile": profile,
     }
 
 
@@ -246,6 +332,12 @@ def parser() -> argparse.ArgumentParser:
         default=PLUGIN_ROOT,
         help="Plugin / repo root to audit",
     )
+    result.add_argument(
+        "--profile",
+        choices=("source", "runtime"),
+        default="source",
+        help="source = full repo gates; runtime = installed marketplace lean gates",
+    )
     return result
 
 
@@ -253,7 +345,7 @@ def run_cli(argv: list[str] | None = None) -> tuple[int, str]:
     args = parser().parse_args(argv)
     buffer = io.StringIO()
     with redirect_stdout(buffer):
-        payload = run_audit(args.root)
+        payload = run_audit(args.root, profile=args.profile)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         print(payload["summary_tr"])
     code = 0 if payload["status"] == "passed" else 1

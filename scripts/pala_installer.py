@@ -49,6 +49,24 @@ def now_utc() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
 
 
+def emit_json(payload: object, *, indent: int | None = 2) -> None:
+    """Write JSON to stdout without crashing on Windows cp1254 consoles.
+
+    Doctor payloads may include U+FFFD after UTF-8/cp1254 pipe mojibake.
+    Prefer UTF-8 bytes via ``stdout.buffer``; fall back to text with replace.
+    """
+    text = json.dumps(payload, ensure_ascii=False, indent=indent, sort_keys=True)
+    data = (text + "\n").encode("utf-8", errors="replace")
+    buffer = getattr(sys.stdout, "buffer", None)
+    if buffer is not None:
+        buffer.write(data)
+        buffer.flush()
+        return
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    sys.stdout.write(data.decode(encoding, errors="replace"))
+    sys.stdout.flush()
+
+
 def atomic_write_json(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temp_name = tempfile.mkstemp(
@@ -490,13 +508,13 @@ def validate_bundle(source: Path) -> dict[str, object]:
 
 
 def tree_fingerprint(root: Path) -> str:
+    """Fingerprint only allowlisted bundle files under an install root.
+
+    Runtime junk (__pycache__, *.pyc) must not mark a healthy install as drifted.
+    """
     root = root.resolve()
     digest = hashlib.sha256()
-    files = sorted(
-        (path for path in root.rglob("*") if path.is_file()),
-        key=lambda item: item.relative_to(root).as_posix().casefold(),
-    )
-    for path in files:
+    for path in bundle_files(root):
         relative = path.relative_to(root).as_posix()
         digest.update(relative.encode("utf-8"))
         digest.update(b"\0")
@@ -727,6 +745,9 @@ def project_doctor(install_root: Path, project_root: Path) -> dict[str, object]:
             "error": "Pala project doctor is not installed",
         }
     try:
+        env = dict(os.environ)
+        env.setdefault("PYTHONIOENCODING", "utf-8")
+        env.setdefault("PYTHONUTF8", "1")
         completed = subprocess.run(
             [sys.executable, str(script), "doctor", "--cwd", str(project_root)],
             check=False,
@@ -735,6 +756,7 @@ def project_doctor(install_root: Path, project_root: Path) -> dict[str, object]:
             encoding="utf-8",
             errors="replace",
             timeout=15,
+            env=env,
         )
     except subprocess.TimeoutExpired:
         return {
@@ -801,12 +823,23 @@ def doctor_installation(
             if self_audit_script.is_file()
             else "not-run"
         ),
-        "command": "py -3 scripts/pala_self_audit.py",
+        "command": "py -3 scripts/pala_self_audit.py --profile runtime",
         "detail": (
             "Fork/presence kalite kapisi Doctor icinde otomatik kosulmaz; "
-            "verify.py veya acik self-audit komutu gerekir."
+            "kurulu marketplace icin --profile runtime; kaynak agac icin "
+            "verify.py veya --profile source gerekir."
         ),
     }
+    try:
+        from pala_shared_memory import doctor_store_block
+
+        shared_store = doctor_store_block()
+    except Exception as error:  # noqa: BLE001 — Doctor must stay readable
+        shared_store = {
+            "db_path": None,
+            "error": str(error),
+            "cloud_sync": False,
+        }
     return {
         "schema_version": SCHEMA_VERSION,
         "healthy": healthy,
@@ -815,6 +848,7 @@ def doctor_installation(
         "status": "ready" if healthy else "attention_required",
         "hooks_next_step": hooks_next,
         "self_audit": self_audit,
+        "shared_store": shared_store,
         "plugin": bundle["plugin"],
         "adapters": bundle.get("adapters", {}),
         "codex": codex,
@@ -1195,7 +1229,7 @@ def main() -> int:
                 )
             except OSError:
                 pass
-        print(json.dumps({"status": "failed", "error": str(error)}, ensure_ascii=False))
+        emit_json({"status": "failed", "error": str(error)}, indent=None)
         return 1
     if not args.dry_run and report.get("changed"):
         try:
@@ -1210,7 +1244,7 @@ def main() -> int:
             )
         except OSError:
             pass
-    print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
+    emit_json(report)
     if report.get("status") in {
         "attention_required",
         "external_conflict",

@@ -36,3 +36,35 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: python scripts/verify.py
+
+  artifact-install-smoke:
+    name: Install artifact runtime smoke
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Build portable ZIP and runtime-audit extract
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONDONTWRITEBYTECODE: "1"
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $out = Join-Path $env:RUNNER_TEMP "pala-artifact-smoke.zip"
+          python scripts/build_portable.py --output $out
+          $extract = Join-Path $env:RUNNER_TEMP "pala-marketplace"
+          New-Item -ItemType Directory -Path $extract | Out-Null
+          Expand-Archive -LiteralPath $out -DestinationPath $extract -Force
+          $root = Join-Path $extract "pala-project-studio"
+          if (-not (Test-Path -LiteralPath $root)) { throw "portable extract root missing: $root" }
+          python "$root/scripts/pala_self_audit.py" --root $root --profile runtime
+          if ($LASTEXITCODE -ne 0) { throw "runtime self-audit failed" }
+          $env:PALA_SMOKE_ROOT = $root
+          python -c "from pathlib import Path; import importlib.util, os; root=Path(os.environ['PALA_SMOKE_ROOT']); spec=importlib.util.spec_from_file_location('pala_installer', root/'scripts'/'pala_installer.py'); mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); before=mod.tree_fingerprint(root); cache=root/'scripts'/'__pycache__'; cache.mkdir(exist_ok=True); (cache/'smoke.pyc').write_bytes(b'x'); after=mod.tree_fingerprint(root); assert before==after, (before, after); print('fingerprint_stable_after_pycache')"
