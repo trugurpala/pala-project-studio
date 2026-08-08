@@ -19,6 +19,8 @@ MANIFEST = Path(".codex/pala-project.json")
 WORKFLOW = Path(".codex/pala-workflow.json")
 WORKFLOW_SCHEMA_VERSION = 2
 SESSION_KEY_LENGTH = 24
+# begin without --session-key still claims a v3 ticket under this local owner
+DEFAULT_LOCAL_SESSION = "pala-local"
 DEFAULT_INSTRUCTION_LIMIT = 32_768
 VERIFICATION_TIERS = ("narrow", "ticket", "milestone", "release", "not-run")
 CANDIDATES = {
@@ -531,11 +533,13 @@ def hook_safety_report(root: Path) -> dict[str, object]:
         return {
             "status": "passed",
             "reasons": [],
+            "ui_trust": "configured-not-verified",
             "recommendation": "run /hooks to review hook policy when you change safety boundaries",
         }
     return {
         "status": "blocked",
         "reasons": reasons,
+        "ui_trust": "configured-not-verified",
         "recommendation": "run /hooks to inspect and repair hook safety",
     }
 
@@ -630,6 +634,13 @@ def doctor_report(
         and status["project_registration"]["registered"]
         and status["hook_safety"]["status"] == "passed"
     )
+
+    try:
+        from pala_shared_memory import doctor_store_block
+
+        status["shared_store"] = doctor_store_block()
+    except Exception as error:  # noqa: BLE001 — doctor JSON stays useful
+        status["shared_store"] = {"error": str(error), "cloud_sync": False}
 
     return status
 
@@ -847,22 +858,70 @@ def _record_store_event(
         pass
 
 
+def _emit_debug_gate(root: Path, *, surface: str) -> None:
+    """Warn on stderr + record attempt when open INC exist (Wave B)."""
+    try:
+        from pala_debug_gate import evaluate_gate, record_debug_attempt
+
+        documents: dict[str, object] | None = None
+        try:
+            documents = dict(load_manifest(root).get("documents") or {})
+        except (OSError, ValueError, json.JSONDecodeError):
+            documents = {"debugging": "DEBUGGING.md"}
+        report = evaluate_gate(root, documents, surface=surface)
+        if not report.get("warn"):
+            return
+        message = str(report.get("message") or "").strip()
+        if message:
+            print(message, file=sys.stderr)
+        for item in report.get("incidents") or []:
+            if not isinstance(item, dict):
+                continue
+            inc_id = str(item.get("id") or "").strip()
+            if not inc_id:
+                continue
+            record_debug_attempt(
+                root,
+                inc_id,
+                detail=f"{surface}: saw open {inc_id}",
+                evidence=f"surface={surface}",
+            )
+    except (OSError, ValueError, TypeError, KeyError, ImportError):
+        pass
+
+
+def complete_recovery_message(ticket: str, *, reason: str = "") -> str:
+    """Actionable Turkish recovery when complete cannot find ticket/session."""
+    tip = (
+        f"complete reddedildi: ticket/oturum kaydı yok veya uyuşmuyor ({ticket}). "
+        f"Önce gerekirse register; sonra "
+        f'begin --ticket {ticket} --goal "tek sonraki iş" --session-key <aynı-anahtar> '
+        f"(session yoksa begin varsayılanı: {DEFAULT_LOCAL_SESSION}). Soft-pass yok."
+    )
+    detail = (reason or "").strip()
+    if detail and detail not in tip:
+        return f"{tip} ({detail})"
+    return tip
+
+
 def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -> None:
     if not ticket.strip() or not goal.strip():
         raise ValueError("ticket and goal must be non-empty")
-    if session is not None:
-        from pala_store import WorkflowStore
+    _emit_debug_gate(root, surface="begin")
+    from pala_store import WorkflowStore
 
+    if session is not None:
         result = WorkflowStore(root).claim(ticket=ticket, goal=goal, session=session)
         if result.status == "owned_by_other":
             raise ValueError("ticket is owned by another active session")
+        if result.status == "busy":
+            raise ValueError("ticket claim busy; retry begin with the same --session-key")
         _record_store_event(
             root,
             "begin",
             detail=f"{ticket.strip()}: {goal.strip()}"[:300],
         )
         return
-    from pala_store import WorkflowStore
 
     if WorkflowStore(root).has_dirty_record():
         raise ValueError(
@@ -874,6 +933,14 @@ def begin_work(root: Path, ticket: str, goal: str, session: str | None = None) -
             raise ValueError(
                 "active workflow has uncheckpointed dirty work; run checkpoint before begin"
             )
+    # Always write a v3 ticket row so complete/session tools can find it.
+    claim = WorkflowStore(root).claim(
+        ticket=ticket, goal=goal, session=DEFAULT_LOCAL_SESSION
+    )
+    if claim.status == "owned_by_other":
+        raise ValueError("ticket is owned by another active session")
+    if claim.status == "busy":
+        raise ValueError("ticket claim busy; retry begin")
     payload = {
         "schema_version": WORKFLOW_SCHEMA_VERSION,
         "active_ticket": ticket.strip(),
@@ -904,12 +971,14 @@ def checkpoint_work(
     *,
     changed_summary: str = "",
     changed_files: list[str] | None = None,
+    session_id: str | None = None,
 ) -> None:
     from pala_memory import (
         append_status_mismatch,
         ticket_coherence_report,
     )
 
+    _emit_debug_gate(root, surface="checkpoint")
     payload = load_workflow(root)
     if not next_action.strip():
         raise ValueError("next action must be non-empty")
@@ -934,6 +1003,34 @@ def checkpoint_work(
         "",
     )
     needs_reconcile = bool(coherence.get("mismatch"))
+    parallel_stamp: dict[str, object] | None = None
+    try:
+        from pala_cold_packet import (
+            detect_worktree_conflict,
+            git_surface,
+            parallel_checkpoint_fields,
+        )
+
+        git = git_surface(root)
+        prior = payload.get("parallel") if isinstance(payload.get("parallel"), dict) else {}
+        conflict = detect_worktree_conflict(
+            ticket=str(payload.get("active_ticket") or ""),
+            this_worktree=str(git.get("worktree") or root),
+            other_worktree=str(prior.get("worktree") or "") or None,
+            other_branch=str(prior.get("branch") or "") or None,
+            this_branch=str(git.get("branch") or "") or None,
+        )
+        if conflict.get("reconcile_required"):
+            needs_reconcile = True
+        parallel_stamp = parallel_checkpoint_fields(
+            session_id=session_id,
+            worktree=str(git.get("worktree") or root),
+            branch=str(git.get("branch") or "unknown"),
+            base_commit=str(git.get("base_commit") or "") or None,
+            file_scope=list(changed_files or git.get("changed_files") or [])[:16],
+        )
+    except (OSError, ValueError, TypeError, ImportError):
+        parallel_stamp = None
     payload.update(
         {
             "schema_version": WORKFLOW_SCHEMA_VERSION,
@@ -951,6 +1048,8 @@ def checkpoint_work(
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
     )
+    if parallel_stamp is not None:
+        payload["parallel"] = parallel_stamp
     write_json(root / WORKFLOW, payload)
     if status_rel and coherence.get("mismatch"):
         append_status_mismatch(root / status_rel, coherence)
@@ -1181,6 +1280,29 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
         if isinstance(manifest.get("profiles"), list)
         else []
     )
+    cmd_memory: dict[str, object] = {"blocks": [], "hint": None}
+    try:
+        from pala_cmd_memory import active_blocks, context_packet_hint
+
+        cmd_memory = {
+            "blocks": active_blocks(limit=5),
+            "hint": context_packet_hint(limit=3),
+        }
+    except (OSError, ValueError, TypeError, ImportError):
+        pass
+    cold_packet: dict[str, object] | None = None
+    try:
+        from pala_cold_packet import build_cold_packet
+
+        cold_packet = build_cold_packet(
+            root,
+            profile="minimal",
+            session_id=session,
+            documents=safe_documents,
+            workflow=workflow if isinstance(workflow, dict) else None,
+        )
+    except (OSError, ValueError, TypeError, ImportError):
+        cold_packet = None
     return {
         "active_ticket": workflow.get("active_ticket"),
         "goal": workflow.get("goal"),
@@ -1196,15 +1318,36 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
             "counts": tools.get("counts"),
             "total": tools.get("total"),
         },
+        "cmd_memory": cmd_memory,
+        "cold_packet": cold_packet,
         "memory_contract_version": memory.get("memory_contract_version"),
         "active_plan": safe_documents.get("plan"),
         "project": safe_documents.get("project"),
     }
 
 
+class _PalaArgumentParser(argparse.ArgumentParser):
+    """Turkish-friendly errors for required begin --goal (and related) flags."""
+
+    def error(self, message: str) -> None:  # type: ignore[override]
+        text = str(message or "")
+        lowered = text.casefold()
+        if "--goal" in lowered or (
+            "goal" in lowered and ("required" in lowered or "zorunlu" in lowered)
+        ):
+            text = (
+                'begin için --goal zorunlu. '
+                'Örnek: begin --ticket T1 --goal "tek sonraki iş"'
+            )
+        self.print_usage(sys.stderr)
+        self.exit(2, f"{self.prog}: error: {text}\n")
+
+
 def parser() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(description=__doc__)
-    subparsers = result.add_subparsers(dest="command", required=True)
+    result = _PalaArgumentParser(description=__doc__)
+    subparsers = result.add_subparsers(
+        dest="command", required=True, parser_class=_PalaArgumentParser
+    )
     for command in ("discover", "validate", "instructions", "context", "memory"):
         child = subparsers.add_parser(command)
         child.add_argument("--cwd", default=".")
@@ -1221,10 +1364,17 @@ def parser() -> argparse.ArgumentParser:
     register_parser.add_argument("--decisions")
     register_parser.add_argument("--open-source", dest="open_source")
     register_parser.add_argument("--demo")
-    begin_parser = subparsers.add_parser("begin")
+    begin_parser = subparsers.add_parser(
+        "begin",
+        help="Start a ticket; --goal zorunlu",
+    )
     begin_parser.add_argument("--cwd", default=".")
     begin_parser.add_argument("--ticket", required=True)
-    begin_parser.add_argument("--goal", required=True)
+    begin_parser.add_argument(
+        "--goal",
+        required=True,
+        help='Zorunlu hedef. Örnek: begin --ticket T1 --goal "tek sonraki iş"',
+    )
     begin_parser.add_argument("--session-key")
     checkpoint_parser = subparsers.add_parser("checkpoint")
     checkpoint_parser.add_argument("--cwd", default=".")
@@ -1251,6 +1401,16 @@ def parser() -> argparse.ArgumentParser:
         child.add_argument("--cwd", default=".")
         child.add_argument("--ticket", required=True)
         child.add_argument("--session-key", required=True)
+    debug_gate_parser = subparsers.add_parser("debug-gate")
+    debug_gate_parser.add_argument("--cwd", default=".")
+    debug_gate_parser.add_argument(
+        "--surface",
+        default="begin",
+        choices=("session", "begin", "checkpoint", "complete"),
+    )
+    debug_gate_parser.add_argument("--json", action="store_true")
+    debug_gate_parser.add_argument("--record-attempt", metavar="INC_ID")
+    debug_gate_parser.add_argument("--attempt-detail", default="")
     return result
 
 
@@ -1378,10 +1538,85 @@ def main() -> int:
     if args.command in {"recover", "complete"}:
         from pala_store import WorkflowStore
 
+        if args.command == "complete":
+            try:
+                from pala_debug_gate import complete_fail_closed
+
+                documents: dict[str, object] | None = None
+                changed: list[str] = []
+                verification: list[object] = []
+                try:
+                    documents = dict(load_manifest(root).get("documents") or {})
+                except (OSError, ValueError, json.JSONDecodeError):
+                    documents = {"debugging": "DEBUGGING.md"}
+                try:
+                    workflow = load_workflow(root)
+                    raw_changed = workflow.get("changed_files") or []
+                    if isinstance(raw_changed, list):
+                        changed = [str(item) for item in raw_changed]
+                    raw_verify = workflow.get("verification_evidence") or workflow.get(
+                        "verification"
+                    ) or []
+                    if isinstance(raw_verify, list):
+                        verification = list(raw_verify)
+                except (OSError, ValueError, json.JSONDecodeError):
+                    pass
+                # Session ticket store may also hold verification.
+                try:
+                    record = WorkflowStore(root)._read(
+                        WorkflowStore(root)._ticket_path(args.ticket)
+                    )
+                    if isinstance(record, dict):
+                        store_verify = record.get("verification") or []
+                        if isinstance(store_verify, list) and store_verify:
+                            verification = list(store_verify)
+                        store_changed = record.get("changed_files") or []
+                        if isinstance(store_changed, list) and store_changed:
+                            changed = [str(item) for item in store_changed]
+                except (OSError, ValueError, TypeError, AttributeError):
+                    pass
+                decision = complete_fail_closed(
+                    root,
+                    documents=documents,
+                    changed_files=changed,
+                    verification=verification,
+                    enabled=True,
+                )
+                if not decision.get("allowed"):
+                    print(str(decision.get("reason") or "complete refused"), file=sys.stderr)
+                    return 2
+            except (OSError, ValueError, TypeError, ImportError) as exc:
+                print(str(exc), file=sys.stderr)
+                return 2
         try:
             result = getattr(WorkflowStore(root), args.command)(args.ticket, args.session_key)
         except ValueError as exc:
-            print(str(exc), file=sys.stderr)
+            reason = str(exc)
+            if args.command == "complete" and (
+                "not found" in reason.casefold() or "ticket" in reason.casefold()
+            ):
+                print(
+                    complete_recovery_message(args.ticket, reason=reason),
+                    file=sys.stderr,
+                )
+            else:
+                print(reason, file=sys.stderr)
+            return 2
+        if args.command == "complete" and result.status not in {"completed"}:
+            if result.status in {"owned_by_other", "busy"}:
+                print(
+                    complete_recovery_message(
+                        args.ticket,
+                        reason=f"status={result.status}",
+                    ),
+                    file=sys.stderr,
+                )
+            print(
+                json.dumps(
+                    {"status": result.status, "record": result.record},
+                    ensure_ascii=False,
+                )
+            )
             return 2
         print(json.dumps({"status": result.status, "record": result.record}, ensure_ascii=False))
         return 0 if result.status in {"recovered", "completed"} else 2
@@ -1389,6 +1624,17 @@ def main() -> int:
         payload = doctor_report(root, session=args.session_key)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0 if payload["healthy"] else 2
+    if args.command == "debug-gate":
+        from pala_debug_gate import main as debug_gate_main
+
+        argv = ["--cwd", str(root), "--surface", args.surface]
+        if args.json:
+            argv.append("--json")
+        if args.record_attempt:
+            argv.extend(["--record-attempt", args.record_attempt])
+        if args.attempt_detail:
+            argv.extend(["--attempt-detail", args.attempt_detail])
+        return debug_gate_main(argv)
     return validate(root)
 
 

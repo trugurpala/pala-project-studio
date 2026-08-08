@@ -384,7 +384,7 @@ class MemoryContractTests(unittest.TestCase):
             tools_summary="tools=3ok/2gap",
         )
         message = result["hookSpecificOutput"]["additionalContext"]
-        self.assertLessEqual(len(message), 800)
+        self.assertLessEqual(len(message), pala_hook.SESSION_CONTEXT_LIMIT)
         self.assertIn("Read status first", message)
         self.assertIn("ticket_mismatch=true", message)
         self.assertIn("tools=3ok/2gap", message)

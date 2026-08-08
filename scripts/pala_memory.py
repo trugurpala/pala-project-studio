@@ -50,6 +50,7 @@ STUB_BODIES = {
         "## Format\n\n"
         "Each incident uses heading `### INC-YYYYMMDD-slug` and these fields:\n"
         "Symptoms, Root cause, Fix criteria, Proved by, Related files, Date, Status.\n"
+        "Optional: Attempts (append-only notes when a fix is tried).\n"
         "Status may be `open`, `fixed`, or `wontfix`; fixed requires evidence labels "
         "(passed | not-run | blocked | configured-not-verified), not soft done/ok.\n\n"
         "## Incidents\n\n"
@@ -78,10 +79,13 @@ DEBUGGING_REQUIRED_FIELDS = (
     "Date",
     "Status",
 )
+# Optional but recommended for open incidents (Wave B attempt discipline).
+DEBUGGING_OPTIONAL_FIELDS = ("Attempts",)
+DEBUGGING_FIELD_NAMES = DEBUGGING_REQUIRED_FIELDS + DEBUGGING_OPTIONAL_FIELDS
 INCIDENT_HEADING_RE = re.compile(r"(?m)^###\s+(INC-[A-Za-z0-9][\w.-]*)\s*$")
 INCIDENT_FIELD_RE = re.compile(
     r"(?im)^\s*[-*]\s*\*\*("
-    + "|".join(re.escape(name) for name in DEBUGGING_REQUIRED_FIELDS)
+    + "|".join(re.escape(name) for name in DEBUGGING_FIELD_NAMES)
     + r"):\*\*\s*(.*)$"
 )
 
@@ -151,9 +155,9 @@ def parse_debugging_brain(text: str) -> dict[str, object]:
         fields: dict[str, str] = {}
         for field_match in INCIDENT_FIELD_RE.finditer(chunk):
             key = field_match.group(1)
-            # Preserve canonical casing from DEBUGGING_REQUIRED_FIELDS.
+            # Preserve canonical casing from required + optional field names.
             canonical = next(
-                name for name in DEBUGGING_REQUIRED_FIELDS if name.casefold() == key.casefold()
+                name for name in DEBUGGING_FIELD_NAMES if name.casefold() == key.casefold()
             )
             fields[canonical] = field_match.group(2).strip()
         missing = [name for name in DEBUGGING_REQUIRED_FIELDS if not fields.get(name)]
@@ -521,6 +525,18 @@ def plain_memory_report(
     if isinstance(tool_counts, dict) and tool_counts:
         parts = [f"{key}={value}" for key, value in sorted(tool_counts.items())]
         lines.append("Araç özeti: " + ", ".join(parts))
+    lines.append("")
+    try:
+        from pala_shared_memory import surface_report
+
+        store = surface_report("cli")
+        lines.append(f"Ortak store: {store['db_path']}")
+        lines.append(
+            "Yüzeyler: Codex (plugin+hooks) · Cursor (ince skill/rules) · CLI "
+            "(aynı sqlite; bulut sync yok)"
+        )
+    except Exception:  # noqa: BLE001 — memory text must not crash
+        lines.append("Ortak store: (okunamadı)")
     lines.append("")
     lines.append(
         "İpucu: sohbet geçmişine güvenme; yukarıdaki dosyaları sırayla oku."

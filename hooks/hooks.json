@@ -11,7 +11,7 @@
             "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pala_hook.py\"",
             "timeout": 10,
             "statusMessage": "Pala yanınızda",
-            "additionalContextLimit": 800
+            "additionalContextLimit": 2048
           }
         ]
       }

@@ -7,8 +7,8 @@ focused file reads are usually cheaper and more precise.
 
 ## Bounded workflow
 
-1. Resolve `../../scripts/pala_code_intel.py` from the skill, then run `status
-   --cwd <project>`.
+1. Resolve `pala_code_intel.py` from Pala scripts (marketplace/repo; not
+   skill-relative paths from project cwd), then run `status --cwd <project>`.
 2. If `code-review-graph` and a local graph are available, update/build only
    when authorized, then use `review` to identify changed symbols, dependents,
    execution flows, and likely test gaps.
