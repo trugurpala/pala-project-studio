@@ -147,6 +147,11 @@ class ExpertInstallerTests(unittest.TestCase):
         lock = {
             "graphify": {"version": "1.0", "source_url": "https://example.invalid/graphify.whl", "sha256": hashlib.sha256(wheel).hexdigest()},
             "serena": {"version": "1.0", "source_url": "https://example.invalid/serena.whl", "sha256": hashlib.sha256(wheel).hexdigest()},
+            "code-review-graph": {
+                "version": "1.0",
+                "source_url": "https://example.invalid/code_review_graph.whl",
+                "sha256": hashlib.sha256(wheel).hexdigest(),
+            },
             "codebase-memory": {"version": "1.0", "source_url": "https://example.invalid/cbm.zip", "sha256": hashlib.sha256(zip_payload).hexdigest()},
             "ollama": {"version": "1.0", "source_url": "https://example.invalid/ollama.zip", "sha256": hashlib.sha256(zip_payload).hexdigest()},
             "rtk": {"version": "1.0", "source_url": "https://example.invalid/rtk.exe", "sha256": hashlib.sha256(b"rtk").hexdigest()},
@@ -157,7 +162,10 @@ class ExpertInstallerTests(unittest.TestCase):
             report = self.installer.install_expert_suite(
                 lock, state, fetch=lambda url: payloads[url], uv="uv.exe", run=lambda _args, _env: 0,
             )
-            self.assertEqual(set(report["experts"]), {"graphify", "serena", "codebase-memory", "ollama"})
+            self.assertEqual(
+                set(report["experts"]),
+                {"graphify", "serena", "code-review-graph", "codebase-memory", "ollama"},
+            )
             self.assertTrue(all(item["state"] == "ready" for item in report["experts"].values()))
             self.assertFalse((state / "experts" / "rtk").exists())
 

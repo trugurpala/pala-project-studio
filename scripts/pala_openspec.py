@@ -20,3 +20,27 @@ class OpenSpecAdapter:
             if path.is_dir()
         )
         return AdapterResult("openspec", "ready", False, "OpenSpec artifacts discovered", evidence)
+
+    def bind_active_ticket(
+        self, root: Path, active_ticket: str | None
+    ) -> AdapterResult:
+        """Link OpenSpec presence to the current Pala ticket without a second planner."""
+        current = self.inspect(root)
+        if current.state != "ready":
+            return current
+        ticket = (active_ticket or "").strip()
+        if not ticket:
+            return AdapterResult(
+                "openspec",
+                "ready",
+                False,
+                "OpenSpec present; no active Pala ticket to bind",
+                current.evidence,
+            )
+        return AdapterResult(
+            "openspec",
+            "ready",
+            False,
+            f"OpenSpec bound to active ticket {ticket} (compatibility only; no second plan system)",
+            current.evidence + (f"ticket:{ticket}",),
+        )

@@ -89,8 +89,9 @@ class CodeIntelligenceTests(unittest.TestCase):
             ):
                 self.assertEqual(code_intel.run_graph(root, "update"), 0)
         self.assertEqual(run.call_args.args[0], ["crg", "update", "--brief"])
-        self.assertEqual(run.call_args.kwargs["env"]["PYTHONUTF8"], "1")
-        self.assertNotEqual(run.call_args.kwargs["env"], os.environ)
+        env = run.call_args.kwargs["env"]
+        self.assertIsNot(env, os.environ)
+        self.assertEqual(env.get("PYTHONUTF8"), "1")
 
     def test_installer_keeps_codex_config_and_graph_build_opt_in(self) -> None:
         installer = (SCRIPTS / "install_code_intelligence.ps1").read_text(
