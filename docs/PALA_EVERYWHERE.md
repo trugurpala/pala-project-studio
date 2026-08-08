@@ -57,6 +57,9 @@ codex plugin add pala-project-studio@pala-project-studio
 4. Git URL marketplace kapısı (dokümante)
 5. İleride (ayrı ticket): Agent Skills taşınabilir çekirdek → Claude/Cursor
    skill kopyası — **aynı UX iddiası yok**
+6. **M25 / Wave E:** `portable/cursor/SKILL.md` + `.cursor/rules/pala-memory.mdc`
+   + `pala_shared_memory.py` — aynı `pala.sqlite`, Codex hook parity yok
+   (ADR-017). Hit/miss + Doctor `shared_store`: `docs/PALA_SHARED_MEMORY.md`.
 
 ## Multi-host gerçeklik
 
@@ -65,7 +68,8 @@ codex plugin add pala-project-studio@pala-project-studio
 | Codex CLI / desktop Codex | Birinci sınıf |
 | ChatGPT Work + Plugins Directory | Aynı katalog ailesi; GUI ayrı |
 | ChatGPT Plus düz sohbet | **Desteklenmez** — plugin yüzeyi değil |
-| Claude Code / Cursor skills | Taşınabilir `SKILL.md` çekirdeği mümkün; hook/marketplace ayrı |
+| Cursor (bu checkout) | İnce rule + portable skill; ortak sqlite; hook yok |
+| Claude Code / diğer agentskills | `portable/cursor/SKILL.md` kopyalanabilir |
 | IDE extension / mobile | Hedef değil |
 
 Kaynak standart: [agentskills.io](https://agentskills.io) — portable olan skill
