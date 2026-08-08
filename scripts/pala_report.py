@@ -94,6 +94,89 @@ def _read_order_progress(read_order: list[object]) -> dict[str, object]:
     return {"ready": ready, "total": len(read_order) or 7, "missing": missing}
 
 
+_GATE_STATUSES = ("passed", "not-run", "blocked", "configured-not-verified", "failed")
+
+
+def _gate_status_from_text(text: str) -> str:
+    lowered = text.casefold()
+    for status in _GATE_STATUSES:
+        if status in lowered:
+            return status
+    return "not-run"
+
+
+def last_gate_signal(
+    workflow: dict[str, object] | None,
+    events: list[object] | None = None,
+) -> dict[str, str]:
+    """Display-only last gate summary for the Status decision strip."""
+    workflow = workflow if isinstance(workflow, dict) else {}
+    verification = workflow.get("verification")
+    if isinstance(verification, list) and verification:
+        last = str(verification[-1]).strip()
+        if last:
+            return {
+                "label": last[:80],
+                "status": _gate_status_from_text(last),
+            }
+    evidence = workflow.get("verification_evidence")
+    if isinstance(evidence, list) and evidence:
+        last_ev = evidence[-1]
+        if isinstance(last_ev, dict):
+            label = str(last_ev.get("command") or last_ev.get("status") or "").strip()
+            status = str(last_ev.get("status") or _gate_status_from_text(label))
+        else:
+            label = str(last_ev).strip()
+            status = _gate_status_from_text(label)
+        if label:
+            return {"label": label[:80], "status": status or "not-run"}
+    tier = str(workflow.get("verification_tier") or "").strip()
+    if tier and tier != "not-run":
+        return {"label": tier[:80], "status": _gate_status_from_text(tier)}
+    for event in events or []:
+        if not isinstance(event, dict):
+            continue
+        kind = str(event.get("kind") or "")
+        if kind not in {"checkpoint", "mismatch"}:
+            continue
+        detail = str(event.get("evidence") or event.get("detail") or "").strip()
+        if not detail:
+            continue
+        return {
+            "label": detail[:80],
+            "status": _gate_status_from_text(detail)
+            if kind == "checkpoint"
+            else "blocked",
+        }
+    if tier:
+        return {"label": tier[:80], "status": "not-run"}
+    return {"label": "not-run", "status": "not-run"}
+
+
+def active_freshness_level(
+    root: Path,
+    projects: list[object],
+    workflow: dict[str, object] | None,
+    *,
+    now: datetime | None = None,
+) -> str:
+    """Freshness for the active project strip (catalog path, else workflow stamp)."""
+    root_resolved = root.resolve()
+    for item in projects:
+        if not isinstance(item, dict):
+            continue
+        path_raw = item.get("path")
+        if not isinstance(path_raw, str) or not path_raw.strip():
+            continue
+        try:
+            if Path(path_raw).resolve() == root_resolved:
+                return freshness(item.get("updated_at"), now)
+        except OSError:
+            continue
+    workflow = workflow if isinstance(workflow, dict) else {}
+    return freshness(workflow.get("updated_at"), now)
+
+
 def build_status_model(
     root: Path,
     *,
@@ -171,6 +254,10 @@ def build_status_model(
         "events": events,
         "provisions": provisions,
         "next_action": next_action,
+        "last_gate": last_gate_signal(workflow, events),
+        "freshness_level": active_freshness_level(
+            root, projects, workflow, now=now
+        ),
         "update": update,
         "update_checked_at": update_checked_at,
         "now": now,
@@ -242,6 +329,27 @@ def open_report(path: Path) -> None:
         webbrowser.open(resolved.as_uri())
 
 
+def format_open_hint(path: Path) -> str:
+    """One-liner for agents/humans: how to open the Status HTML vitrin."""
+    resolved = path.resolve()
+    try:
+        uri = resolved.as_uri()
+    except ValueError:
+        uri = str(resolved)
+    return f"açmak için: {uri}"
+
+
+def format_report_output(path: Path) -> str:
+    """CLI stdout body: absolute path, contract relative path, open hint."""
+    resolved = path.resolve()
+    lines = [
+        str(resolved),
+        f"Status HTML: {REPORT_REL.as_posix()}",
+        format_open_hint(resolved),
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cwd", default=".")
@@ -253,7 +361,7 @@ def main() -> int:
     out = Path(args.out) if args.out else None
     cache = Path(args.cache) if args.cache else None
     target = write_report(root, out, cache_path=cache)
-    print(str(target))
+    sys.stdout.write(format_report_output(target))
     if args.open:
         open_report(target)
     return 0
