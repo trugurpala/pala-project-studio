@@ -62,12 +62,21 @@ class UserExperienceContractTests(unittest.TestCase):
                 or "yayınlanmad" in normalized,
                 "README must state GitHub publish is pending while STATUS says not-run",
             )
-            self.assertIn("v0.7.1", readme)
-            self.assertIn(
-                "pala-project-studio-0.7.1.zip",
-                readme,
-                "While 0.8.0 is pending, README must point at last published ZIP",
-            )
+            # Primary download stays on last published GitHub release.
+            if release_version == "0.8.1":
+                self.assertIn("v0.8.0", readme)
+                self.assertIn(
+                    "pala-project-studio-0.8.0.zip",
+                    readme,
+                    "While 0.8.1 is pending, README must point at last published ZIP",
+                )
+            else:
+                self.assertIn("v0.7.1", readme)
+                self.assertIn(
+                    "pala-project-studio-0.7.1.zip",
+                    readme,
+                    "While next release is pending, README must point at last published ZIP",
+                )
         else:
             self.assertIn(published_zip, readme)
             self.assertIn(green_badge, readme)
@@ -81,6 +90,32 @@ class UserExperienceContractTests(unittest.TestCase):
             "divan",
         ):
             self.assertIn(required, normalized)
+
+    def test_readme_download_matches_published_or_pending_policy(self) -> None:
+        """Task 5: download ZIP name follows STATUS publish honesty."""
+        readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
+        status = (PLUGIN_ROOT / "STATUS.md").read_text(encoding="utf-8")
+        manifest = json.loads(
+            (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        version = str(manifest["version"]).split("+", maxsplit=1)[0]
+        pending = bool(
+            re.search(
+                rf"`v?{re.escape(version)}`[^\n]*`not-run`",
+                status,
+                flags=re.IGNORECASE,
+            )
+        )
+        if pending:
+            self.assertIn("pala-project-studio-0.8.0.zip", readme)
+            self.assertNotIn(
+                f"img.shields.io/badge/release-v{version}-2ea44f",
+                readme,
+            )
+        else:
+            self.assertIn(f"pala-project-studio-{version}.zip", readme)
 
     def test_04_single_door_plan_is_opinionated_and_codex_safe(self) -> None:
         project = (PLUGIN_ROOT / "PROJECT.md").read_text(encoding="utf-8")
@@ -127,7 +162,7 @@ class UserExperienceContractTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        self.assertTrue(manifest["version"].startswith("0.8.0+codex."))
+        self.assertTrue(manifest["version"].startswith("0.8.1+codex."))
         self.assertEqual(
             manifest["repository"],
             "https://github.com/trugurpala/pala-project-studio",
@@ -201,7 +236,8 @@ class UserExperienceContractTests(unittest.TestCase):
 
     def test_orchestrator_is_concise_and_declares_human_contract(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
-        self.assertLessEqual(len(skill.split()), 450)
+        # Premium kontrol checklist + marketplace path guidance share this budget.
+        self.assertLessEqual(len(skill.split()), 650)
         for principle in (
             "Understand before changing.",
             "Choose the smallest correct and sustainable path.",
@@ -226,6 +262,33 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertIn(
             "do not implement or run the completion gate",
             normalized,
+        )
+
+    def test_kontrol_et_readonly_checklist_markers(self) -> None:
+        """Premium 'pala kontrol et' Codex checklist stays explicit and read-only."""
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        for marker in (
+            "kontrol et",
+            "rapor",
+            "denetle",
+            "Presence",
+            "pala_report",
+            "discover",
+            "STATUS",
+            "PLAN",
+            "DEBUGGING",
+            "pala-status.html",
+            "do not register, begin",
+        ):
+            self.assertIn(marker, skill)
+        # Numbered steps covering presence → report → discover → docs → gates → URL
+        for step in ("1.", "2.", "3.", "4.", "5.", "6.", "7."):
+            self.assertIn(step, skill)
+        readonly_block = skill.split("## Task Modes", 1)[-1].split("## Operating", 1)[0]
+        self.assertIn("register", readonly_block.casefold())
+        self.assertRegex(
+            readonly_block,
+            r"(?is)do not register.*begin",
         )
 
     def test_specialist_routing_is_conditional_and_current(self) -> None:
@@ -306,6 +369,20 @@ class UserExperienceContractTests(unittest.TestCase):
             "% faster",
         ):
             self.assertNotIn(banned.casefold(), normalized)
+
+    def test_skill_script_paths_are_marketplace_or_pala_state_not_relative_cwd(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.assertNotIn("../../scripts/", skill)
+        self.assertNotIn("..\\..\\scripts\\", skill)
+        lowered = skill.casefold()
+        self.assertTrue(
+            "localappdata" in lowered
+            or "marketplace\\scripts" in lowered
+            or "marketplace/scripts" in lowered
+            or "pala_state" in lowered,
+            "skill must not tell agents to run ../../scripts/ from project cwd",
+        )
+        self.assertIn("--goal", skill)
 
     def test_github_reference_excludes_secrets_and_requires_separate_authority(self) -> None:
         text = (REFERENCE_ROOT / "github-persistence.md").read_text(

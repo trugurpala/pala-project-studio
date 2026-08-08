@@ -46,9 +46,10 @@ class DemoFixtureContractTests(unittest.TestCase):
         self.assertIn("DEMO-003", plan)
         self.assertIn("[x] DEMO-003", plan)
         self.assertIn("[x] DEMO-004", plan)
-        self.assertEqual(workflow.get("active_ticket"), "DEMO-005")
+        self.assertIn("[x] DEMO-005", plan)
+        self.assertEqual(str(workflow.get("active_ticket") or "").strip(), "")
         self.assertIn("passed", status)
-        self.assertIn("not-run", status)
+        self.assertIn("OWNER_DEMO", status)
         self.assertIn("Status HTML", status)
         for banned in ("api_key", "sk-", "BEGIN PRIVATE"):
             tree = "\n".join(
@@ -69,13 +70,13 @@ class PalaDemoSeedTests(unittest.TestCase):
                 catalog_root=catalog,
             )
             self.assertEqual(result["status"], "passed")
-            self.assertEqual(result["project"]["active_ticket"], "DEMO-005")
+            self.assertEqual(result["project"]["active_ticket"], "DEMO-003")
             self.assertGreaterEqual(result["events_written"], 3)
             self.assertTrue((catalog / "pala.sqlite").is_file())
 
             projects = pala_db.list_projects(path=catalog / "pala.sqlite")
             self.assertEqual(len(projects), 1)
-            self.assertIn("DEMO-005", projects[0]["next_action"])
+            self.assertIn("DEMO-003", projects[0]["next_action"])
             events = pala_db.recent_events(limit=10, path=catalog / "pala.sqlite")
             kinds = {event["kind"] for event in events}
             self.assertTrue({"register", "begin", "checkpoint"}.issubset(kinds))
@@ -98,7 +99,7 @@ class PalaDemoSeedTests(unittest.TestCase):
             self.assertEqual(code, 0)
             body = json.loads(payload)
             self.assertEqual(body["status"], "passed")
-            self.assertEqual(body["project"]["active_ticket"], "DEMO-005")
+            self.assertEqual(body["project"]["active_ticket"], "DEMO-003")
 
     def test_seed_rejects_missing_fixture(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -122,7 +123,7 @@ class PalaDemoSeedTests(unittest.TestCase):
             markup = str(proof["html"])
             self.assertIn("Şimdi:", markup)
             self.assertIn(str(proof["active_ticket"]), markup)
-            self.assertEqual(proof["active_ticket"], "DEMO-005")
+            self.assertEqual(proof["active_ticket"], "DEMO-003")
             for kind_label in ("kayit", "basla", "checkpoint"):
                 self.assertIn(kind_label, markup)
             self.assertIn("Hata beyni", markup)

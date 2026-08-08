@@ -16,9 +16,9 @@ from pala_store import WorkflowStore
 MANIFEST = Path(".codex/pala-project.json")
 WORKFLOW = Path(".codex/pala-workflow.json")
 WORKFLOW_SCHEMA_VERSIONS = (1, 2)
-# Short trust line for SessionStart; keep under the 800-char budget with health.
+# Presence + minimal cold packet; hooks.json additionalContextLimit must match.
 PRESENCE_LINE = "Pala burada — bu oturumda yanındayım."
-SESSION_CONTEXT_LIMIT = 800
+SESSION_CONTEXT_LIMIT = 2048
 
 
 def emit(value: dict[str, object]) -> None:
@@ -114,6 +114,7 @@ def session_context(
     health: dict[str, str] | None = None,
     memory: dict[str, object] | None = None,
     tools_summary: str | None = None,
+    cold_packet_text: str | None = None,
 ) -> dict[str, object]:
     status = documents.get("status")
     plan = documents.get("plan")
@@ -142,6 +143,16 @@ def session_context(
         debug_open = int(brain.get("open") or 0)
     else:
         debug_open = 0
+    gate = (memory or {}).get("debug_gate") if isinstance(memory, dict) else None
+    gate_message = None
+    if isinstance(gate, dict) and gate.get("message"):
+        if gate.get("warn") or gate.get("do_not_retry"):
+            gate_message = str(gate.get("message") or "").strip() or None
+    cmd_hint = None
+    if isinstance(memory, dict):
+        cmd_memory = memory.get("cmd_memory")
+        if isinstance(cmd_memory, dict) and cmd_memory.get("hint"):
+            cmd_hint = str(cmd_memory.get("hint") or "").strip() or None
     tools = tools_summary or "tools=n/a"
     message = (
         f"{PRESENCE_LINE} {prefix}{health_text}Pala project kind={kind}. "
@@ -156,6 +167,40 @@ def session_context(
         "Do not re-plan completed scope. Continue authorized local work; "
         "full gate only at milestone/release; then checkpoint one ticket."
     )
+    if gate_message:
+        try:
+            from pala_debug_gate import inject_session_gate
+
+            message = inject_session_gate(message, gate_message, SESSION_CONTEXT_LIMIT)
+        except ImportError:
+            if len(message) + len(gate_message) + 1 <= SESSION_CONTEXT_LIMIT:
+                message = f"{message} {gate_message}"
+            else:
+                message = (message[: SESSION_CONTEXT_LIMIT - len(gate_message) - 4] + "... " + gate_message)
+    if cmd_hint and "do not retry" not in message.casefold():
+        extra = cmd_hint
+        if len(message) + len(extra) + 1 <= SESSION_CONTEXT_LIMIT:
+            message = f"{message} {extra}"
+        else:
+            message = message[: SESSION_CONTEXT_LIMIT - len(extra) - 4] + "... " + extra
+    packet = (cold_packet_text or "").strip()
+    if packet:
+        # Prefer evidence-first cold packet; keep presence + health + ticket cues.
+        room = SESSION_CONTEXT_LIMIT - len(message) - 1
+        if room >= 80:
+            if len(packet) > room:
+                packet = packet[: room - 3] + "..."
+            message = f"{message}\n{packet}"
+        else:
+            # Shrink legacy body so the cold packet still fits.
+            keep_head = PRESENCE_LINE
+            body_budget = max(120, SESSION_CONTEXT_LIMIT - len(packet) - len(keep_head) - 8)
+            legacy = message[len(PRESENCE_LINE) :].strip()
+            if len(legacy) > body_budget:
+                legacy = legacy[: body_budget - 3] + "..."
+            message = f"{keep_head} {legacy}\n{packet}"
+    elif len(message) > SESSION_CONTEXT_LIMIT:
+        message = message[: SESSION_CONTEXT_LIMIT - 3] + "..."
     if len(message) > SESSION_CONTEXT_LIMIT:
         message = message[: SESSION_CONTEXT_LIMIT - 3] + "..."
     return {
@@ -215,6 +260,35 @@ def main() -> int:
             from pala_tool_memory import short_hook_summary, tool_memory_report
 
             memory = contract_context(root, documents, workflow)
+            try:
+                from pala_debug_gate import evaluate_gate, session_memory_hit
+
+                docs = documents if isinstance(documents, dict) else {}
+                gate = evaluate_gate(root, docs, surface="session")
+                memory["debug_gate"] = gate
+                brain = memory.get("debugging_brain")
+                debug_open = (
+                    int(brain.get("open") or 0) if isinstance(brain, dict) else 0
+                )
+                debugging_read = False
+                for item in memory.get("read_order") or []:
+                    if isinstance(item, dict) and item.get("purpose") == "debugging":
+                        debugging_read = bool(item.get("exists"))
+                        break
+                memory["memory_hit"] = session_memory_hit(
+                    debug_open=debug_open, debugging_read=debugging_read
+                )
+                try:
+                    from pala_cmd_memory import active_blocks, context_packet_hint
+
+                    memory["cmd_memory"] = {
+                        "blocks": active_blocks(limit=5),
+                        "hint": context_packet_hint(limit=3),
+                    }
+                except (OSError, ValueError, TypeError, ImportError):
+                    pass
+            except (OSError, ValueError, TypeError, ImportError):
+                pass
             profiles = payload.get("profiles")
             tools = tool_memory_report(
                 profiles=list(profiles) if isinstance(profiles, list) else []
@@ -231,6 +305,23 @@ def main() -> int:
         except (OSError, ValueError, TypeError, ImportError):
             memory = None
             tools_summary = None
+        cold_text = None
+        try:
+            from pala_cold_packet import session_packet_snippet, stamp_workflow_parallel
+
+            cold_text = session_packet_snippet(
+                root,
+                documents=documents if isinstance(documents, dict) else None,
+                workflow=workflow if isinstance(workflow, dict) else None,
+                session_id=session_id if isinstance(session_id, str) else None,
+                max_bytes=900,
+            )
+            stamp_workflow_parallel(
+                root,
+                session_id=session_id if isinstance(session_id, str) else None,
+            )
+        except (OSError, ValueError, TypeError, ImportError):
+            cold_text = None
         emit(
             session_context(
                 documents,
@@ -242,6 +333,7 @@ def main() -> int:
                 local_health(root),
                 memory,
                 tools_summary,
+                cold_packet_text=cold_text,
             )
         )
         return 0

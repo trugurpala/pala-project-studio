@@ -20,7 +20,15 @@ from pathlib import Path
 SCHEMA_VERSION = 1
 DB_NAME = "pala.sqlite"
 BUSY_TIMEOUT_MS = 5000
-EVENT_KINDS = ("register", "begin", "checkpoint", "provision", "mismatch")
+EVENT_KINDS = (
+    "register",
+    "begin",
+    "checkpoint",
+    "provision",
+    "mismatch",
+    "debug_attempt",
+    "tool_attempt",
+)
 DETAIL_LIMIT = 300
 EVIDENCE_LIMIT = 500
 EVENT_KEEP = 2000
@@ -63,8 +71,28 @@ _SCHEMA = (
         evidence TEXT NOT NULL DEFAULT '',
         created_at TEXT NOT NULL DEFAULT ''
     )""",
+    """CREATE TABLE IF NOT EXISTS tool_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        command_family TEXT NOT NULL DEFAULT '',
+        cwd TEXT NOT NULL DEFAULT '',
+        os_name TEXT NOT NULL DEFAULT '',
+        shell TEXT NOT NULL DEFAULT '',
+        profile TEXT NOT NULL DEFAULT '',
+        exit_code INTEGER NOT NULL DEFAULT 1,
+        failure_class TEXT NOT NULL DEFAULT '',
+        resolution TEXT NOT NULL DEFAULT '',
+        fallback TEXT NOT NULL DEFAULT '',
+        scope TEXT NOT NULL DEFAULT '',
+        freshness TEXT NOT NULL DEFAULT '',
+        repeat_count INTEGER NOT NULL DEFAULT 1,
+        project_id TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL DEFAULT ''
+    )""",
     "CREATE INDEX IF NOT EXISTS idx_projects_updated ON projects (updated_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_events_recent ON events (id DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_tool_attempts_lookup ON tool_attempts "
+    "(failure_class, command_family, os_name, shell, profile)",
 )
 
 _PROJECT_COLUMNS = (
@@ -501,3 +529,152 @@ def migrate_from_json(
         "projects": imported_projects,
         "provisions": imported_provisions,
     }
+
+
+def _row_to_tool_attempt(row: sqlite3.Row) -> dict[str, object]:
+    return {
+        "id": row["id"],
+        "command_family": row["command_family"],
+        "cwd": row["cwd"],
+        "os": row["os_name"],
+        "shell": row["shell"],
+        "profile": row["profile"],
+        "exit_code": int(row["exit_code"]),
+        "failure_class": row["failure_class"],
+        "resolution": row["resolution"],
+        "fallback": row["fallback"],
+        "scope": row["scope"],
+        "freshness": row["freshness"],
+        "repeat_count": int(row["repeat_count"]),
+        "project_id": row["project_id"],
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
+    }
+
+
+def find_tool_attempt(
+    *,
+    failure_class: str,
+    command_family: str,
+    os_name: str = "",
+    shell: str = "",
+    profile: str = "",
+    path: Path | None = None,
+) -> dict[str, object] | None:
+    """Return the newest matching failure memory row, if any."""
+    with connect(path) as conn:
+        row = conn.execute(
+            "SELECT * FROM tool_attempts WHERE failure_class = ? AND "
+            "command_family = ? AND os_name = ? AND shell = ? AND profile = ? "
+            "ORDER BY id DESC LIMIT 1",
+            (
+                _text(failure_class, 80),
+                _text(command_family, 160),
+                _text(os_name, 40),
+                _text(shell, 40),
+                _text(profile, 80),
+            ),
+        ).fetchone()
+        return _row_to_tool_attempt(row) if row is not None else None
+
+
+def upsert_tool_attempt(
+    *,
+    command_family: str,
+    failure_class: str,
+    cwd: str = "",
+    os_name: str = "",
+    shell: str = "",
+    profile: str = "",
+    exit_code: int = 1,
+    resolution: str = "",
+    fallback: str = "",
+    scope: str = "",
+    freshness: str = "",
+    project_id: str = "",
+    path: Path | None = None,
+) -> dict[str, object]:
+    """Insert or bump repeat_count for the same failure signature."""
+    stamp = _now()
+    family = _text(command_family, 160)
+    klass = _text(failure_class, 80)
+    os_key = _text(os_name, 40)
+    shell_key = _text(shell, 40)
+    profile_key = _text(profile, 80)
+    with connect(path) as conn:
+        existing = conn.execute(
+            "SELECT * FROM tool_attempts WHERE failure_class = ? AND "
+            "command_family = ? AND os_name = ? AND shell = ? AND profile = ? "
+            "ORDER BY id DESC LIMIT 1",
+            (klass, family, os_key, shell_key, profile_key),
+        ).fetchone()
+        if existing is None:
+            cursor = conn.execute(
+                "INSERT INTO tool_attempts "
+                "(command_family, cwd, os_name, shell, profile, exit_code, "
+                "failure_class, resolution, fallback, scope, freshness, "
+                "repeat_count, project_id, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)",
+                (
+                    family,
+                    _text(cwd, 400),
+                    os_key,
+                    shell_key,
+                    profile_key,
+                    int(exit_code),
+                    klass,
+                    _text(resolution, DETAIL_LIMIT),
+                    _text(fallback, DETAIL_LIMIT),
+                    _text(scope, 80),
+                    _text(freshness, 40) or "fresh",
+                    _text(project_id, 160),
+                    stamp,
+                    stamp,
+                ),
+            )
+            row_id = int(cursor.lastrowid or 0)
+        else:
+            row_id = int(existing["id"])
+            conn.execute(
+                "UPDATE tool_attempts SET cwd = ?, exit_code = ?, "
+                "resolution = ?, fallback = ?, scope = ?, freshness = ?, "
+                "repeat_count = repeat_count + 1, project_id = ?, "
+                "updated_at = ? WHERE id = ?",
+                (
+                    _text(cwd, 400) or existing["cwd"],
+                    int(exit_code),
+                    _text(resolution, DETAIL_LIMIT) or existing["resolution"],
+                    _text(fallback, DETAIL_LIMIT) or existing["fallback"],
+                    _text(scope, 80) or existing["scope"],
+                    _text(freshness, 40) or "stale",
+                    _text(project_id, 160) or existing["project_id"],
+                    stamp,
+                    row_id,
+                ),
+            )
+        row = conn.execute(
+            "SELECT * FROM tool_attempts WHERE id = ?", (row_id,)
+        ).fetchone()
+        return _row_to_tool_attempt(row)
+
+
+def list_tool_attempts(
+    *,
+    limit: int = 20,
+    failure_class: str | None = None,
+    path: Path | None = None,
+) -> list[dict[str, object]]:
+    with connect(path) as conn:
+        if failure_class:
+            rows = conn.execute(
+                "SELECT * FROM tool_attempts WHERE failure_class = ? "
+                "ORDER BY updated_at DESC, id DESC LIMIT ?",
+                (_text(failure_class, 80), max(int(limit), 0)),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM tool_attempts ORDER BY updated_at DESC, id DESC "
+                "LIMIT ?",
+                (max(int(limit), 0),),
+            ).fetchall()
+        return [_row_to_tool_attempt(row) for row in rows]

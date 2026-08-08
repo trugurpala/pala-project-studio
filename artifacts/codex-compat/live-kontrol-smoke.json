@@ -1,0 +1,73 @@
+{
+  "generated_at": "2026-08-08T11:51:10.966880+00:00",
+  "plugin_version": "0.8.1+codex.20260808124500",
+  "codex_home": "C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\profiles\\live-08x",
+  "marketplace_root": "C:\\Users\\Pala-Pc\\AppData\\Local\\Pala\\marketplace",
+  "scripts_dir": "C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\profiles\\live-08x\\plugins\\cache\\pala-project-studio\\pala-project-studio\\0.8.1+codex.20260808124500\\scripts",
+  "worktree": "C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\smoke\\live-kontrol-08x",
+  "os": "Windows",
+  "shell": "powershell+py",
+  "profile": "live-08x",
+  "command": "pala kontrol et smoke",
+  "status": "passed",
+  "exit_code": 0,
+  "checks": [
+    {
+      "name": "fixture_register",
+      "status": "passed",
+      "exit_code": 0,
+      "command": "py -3 C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\profiles\\live-08x\\plugins\\cache\\pala-project-studio\\pala-project-studio\\0.8.1+codex.20260808124500\\scripts\\pala_state.py register --cwd C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\smoke\\live-kontrol-08x",
+      "evidence": "setup only; kontrol-et itself stays read-only",
+      "notes": "C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\smoke\\live-kontrol-08x\\.codex\\pala-project.json | "
+    },
+    {
+      "name": "presence",
+      "status": "passed",
+      "exit_code": 0,
+      "command": "py -3 C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\profiles\\live-08x\\plugins\\cache\\pala-project-studio\\pala-project-studio\\0.8.1+codex.20260808124500\\scripts\\pala_hook.py < SessionStart JSON",
+      "evidence": "wall_ms=490; has_prefix=True; ctx_len=949",
+      "notes": "Pala burada — bu oturumda yanındayım. Pala local health: plugin=loaded; python=ready; git=ready; hook=running. Pala project kind=greenfield. Once durum sayfasini ac: pala_report.py --open. Memory read_order=AGENTS>CURRENT_STATUS>PROGRESS>plan>TOOLING>DEBUG>git. Read status first: status=reports/CURRENT_STATUS.md; active ticket only in plan=PLAN.md. active=none; next=reconcile first; dirty=false; b"
+    },
+    {
+      "name": "codex_plugin_list",
+      "status": "passed",
+      "exit_code": 0,
+      "command": "codex plugin list --json (CODEX_HOME=live-08x)",
+      "evidence": "version=0.8.1+codex.20260808124500; enabled=True",
+      "notes": ""
+    },
+    {
+      "name": "hooks_ui_trust",
+      "status": "configured-not-verified",
+      "exit_code": 0,
+      "command": "/hooks UI trust (human)",
+      "evidence": "not verified in this smoke; CLI SessionStart only",
+      "notes": ""
+    },
+    {
+      "name": "pala_report",
+      "status": "passed",
+      "exit_code": 0,
+      "command": "py -3 C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\profiles\\live-08x\\plugins\\cache\\pala-project-studio\\pala-project-studio\\0.8.1+codex.20260808124500\\scripts\\pala_report.py --cwd C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\smoke\\live-kontrol-08x",
+      "evidence": "html_exists=True; open_hint=True; rel=True; abs=True",
+      "notes": "C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\smoke\\live-kontrol-08x\\.codex\\pala-status.html | Status HTML: .codex/pala-status.html | açmak için: file:///C:/Users/Pala-Pc/Desktop/PalaAB/smoke/live-kontrol-08x/.codex/pala-status.html | "
+    },
+    {
+      "name": "discover",
+      "status": "passed",
+      "exit_code": 0,
+      "command": "py -3 C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\profiles\\live-08x\\plugins\\cache\\pala-project-studio\\pala-project-studio\\0.8.1+codex.20260808124500\\scripts\\pala_state.py discover --cwd C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\smoke\\live-kontrol-08x",
+      "evidence": "{ |   \"root\": \"C:\\\\Users\\\\Pala-Pc\\\\Desktop\\\\PalaAB\\\\smoke\\\\live-kontrol-08x\", |   \"manifest\": \"C:\\\\Users\\\\Pala-Pc\\\\Desktop\\\\PalaAB\\\\smoke\\\\live-kontrol-08x\\\\.codex\\\\pala-project.json\", |   \"registered\": true, |   \"project_kind\": \"greenfield\", |   \"profiles\": [ |     \"project-intake\", |     \"reuse-or-build\", |     \"architecture-selection\", |     \"greenfield-scaffolding\", |     \"modularity-budgets\", |     \"runtime-delivery\" |   ], |   \"documents\": { |     \"instructions\": \"AGENTS.md\", |     \"project\": \"PROJECT.md\", |     \"plan\": ",
+      "notes": ""
+    },
+    {
+      "name": "status_html_path",
+      "status": "passed",
+      "exit_code": 0,
+      "command": "pala_report stdout Status HTML path",
+      "evidence": "C:\\Users\\Pala-Pc\\Desktop\\PalaAB\\smoke\\live-kontrol-08x\\.codex\\pala-status.html",
+      "notes": ""
+    }
+  ],
+  "hooks_ui_trust": "configured-not-verified"
+}
