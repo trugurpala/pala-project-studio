@@ -1170,7 +1170,7 @@ class PalaHookTests(unittest.TestCase):
             reconciliation={"needed": False, "reasons": []},
         )
         message = result["hookSpecificOutput"]["additionalContext"]
-        self.assertLessEqual(len(message), 800)
+        self.assertLessEqual(len(message), pala_hook.SESSION_CONTEXT_LIMIT)
         self.assertIn("status=reports/CURRENT_STATUS.md", message)
         self.assertIn("active=F2-T1", message)
         self.assertIn("plan=docs/IMPLEMENTATION_PLAN.md", message)
@@ -1324,6 +1324,128 @@ class PluginContractTests(unittest.TestCase):
         self.assertIn("only the active ticket section", normalized)
         self.assertIn("Do not re-plan completed scope", normalized)
         self.assertIn("continue safe in-scope local work", normalized)
+
+
+class PalaViewA11yTests(unittest.TestCase):
+    """Contract checks for Status HTML landmarks / keyboard / responsive CSS."""
+
+    def _sample_html(self, **overrides: object) -> str:
+        import pala_view
+
+        model: dict[str, object] = {
+            "root_name": "demo",
+            "root_path": "C:/tmp/demo",
+            "stamp": "2026-08-08",
+            "coherence": {
+                "active": "T1",
+                "inferred_next": "ship",
+                "mismatch": False,
+                "note": "ok",
+            },
+            "git": {"branch": "main", "dirty_count": 0},
+            "read_order": [],
+            "progress": {"ready": 7, "total": 7, "missing": []},
+            "projects": [],
+            "events": [
+                {
+                    "kind": "checkpoint",
+                    "created_at": "2026-08-08T10:00:00",
+                    "project_name": "demo",
+                    "detail": "ok",
+                },
+                {
+                    "kind": "debug_attempt",
+                    "created_at": "2026-08-08T09:00:00",
+                    "project_name": "demo",
+                    "detail": "tried fix A",
+                },
+            ],
+            "provisions": [],
+            "next_action": "ship",
+            "debugging_brain": {"ok": True, "open": 2, "fixed": 1, "total": 3},
+            "last_gate": {"label": "unittest: passed", "status": "passed"},
+            "freshness_level": "fresh",
+        }
+        model.update(overrides)
+        return pala_view.render(model, freshness_fn=lambda _ts: "fresh")
+
+    def test_status_html_has_landmarks_skip_link_and_focus_styles(self) -> None:
+        html = self._sample_html()
+        self.assertIn('class="skip-link"', html)
+        self.assertIn('href="#pala-main"', html)
+        self.assertIn("<nav ", html)
+        self.assertIn('id="pala-main"', html)
+        self.assertIn("<main ", html)
+        self.assertIn('role="status"', html)
+        self.assertIn(":focus", html)
+        self.assertIn("@media (max-width: 720px)", html)
+        self.assertIn("outline: 3px solid", html)
+        self.assertNotIn("purple", html.casefold())
+        self.assertNotIn("linear-gradient", html.casefold())
+        # SFNSP 2026: skip target does not need tabindex=-1
+        self.assertNotIn('tabindex="-1"', html)
+        self.assertNotIn("tabindex='-1'", html)
+
+    def test_decision_strip_has_five_signals_no_vanity_speed(self) -> None:
+        html = self._sample_html()
+        self.assertIn('class="decision-strip"', html)
+        self.assertIn('aria-label="Karar sinyalleri"', html)
+        for key in ("Şimdi", "açık INC", "ticket uyumu", "son gate", "tazelik"):
+            self.assertIn(key, html)
+        self.assertIn("2 açık", html)
+        self.assertIn("unittest: passed", html)
+        self.assertIn("taze", html)
+        self.assertNotIn("speed", html.casefold())
+        self.assertNotIn("%", html.split("Karar sinyalleri", 1)[-1][:800])
+
+    def test_timeline_distinguishes_debug_attempt_and_checkpoint(self) -> None:
+        html = self._sample_html()
+        self.assertIn('data-kind="checkpoint"', html)
+        self.assertIn('data-kind="debug_attempt"', html)
+        self.assertIn("debug denemesi", html)
+        self.assertIn("kind-checkpoint", html)
+        self.assertIn("kind-debug_attempt", html)
+
+    def test_last_gate_signal_prefers_workflow_verification(self) -> None:
+        import pala_report
+
+        gate = pala_report.last_gate_signal(
+            {"verification": ["narrow: passed"], "verification_tier": "ticket"},
+            events=[],
+        )
+        self.assertEqual(gate["status"], "passed")
+        self.assertIn("passed", gate["label"])
+        missing = pala_report.last_gate_signal({}, events=[])
+        self.assertEqual(missing["status"], "not-run")
+
+    def test_report_prints_status_html_path_and_open_hint(self) -> None:
+        import pala_report
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "AGENTS.md").write_text("# agents\n", encoding="utf-8")
+            target = root / ".codex" / "pala-status.html"
+            hint = pala_report.format_open_hint(target)
+            self.assertIn("açmak için:", hint)
+            self.assertTrue(
+                "file://" in hint.casefold() or str(target.resolve()) in hint,
+                msg=f"open hint must carry file:// or absolute path: {hint!r}",
+            )
+            printed = pala_report.format_report_output(target)
+            self.assertIn(".codex/pala-status.html", printed.replace("\\", "/"))
+            self.assertIn("açmak için:", printed)
+            output = io.StringIO()
+            with (
+                patch("sys.argv", ["pala_report.py", "--cwd", str(root)]),
+                patch("sys.stdout", output),
+                patch.object(pala_report, "write_report", return_value=target),
+                patch.object(pala_report, "open_report"),
+            ):
+                code = pala_report.main()
+            self.assertEqual(code, 0)
+            text = output.getvalue()
+            self.assertIn(".codex/pala-status.html", text.replace("\\", "/"))
+            self.assertIn("açmak için:", text)
 
 
 if __name__ == "__main__":
