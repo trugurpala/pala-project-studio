@@ -153,3 +153,25 @@ tek-kapı, yerel-first ve düşük bağımlılık kararlarıyla çakıştığı 
 alınmaz. Yayın onayı diff/commit/gate fingerprint'ine bağlıdır ve yalnız draft
 PR için geçerlidir; merge, release, tag, force-push ve görünürlük değişimi ayrı
 yetki olarak kalır.
+
+## ADR-017 — Ortak hafıza: tek makine store, üç ince yüzey (M25)
+
+Pala'nın çalışma belleği iki katmandır: (1) proje klasöründeki metin hafızası
+(`AGENTS` / `STATUS` / `PLAN` / …, ADR-012); (2) makine-yerel
+`Desktop\Codex\pala.sqlite` katalog + olaylar (ADR-015). M25 bu store'u
+**Codex + Cursor + CLI** için aynı yol sözleşmesiyle okunur kılar.
+
+**Paylaşılır:** `PALA_DB_PATH` / `PALA_CATALOG_ROOT` ile tek sqlite yolu;
+katalog şeması; memory contract; kanıt etiketleri; Status HTML (CLI).
+
+**Yüzeye özel:** Codex marketplace + `hooks.json`; Cursor yalnız ince
+skill/rules (Codex hook parity yok); CLI script kapısı.
+
+**Yasak:** bulut/çok kullanıcı sync; secret/transcript DB'ye; ChatGPT Plus
+kurulum iddiası; Cursor'da "Pala kurulu plugin" yalanı; hook içinde ağ/test.
+
+Uygulama yüzeyi: `scripts/pala_shared_memory.py` + Doctor `shared_store`
+bloğu. Cursor paketi: `portable/cursor/` (skill + rule); Codex plugin
+davranışını taşımaz. Wave E kanıt/doküman: `docs/PALA_SHARED_MEMORY.md`
+(hit/miss + drift check); `AGENTS.md` tek kaynak, Cursor rule ince kalır.
+

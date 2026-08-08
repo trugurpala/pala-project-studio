@@ -23,6 +23,15 @@
 - Ölçülmemiş hız, token veya kalite yüzdesi raporlama.
 - Soft “bitti/done/ok” kanıt sayılmaz; `name=passed|not-run|blocked|configured-not-verified` kullan.
 
+## Multi-host hafıza (ADR-017)
+
+- Bu `AGENTS.md` kalıcı kurallar için **tek kaynak** (single source).
+- Cursor `.cursor/rules/pala-memory.mdc` ve `portable/cursor/SKILL.md` yalnız ince
+  hatırlatıcıdır; kuralları burada çoğaltma.
+- Codex + Cursor + CLI aynı makine-yerel `pala.sqlite` (hit); bilinmeyen host = miss
+  (ikinci store yok). Ayrıntı: `docs/PALA_SHARED_MEMORY.md`.
+- Cursor’da Codex hook / “Pala Cursor plugin kurulu” iddiası yok.
+
 ## Kalite ve güvenlik
 
 - Yeni davranışta önce sözleşme testi yaz ve doğru nedenle kırmızı sonucu gör.

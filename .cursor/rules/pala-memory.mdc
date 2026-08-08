@@ -1,0 +1,14 @@
+---
+description: Pala shared memory — read STATUS first; same local sqlite as Codex CLI
+alwaysApply: true
+---
+
+# Pala memory (Cursor)
+
+Durable rules live in `AGENTS.md` (single source). This rule is a thin reminder.
+
+1. Read `AGENTS.md` → `STATUS.md` → active ticket in `PLAN.md`.
+2. Skim open `INC-` in `DEBUGGING.md` before repeating known failures.
+3. Prefer `py -3 scripts/pala_report.py --cwd .` (same `pala.sqlite` as Codex/CLI).
+4. Do **not** claim Codex hooks or Install-Pala Cursor plugin install.
+5. Evidence: `passed` | `not-run` | `blocked` | `configured-not-verified` only.

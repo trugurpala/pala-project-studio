@@ -5,8 +5,11 @@ Start here if you are new:
 1. [Vibe first 10 minutes](VIBE_FIRST_SESSION.md) — Codex Work install + `/hooks` + first prompt
 2. [Fork pack](FORK_PACK.md) — demo seed + self-audit in 5 minutes
 3. [0.8.0 release checklist](RELEASE_0_8_0_CHECKLIST.md) — Install → Doctor → hooks → seed → publish gate
-4. [Everywhere install contract](PALA_EVERYWHERE.md) — what surfaces exist / do not
-5. [Codex scope & limits](CODEX_SCOPE_AND_LIMITS.md) — honest capability boundary
+4. [Install artifact contract](INSTALL_ARTIFACT_CONTRACT.md) — source vs installed verify
+5. [Codex plugin checklist](CODEX_PLUGIN_CHECKLIST.md) — M27 surface evidence table
+6. [Everywhere install contract](PALA_EVERYWHERE.md) — what surfaces exist / do not
+7. [Shared memory / multi-host](PALA_SHARED_MEMORY.md) — ADR-017 hit/miss + Doctor `shared_store`
+8. [Codex scope & limits](CODEX_SCOPE_AND_LIMITS.md) — honest capability boundary
 
 ## Versioned product notes
 
@@ -16,6 +19,7 @@ Start here if you are new:
 | [PALA_0_5_MEMORY_CONTRACT.md](PALA_0_5_MEMORY_CONTRACT.md) | Memory / read order |
 | [PALA_0_6_STATUS_SURFACE.md](PALA_0_6_STATUS_SURFACE.md) | Local HTML status page |
 | [PALA_0_7_LOCAL_STORE.md](PALA_0_7_LOCAL_STORE.md) | SQLite catalog / timeline |
+| [PALA_SHARED_MEMORY.md](PALA_SHARED_MEMORY.md) | Multi-host same sqlite (Wave E) |
 | [PALA_INTERNAL_PROVISION.md](PALA_INTERNAL_PROVISION.md) | URL → local provision |
 
 ## Repo root contracts
