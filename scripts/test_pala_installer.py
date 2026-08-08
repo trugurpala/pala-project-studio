@@ -131,6 +131,47 @@ class InstallerCoreTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.installer = load_installer()
 
+    def test_installed_fingerprint_stable_after_pycache(self) -> None:
+        """Issue #13: runtime __pycache__ must not mark a healthy install drifted."""
+        with tempfile.TemporaryDirectory(prefix="pala-fp-pycache-") as temp:
+            dest = Path(temp) / "install"
+            self.installer.copy_bundle(ROOT, dest)
+            before = self.installer.tree_fingerprint(dest)
+            pyc = dest / "scripts" / "__pycache__"
+            pyc.mkdir(parents=True)
+            (pyc / "x.pyc").write_bytes(b"abc")
+            self.assertEqual(before, self.installer.tree_fingerprint(dest))
+
+    def test_emit_json_survives_cp1254_stdout_with_replacement_char(self) -> None:
+        """Doctor JSON print must not raise UnicodeEncodeError on Windows consoles."""
+        import io
+
+        class _Cp1254Stdout:
+            encoding = "cp1254"
+
+            def __init__(self) -> None:
+                self.buffer = io.BytesIO()
+                self.text = io.StringIO()
+
+            def write(self, value: str) -> int:
+                # Simulate console: refuse U+FFFD the way cp1254 does.
+                value.encode(self.encoding)
+                return self.text.write(value)
+
+            def flush(self) -> None:
+                return None
+
+        fake = _Cp1254Stdout()
+        payload = {
+            "status": "attention_required",
+            "note": "portable skill/rules only \ufffd not a Codex plugin install",
+        }
+        with patch.object(self.installer.sys, "stdout", fake):
+            self.installer.emit_json(payload)
+        written = fake.buffer.getvalue().decode("utf-8")
+        self.assertIn('"status": "attention_required"', written)
+        self.assertIn("\ufffd", written)
+
     def test_managed_adapter_contracts_and_pins_are_valid(self) -> None:
         adapters = load_adapters()
         lock = adapters.load_managed_tools_lock(ROOT / "managed-tools.lock.json")

@@ -11,6 +11,9 @@ param(
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
+# Keep Python JSON stdout UTF-8 so Doctor does not crash on cp1254 consoles.
+if (-not $env:PYTHONIOENCODING) { $env:PYTHONIOENCODING = "utf-8" }
+if (-not $env:PYTHONUTF8) { $env:PYTHONUTF8 = "1" }
 
 $pluginRoot = Split-Path -Path $PSScriptRoot -Parent
 $core = Join-Path $PSScriptRoot "pala_installer.py"
@@ -98,6 +101,10 @@ function Show-PalaResult([pscustomobject]$Payload) {
             Write-Host "[Pala] $($Payload.hooks_next_step)"
         } elseif ($null -ne $Payload.project.hook_safety -and $Payload.project.hook_safety.status -ne "passed") {
             Write-Host "[Pala] Hook dosya guvenligi veya Codex Work /hooks trust gerekir; otomatik bypass yok."
+        }
+        if ($null -ne $Payload.shared_store -and $null -ne $Payload.shared_store.db_path) {
+            Write-Host "[Pala] Ortak store: $($Payload.shared_store.db_path) (tek makine; bulut sync yok)"
+            Write-Host "[Pala] Host: Codex=plugin+hooks · Cursor=ince skill/rules · CLI=ayni sqlite"
         }
         return
     }

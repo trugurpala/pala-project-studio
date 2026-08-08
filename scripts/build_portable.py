@@ -102,6 +102,9 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "docs" / "VIBE_FIRST_SESSION.md",
         plugin_root / "docs" / "FORK_PACK.md",
         plugin_root / "docs" / "RELEASE_0_8_0_CHECKLIST.md",
+        plugin_root / "portable" / "cursor" / "README.md",
+        plugin_root / "portable" / "cursor" / "SKILL.md",
+        plugin_root / ".cursor" / "rules" / "pala-memory.mdc",
     ]
     for directory in ("hooks", "skills"):
         candidates.extend(
