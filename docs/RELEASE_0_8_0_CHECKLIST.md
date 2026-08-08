@@ -49,17 +49,13 @@ py -3 scripts\pala_self_audit.py
 
 Beklenen: JSON `status=passed` (presence, fork pack, demo Status, soft-claim).
 
-## 6) Yayın (ayrı onay — bu checklist’te otomatik yok)
+## 6) Yayın
 
-Owner “evet” demeden:
+`v0.8.0` yayında:
+https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0
 
-- commit / push yok
-- `v0.8.0` tag yok
-- `gh release create` yok
-
-Onay sonrası tipik sıra: temiz commit → tag `v0.8.0` → portable ZIP asset +
-CHANGELOG gövdesi → GitHub Release → README rozetini yeşil `release-v0.8.0`
-yapıp STATUS’ta release ZIP’i `passed` yaz.
+Yapılanlar: commit `c192ff3` → tag `v0.8.0` → portable ZIP asset + CHANGELOG
+gövdesi → GitHub Release → README yeşil `release-v0.8.0` + STATUS `passed`.
 
 ## Bilerek yapılmayanlar
 

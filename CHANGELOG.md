@@ -8,10 +8,9 @@ Versioning follows the plugin manifest (`0.x.y+codex.…`) and GitHub tags `v0.x
 ## [Unreleased]
 
 ### Notes
-- Working tree holds M21–M24 local prep (agent task cards + gates). GitHub
-  `v0.8.0` publish stays `not-run` until owner authority.
+- M25 (Cursor/CLI ortak hafıza) DRAFT — uygulama yok.
 
-## [0.8.0] - 2026-08-08 (source; GitHub release pending)
+## [0.8.0] - 2026-08-08
 
 ### Added
 - Chat presence trust line on SessionStart + skill Human Contract
@@ -24,15 +23,13 @@ Versioning follows the plugin manifest (`0.x.y+codex.…`) and GitHub tags `v0.x
   Status “Hata beyni” line.
 - Demo Status HTML proof after seed (`pala_demo.prove_status_html`).
 - PLAN agent task card parser (`parse_agent_task_cards`) and self-audit
-  `agent_tasks` gate for M24 release-inner readiness (GitHub release still
-  pending).
+  `agent_tasks` gate for multitask release readiness.
 
 ### Fixed
 - Doctor `hooks_next_step` no longer confuses file `hook_safety=passed` with
   Codex UI `/hooks` trust.
 - `Install-Pala` Doctor label prints `hook_safety=` explicitly.
-- README no longer shows a green “published” badge for unpublished `v0.8.0`
-  while STATUS marks release ZIP `not-run`.
+- README release badge stays honest until GitHub publish is real.
 
 ### Documentation
 - Vibe first-session + fork pack paths.
@@ -42,10 +39,10 @@ Versioning follows the plugin manifest (`0.x.y+codex.…`) and GitHub tags `v0.x
 - World-standard GitHub surface (SUPPORT, CHANGELOG, PR template, docs index)
   carried from 0.7.1 line.
 
-### Notes
-- GitHub release ZIP for `v0.8.0` requires separate owner authority after
-  commit/tag. Until then install from repo / local portable build, or use
-  published `v0.7.1`.
+### Evidence
+- Release: https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0
+- Target: `c192ff3`
+- ZIP SHA-256: `3EA17A1CEFF7DEEBF906D03184D9B9F09F800B4B64B4AD0D880AD30C22A6916E`
 
 ## [0.7.1] - 2026-08-07
 

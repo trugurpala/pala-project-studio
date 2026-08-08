@@ -137,6 +137,9 @@ Phase 0 + Phase 1 uygulandı; yayın yok.
 - T1 Ajan-Plan: PLAN/STATUS tek sonraki iş = release — `passed`
 - T2 Final verify: `passed` (234 test + self-audit; ZIP SHA-256
   `3EA17A1CEFF7DEEBF906D03184D9B9F09F800B4B64B4AD0D880AD30C22A6916E`)
-- T3–T5 commit/push/tag/release: `not-run` (sırada)
-- T6 evidence docs: `not-run`
+- T3 Commit: `passed` (`c192ff3`)
+- T4 Push main: `passed` (`ac57dd1..c192ff3`)
+- T5 Tag + gh release: `passed`
+  https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0
+- T6 Evidence docs: `passed` (bu tur)
 - M25 uygulama: yok (bilerek)

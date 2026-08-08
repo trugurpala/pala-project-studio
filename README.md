@@ -1,8 +1,7 @@
 # Pala Project Studio
 
 ![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
-[![Source v0.8.0](https://img.shields.io/badge/source-v0.8.0-yellow)](CHANGELOG.md)
-[![Release v0.7.1](https://img.shields.io/badge/release-v0.7.1-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.7.1)
+[![Release v0.8.0](https://img.shields.io/badge/release-v0.8.0-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-index-0A66C2)](docs/README.md)
 
@@ -18,9 +17,9 @@ eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bul
 aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
 göre katmanlandırır.
 
-- Kaynak sürüm **0.8.0** (manifest; M21–M22: presence + fork demo + self-audit +
-  hata beyni). Son **yayımlanmış** GitHub release: **v0.7.1**. `v0.8.0` GitHub
-  ZIP: henüz yok (`not-run`) — [release checklist](docs/RELEASE_0_8_0_CHECKLIST.md).
+- Kaynak / GitHub sürüm **0.8.0** (M21–M24: presence + fork demo + self-audit +
+  hata beyni + ajan görev kartları). Release:
+  [v0.8.0](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0).
 - Değişiklik günlüğü: [CHANGELOG.md](CHANGELOG.md) · Destek: [SUPPORT.md](SUPPORT.md)
   · Doküman dizini: [docs/README.md](docs/README.md)
 - Fork paketi: [docs/FORK_PACK.md](docs/FORK_PACK.md)
@@ -31,11 +30,9 @@ göre katmanlandırır.
 
 Son yayımlanmış taşınabilir sürümü indir:
 
-[Pala Project Studio 0.7.1'i indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.7.1.zip)
+[Pala Project Studio 0.8.0'ı indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.8.0.zip)
 
-0.8.0 kaynağından kurmak için bu repo kökünde `Install-Pala.ps1` kullan (veya
-`py -3 scripts/verify.py` ile üretilen portable ZIP). GitHub’da
-`pala-project-studio-0.8.0.zip` asset’i yayınlanana kadar o dosya yoktur.
+Kaynak ağaçtan kurmak için bu repo kökünde `Install-Pala.ps1` kullan.
 
 ZIP'i açtıktan sonra içindeki klasörde şu komutu çalıştır:
 

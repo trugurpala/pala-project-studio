@@ -504,7 +504,7 @@ commit + tag + GitHub `v0.8.0` release sorulsun mu?
 - **Bitti sayılır:** `git status` temiz (veya yalnız post-release docs); commit
   mesajı neden odaklı.
 - **Bağımlılık:** M26-T2
-- **Kanıt:** `not-run`
+- **Kanıt:** `passed` (`c192ff3`)
 
 #### M26-T4 — Push main
 - **Sahip ajan:** Ajan-Yayın
@@ -512,7 +512,7 @@ commit + tag + GitHub `v0.8.0` release sorulsun mu?
 - **Dosyalar:** (git remote)
 - **Bitti sayılır:** `git push` başarılı; branch tracking güncel.
 - **Bağımlılık:** M26-T3
-- **Kanıt:** `not-run`
+- **Kanıt:** `passed`
 
 #### M26-T5 — Tag + GitHub release + ZIP
 - **Sahip ajan:** Ajan-Yayın
@@ -520,7 +520,7 @@ commit + tag + GitHub `v0.8.0` release sorulsun mu?
 - **Dosyalar:** (tag/release; asset `pala-project-studio-0.8.0.zip`)
 - **Bitti sayılır:** `gh release view v0.8.0` başarılı; ZIP indirilebilir.
 - **Bağımlılık:** M26-T4
-- **Kanıt:** `not-run`
+- **Kanıt:** `passed` (https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0)
 
 #### M26-T6 — STATUS: release kanıtı
 - **Sahip ajan:** Ajan-Plan
@@ -529,14 +529,14 @@ commit + tag + GitHub `v0.8.0` release sorulsun mu?
 - **Dosyalar:** `STATUS.md`, `CHANGELOG.md`, `README.md`, `PROGRESS.md`
 - **Bitti sayılır:** Yeşil rozet + release URL; soft `not-run` kalktı.
 - **Bağımlılık:** M26-T5
-- **Kanıt:** `not-run`
+- **Kanıt:** `passed`
 
 - [x] M26-T1: Plan panosu
 - [x] M26-T2: Final verify
-- [ ] M26-T3: Commit
-- [ ] M26-T4: Push main
-- [ ] M26-T5: Tag + gh release
-- [ ] M26-T6: Evidence docs
+- [x] M26-T3: Commit
+- [x] M26-T4: Push main
+- [x] M26-T5: Tag + gh release
+- [x] M26-T6: Evidence docs
 
 ### Bilerek yapılmayanlar (M26)
 
