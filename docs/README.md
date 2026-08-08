@@ -3,8 +3,10 @@
 Start here if you are new:
 
 1. [Vibe first 10 minutes](VIBE_FIRST_SESSION.md) — Codex Work install + `/hooks` + first prompt
-2. [Everywhere install contract](PALA_EVERYWHERE.md) — what surfaces exist / do not
-3. [Codex scope & limits](CODEX_SCOPE_AND_LIMITS.md) — honest capability boundary
+2. [Fork pack](FORK_PACK.md) — demo seed + self-audit in 5 minutes
+3. [0.8.0 release checklist](RELEASE_0_8_0_CHECKLIST.md) — Install → Doctor → hooks → seed → publish gate
+4. [Everywhere install contract](PALA_EVERYWHERE.md) — what surfaces exist / do not
+5. [Codex scope & limits](CODEX_SCOPE_AND_LIMITS.md) — honest capability boundary
 
 ## Versioned product notes
 

@@ -16,6 +16,9 @@ from pala_store import WorkflowStore
 MANIFEST = Path(".codex/pala-project.json")
 WORKFLOW = Path(".codex/pala-workflow.json")
 WORKFLOW_SCHEMA_VERSIONS = (1, 2)
+# Short trust line for SessionStart; keep under the 800-char budget with health.
+PRESENCE_LINE = "Pala burada — bu oturumda yanındayım."
+SESSION_CONTEXT_LIMIT = 800
 
 
 def emit(value: dict[str, object]) -> None:
@@ -134,9 +137,14 @@ def session_context(
     )
     coherence = (memory or {}).get("ticket_coherence") if isinstance(memory, dict) else None
     mismatch = bool(isinstance(coherence, dict) and coherence.get("mismatch"))
+    brain = (memory or {}).get("debugging_brain") if isinstance(memory, dict) else None
+    if isinstance(brain, dict) and "open" in brain:
+        debug_open = int(brain.get("open") or 0)
+    else:
+        debug_open = 0
     tools = tools_summary or "tools=n/a"
     message = (
-        f"{prefix}{health_text}Pala project kind={kind}. "
+        f"{PRESENCE_LINE} {prefix}{health_text}Pala project kind={kind}. "
         f"Once durum sayfasini ac: pala_report.py --open. "
         f"Memory read_order=AGENTS>CURRENT_STATUS>PROGRESS>plan>TOOLING>DEBUG>git. "
         f"Read status first: status={status or project}; "
@@ -144,12 +152,12 @@ def session_context(
         f"active={active or 'none'}; next={next_action or 'reconcile first'}; "
         f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
         f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
-        f"ticket_mismatch={str(mismatch).lower()}; {tools}. "
+        f"ticket_mismatch={str(mismatch).lower()}; debug_open={debug_open}; {tools}. "
         "Do not re-plan completed scope. Continue authorized local work; "
         "full gate only at milestone/release; then checkpoint one ticket."
     )
-    if len(message) > 800:
-        message = message[:797] + "..."
+    if len(message) > SESSION_CONTEXT_LIMIT:
+        message = message[: SESSION_CONTEXT_LIMIT - 3] + "..."
     return {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",

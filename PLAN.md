@@ -259,3 +259,409 @@ owner canary ve release iddiası kanıt etiketli.
 - [ ] code-review-graph `uv` izole sabit kurulum (Pala adaptörü).
 - [ ] Context7 / Playwright MCP keşif + `codex mcp add` (çakışmayı ezmeden).
 - [ ] OpenSpec bulunan projeyi ticket'a bağla; yoksa ikinci plan sistemi kurma.
+
+## M21 — Yanında Pala + fork-ready + kalite kanıtı
+
+- [x] SessionStart + skill Human Contract presence (`Pala burada — bu oturumda yanındayım.`)
+- [x] `hooks.json` SessionStart `statusMessage`: `Pala yanınızda`
+- [x] `examples/demo-software-project/` dolu bellek sözleşmesi
+- [x] `scripts/pala_demo.py seed` + `test_pala_demo.py`
+- [x] `scripts/pala_self_audit.py` + `verify.py` bağ + Doctor ince işaret
+- [x] `docs/FORK_PACK.md`, README/CONTRIBUTING/VIBE güncellemesi
+- [x] Packager allowlist (demo + FORK_PACK); manifest `0.8.0+codex.*`
+- [ ] GitHub `v0.8.0` release ZIP (ayrı yetki)
+
+## M21.1 — STAB-001 Local confidence gate + durable error brain
+
+Amaç: M21/0.8.0 working tree üzerinde yeniden güven; yeni büyük ürün özelliği yok.
+`DEBUGGING.md` hafıza sözleşmesinin parçası olarak kalıcı hata beyni güçlendirilir
+(paralel sistem yok). Release/tag/push bu ticket'ta yok.
+
+Paralel iş akışları:
+
+1. Kapı: dar unittest → düzelt → `verify.py` tam yerel kapı.
+2. Error-brain: kök `DEBUGGING.md` parse edilebilir incident formatı + sözleşme
+   testi + self-audit fail-closed; ajanlar bilinen hatayı tekrarlamadan önce okur.
+3. Kanıt: STATUS / PLAN / PROGRESS gerçek etiketlerle güncellenir.
+
+- [x] STAB-001-A: `DEBUGGING.md` Format + zorunlu alanlar; `pala_memory` parser;
+  stub gövdesi; AGENTS/skill referans işareti.
+- [x] STAB-001-B: Dar sözleşme testleri (kırmızı→yeşil) + self-audit `debugging_brain`.
+- [x] STAB-001-C: Dar kapı `test_pala_tools` + `test_plugin_experience` (+ yeni testler).
+- [x] STAB-001-D: Tam `verify.py`; her kırmızı kapıda önce/yanında brain kaydı.
+- [x] STAB-001-E: STATUS/PROGRESS kanıt etiketleri; aktif ticket kapanışı.
+
+## M22 — Fork demosu elle tutulur olsun (insan planı)
+
+**Neden:** Release/commit beklemeden ürünü daha kullanılabilir yapmak. Fork
+eden veya vibe kullanıcı Status’u açınca “çalışıyor” hissi almalı; bilinen
+hatalar oturumda unutulmamalı.
+
+**Şu an tek sonraki iş:** Yok (M22 kapandı). Sonraki seçim: commit/release
+veya M10 / DEMO-005 — owner karar verir.
+
+### A — Demo Status paneli (DEMO-003 / DEMO-004)
+
+- **Amaç:** Seed sonrası durum sayfasında aktif ticket ve üç zaman çizgisi olayı
+  görünsün; bunu test kanıtlasın (gözle “galiba” yetmez).
+- **Yapılacaklar:**
+  - Seed → Status HTML zincirini tek fonksiyonla doğrula
+  - “Şimdi” satırında ticket + sonraki iş net olsun
+  - Demo PLAN/STATUS’u bu kanıtla kapat
+- **Bitti sayılır:** Sözleşme testi yeşil; self-audit demo kapısı HTML’i de
+  kontrol eder; demo STATUS’ta Status HTML = `passed`
+
+### B — Hata beyni oturumda görünsün
+
+- **Amaç:** `DEBUGGING.md` yalnız dosyada durmasın; oturum ve durum sayfası
+  açık incident sayısını kısa göstersin.
+- **Yapılacaklar:**
+  - Parser özeti (açık / kapalı sayı)
+  - SessionStart mesajına kısa `debug_open=…` (800 karakter sınırı korunur)
+  - Status HTML’de “Hata beyni” satırı
+- **Bitti sayılır:** Dar unittest + self-audit yeşil; hook hâlâ ağ/test
+  başlatmaz
+
+### C — Bilerek yapılmayanlar (bu tur)
+
+- Commit / push / GitHub `v0.8.0` release
+- M10 RTK/MCP canary
+- İkinci orkestratör veya büyük yeni ürün yüzeyi
+
+- [x] M22-A: Demo Status HTML kanıtı + DEMO-003/004 kapanışı
+- [x] M22-B: Hata beyni özeti SessionStart + Status
+- [x] M22-C: `verify.py` tam yerel kapı; STATUS/PROGRESS güncellemesi
+
+## M23 — Release’e sağlam çık
+
+**Neden:** Yeni özellik yok. Amaç içeriye doğru hatasız çıkmak: GitHub ile
+uzlaş, sürüm yalanı olmasın, kapı yeşil olsun, ZIP üret, yayın için tek onay
+beklesin.
+
+**Şu an tek sonraki iş:** Owner’a sor — Commit + tag + GitHub `v0.8.0`
+release yapılsın mı? (Bu turda yayın yok; yerel kapı yeşil.)
+
+**Bitti sayılır:** `verify.py` `passed` + soft-claim/self-audit `passed` +
+taşınabilir ZIP tekrar üretildi (SHA STATUS’ta) + STATUS’ta yayımlanmamış
+şey `passed` yazılmıyor + `v0.8.0` GitHub release hâlâ `not-run` (onay yoksa).
+
+### A — Remote uzlaştır
+
+- `git fetch` + `origin/main` vs yerel; eksik commit varsa stash ile birleştir
+- Son yayın `v0.7.1` notları / açık PR gözden geçir
+- README yeşil rozet / indirme linki yayımlanmamış sürümü iddia etmesin
+
+### B — Release kapısı / hatasız iç
+
+- Manifest / CHANGELOG / STATUS sürüm metinleri `0.8.0` kaynak; GitHub yayın
+  iddiası yok
+- Dar unittest → kırmızıysa `DEBUGGING.md` INC → düzelt
+- Tam `verify.py` + Doctor/self-audit soft claim
+- M10 RTK/MCP yok (release blokörü değil)
+
+### C — Paket + insan checklist
+
+- CHANGELOG `[0.8.0]` net
+- Portable ZIP (verify yolu) + SHA kanıtı
+- İnsan adımları: Install → Doctor → `/hooks` → demo seed → self-audit
+  (`docs/RELEASE_0_8_0_CHECKLIST.md`)
+- Commit / tag / `gh release create` **yok** (ayrı onay)
+
+- [x] M23-A: Remote reconcile + README dürüstlüğü
+- [x] M23-B: Sözleşme + `verify.py` yeşil; INC yalnız gerçek arızada
+- [x] M23-C: ZIP SHA + checklist; yayın onayı bekler
+  (`v0.8.0` GitHub release: `not-run`)
+
+## M24 — Ajan görevleri ile release-içi tamamlama
+
+**Neden:** Yerel 0.8.0 zaten hazır (M21–M23). Bu tur yayın değil; ajanların
+görev kartlarıyla çalışabilir hale gelmesi ve release-içi yüzeyin zayıf
+kalan yerlerinin kapanması. Commit / tag / GitHub release yok.
+
+**Şu an tek sonraki iş:** Yok (M24 kapandı). Sonraki seçim: owner’a
+commit + tag + GitHub `v0.8.0` release sorulsun mu?
+
+**Bitti sayılır:** Tüm M24-T* kartları `passed` veya dürüst `not-run`;
+`verify.py` `passed`; GitHub `v0.8.0` hâlâ `not-run`.
+
+### Aktif ajanlar
+
+| Ajan | Rol |
+| --- | --- |
+| **Ajan-Plan** | Bellek / STATUS / PLAN tutarlılığı; kart panosu gerçeğe uyum |
+| **Ajan-Kapı** | verify, self-audit, hata beyni, soft-claim, sürüm dürüstlüğü |
+| **Ajan-Yüzey** | fork pack, vibe first session, demo Status, presence UX |
+| **Ajan-Sözleşme** | AGENTS.md, skill referansları, geleceğe task-card formatı |
+
+### Gelecekte multitask nasıl çalışır (kısa)
+
+1. Owner veya orkestratör `PLAN.md` içine `M*-T*` görev kartı yazar
+   (Sahip ajan, Amaç, Dosyalar, Bitti sayılır, Bağımlılık, Kanıt).
+2. Her ajan işe başlamadan: `STATUS.md` → aktif milestone’daki kendi
+   `M*-T*` kartları → `DEBUGGING.md` okur; **tek task ID** seçer.
+3. Dosya sahipliği çakışmayan kartlar paralel yürür; STATUS/PLAN’ı
+   orkestratör (veya Ajan-Plan) sonda uzlaştırır.
+4. Soft “bitti” yok — kanıt etiketi zorunlu. Hook hâlâ test/ağ başlatmaz.
+
+### Görev kartları
+
+#### M24-T1 — Görev panosu gerçeğe otursun
+- **Sahip ajan:** Ajan-Plan
+- **Amaç:** PLAN/STATUS/PROGRESS’te M24 kartları gerçek durumla uyumlu olsun.
+- **Dosyalar:** `PLAN.md`, `STATUS.md`, `PROGRESS.md`
+- **Bitti sayılır:** Üstte tek sonraki iş net; M23 kapalı, M24 aktif; kart
+  kanıtları dürüst (`passed` / `not-run`).
+- **Bağımlılık:** Yok (önce yazılır)
+- **Kanıt:** `passed`
+
+#### M24-T2 — Release-içi kapı + ajan-görev denetimi
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** 0.8.0 prep metinleri dürüst kalsın; PLAN’daki task kartları
+  parse/self-audit ile fail-closed doğrulansın.
+- **Dosyalar:** `CHANGELOG.md`, `scripts/pala_memory.py`,
+  `scripts/pala_self_audit.py`, `scripts/test_pala_memory.py`,
+  `scripts/test_pala_self_audit.py`, `DEBUGGING.md`
+- **Bitti sayılır:** Sözleşme testi kırmızı→yeşil; self-audit’te
+  `agent_tasks` kapısı; CHANGELOG `[0.8.0]` M24 notu; GitHub yayın iddiası yok.
+- **Bağımlılık:** M24-T1 plan metni kaydedilmiş olmalı
+- **Kanıt:** `passed` (`parse_agent_task_cards`; self-audit `agent_tasks=cards=5`)
+
+#### M24-T3 — Fork / vibe / demo çoklu-görev netliği
+- **Sahip ajan:** Ajan-Yüzey
+- **Amaç:** İnsan yüzeyi “hangi görev, kim”i göstersin; ikinci ürün olmasın.
+- **Dosyalar:** `docs/FORK_PACK.md`, `docs/VIBE_FIRST_SESSION.md`,
+  `CONTRIBUTING.md`, `examples/demo-software-project/STATUS.md`,
+  `examples/demo-software-project/PLAN.md`,
+  `examples/demo-software-project/AGENTS.md`
+- **Bitti sayılır:** VIBE/FORK aktif task ID okumayı söyler; demo STATUS’ta
+  örnek ajan→görev tablosu; presence iddiası yok.
+- **Bağımlılık:** Yok (T1 ile paralel dosya seti)
+- **Kanıt:** `passed` (metin + demo tablo; seed Status HTML bozulmadı)
+
+#### M24-T4 — Sözleşme: ajan task ID seçsin
+- **Sahip ajan:** Ajan-Sözleşme
+- **Amaç:** AGENTS + skill bellek sözleşmesi “önce STATUS → aktif kartlar →
+  DEBUGGING; bir task ID seç” desin.
+- **Dosyalar:** `AGENTS.md`,
+  `skills/pala-project-finisher/SKILL.md`,
+  `skills/pala-project-finisher/references/project-memory.md`,
+  `skills/pala-project-finisher/references/project-memory-contract.md`,
+  `docs/PALA_0_5_MEMORY_CONTRACT.md`
+- **Bitti sayılır:** Metinler task-card formatını ve kanıt etiketlerini
+  işaretler; ikinci orkestratör ürünü yok.
+- **Bağımlılık:** Yok (T2 ile dosya çakışması yok)
+- **Kanıt:** `passed` (AGENTS bölümü + skill ≤450 kelime; phrase korundu)
+
+#### M24-T5 — Tam yerel kapı
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** Her şey yeşil olmadan M24’ü kapatma; arızada INC yaz.
+- **Dosyalar:** `STATUS.md` (kanıt), `DEBUGGING.md` (yalnız gerçek arıza)
+- **Bitti sayılır:** `py -3 scripts/verify.py` → `passed`; soft-claim yok.
+- **Bağımlılık:** M24-T2, M24-T3, M24-T4
+- **Kanıt:** `passed` (234 test + self-audit; ZIP
+  `F626B3EBDE7CF71D9A752B3CECC6B2B8019418596C83FBD976AEC7F7CF6CDC6E`)
+
+- [x] M24-T1: Görev panosu + ajan tablosu
+- [x] M24-T2: `agent_tasks` parse/self-audit
+- [x] M24-T3: Fork/vibe/demo netliği
+- [x] M24-T4: AGENTS/skill task ID sözleşmesi
+- [x] M24-T5: Tam `verify.py` (INC-20260808-skill-budget-m24 fixed)
+
+### Bilerek yapılmayanlar (M24)
+
+- M10 RTK / Context7-Playwright MCP genişletmesi
+- ChatGPT Plus install, ikinci skill ürünü, büyük yeni özellik
+- (Yayın M26’ya taşındı — owner “release olana kadar uygula” yetkisi)
+
+## M26 — v0.8.0 GitHub release (2026-08-08)
+
+**Durum:** Aktif. M21–M24 yerel hazır; tek sonraki iş = commit → push → tag →
+`gh release create` + portable ZIP. M25 uygulama yok.
+
+### Görev kartları
+
+#### M26-T1 — Plan/STATUS: tek sonraki iş = release
+- **Sahip ajan:** Ajan-Plan
+- **Amaç:** PLAN/STATUS/PROGRESS’te M26 kartları ve tek sonraki iş release olsun.
+- **Dosyalar:** `PLAN.md`, `STATUS.md`, `PROGRESS.md`
+- **Bitti sayılır:** M24 kapalı işaretli; M26 aktif; M25 hâlâ DRAFT.
+- **Bağımlılık:** M24-T5
+- **Kanıt:** `passed`
+
+#### M26-T2 — Final verify + dürüst kanıt
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** Release öncesi `verify.py` yeşil; soft-claim yok.
+- **Dosyalar:** `STATUS.md` (kanıt), `DEBUGGING.md` (yalnız gerçek arıza)
+- **Bitti sayılır:** `py -3 scripts/verify.py` → `passed`; ZIP SHA kaydı.
+- **Bağımlılık:** M26-T1
+- **Kanıt:** `passed` (234 test + self-audit; ZIP
+  `3EA17A1CEFF7DEEBF906D03184D9B9F09F800B4B64B4AD0D880AD30C22A6916E`)
+
+#### M26-T3 — Commit (secretsız)
+- **Sahip ajan:** Ajan-Yayın
+- **Amaç:** 0.8.0 kaynak ağacını tek release commit’inde topla.
+- **Dosyalar:** (release ağacı; `.env`/pem/secret yok)
+- **Bitti sayılır:** `git status` temiz (veya yalnız post-release docs); commit
+  mesajı neden odaklı.
+- **Bağımlılık:** M26-T2
+- **Kanıt:** `not-run`
+
+#### M26-T4 — Push main
+- **Sahip ajan:** Ajan-Yayın
+- **Amaç:** `origin/main` ile release commit’i hizala; force push yok.
+- **Dosyalar:** (git remote)
+- **Bitti sayılır:** `git push` başarılı; branch tracking güncel.
+- **Bağımlılık:** M26-T3
+- **Kanıt:** `not-run`
+
+#### M26-T5 — Tag + GitHub release + ZIP
+- **Sahip ajan:** Ajan-Yayın
+- **Amaç:** Annotated `v0.8.0` + `gh release create` + portable ZIP asset.
+- **Dosyalar:** (tag/release; asset `pala-project-studio-0.8.0.zip`)
+- **Bitti sayılır:** `gh release view v0.8.0` başarılı; ZIP indirilebilir.
+- **Bağımlılık:** M26-T4
+- **Kanıt:** `not-run`
+
+#### M26-T6 — STATUS: release kanıtı
+- **Sahip ajan:** Ajan-Plan
+- **Amaç:** STATUS/CHANGELOG/README’de GitHub release `passed` + URL; gerekirse
+  ikinci docs commit.
+- **Dosyalar:** `STATUS.md`, `CHANGELOG.md`, `README.md`, `PROGRESS.md`
+- **Bitti sayılır:** Yeşil rozet + release URL; soft `not-run` kalktı.
+- **Bağımlılık:** M26-T5
+- **Kanıt:** `not-run`
+
+- [x] M26-T1: Plan panosu
+- [x] M26-T2: Final verify
+- [ ] M26-T3: Commit
+- [ ] M26-T4: Push main
+- [ ] M26-T5: Tag + gh release
+- [ ] M26-T6: Evidence docs
+
+### Bilerek yapılmayanlar (M26)
+
+- M25 Cursor/CLI ortak hafıza ürünü
+- M10 RTK / MCP genişletmesi
+- Force push / git config / secret paketleme
+
+## M25 — Ortak hafıza (Codex + Cursor + CLI) — taslak / henüz aktif değil
+
+**Durum:** Gelecek ürün düşüncesi. **Aktif uygulama değil.** Kanıt: tüm
+kartlar `not-run`. M24 / `v0.8.0` release bu milestone’u açmaz.
+
+**Neden (tek cümle):** Bugün Pala Codex plugin’i olarak yaşar; Cursor’da
+“kurulu Pala” yok. Aynı makinede Codex + Cursor + CLI aynı çalışma hafızasını
+görsün — bulut sync / çok kullanıcı fantezisi yok (ADR-015 makine-yerel).
+
+**Bugünkü gerçek (araştırma, 2026-08-08):**
+
+| Parça | Gerçek |
+| --- | --- |
+| Ürün hedefi | Codex Work / CLI plugin (`PROJECT.md`, ADR-001) |
+| Cursor’da Pala | Yok — repoda `.cursor/` kurulumu, Cursor skill/hook paketi yok |
+| Kaynak geliştirme | Owner çoğu zaman Cursor’da bu repoyu düzenler; runtime yüzey hâlâ Codex |
+| Ortak DB | `%USERPROFILE%\Desktop\Codex\pala.sqlite` (`PALA_DB_PATH` / `PALA_CATALOG_ROOT`) |
+| DB içeriği | `projects`, `provisions`, `events`, `meta` — secretsız katalog + zaman çizelgesi |
+| Proje hafızası | Klasör dosyaları: `STATUS` / `PLAN` / `PROGRESS` / `AGENTS` (ADR-012) |
+| Oturum sahipliği | Proje-içi `.codex/plugin-data/pala/v3/` JSON (`pala_store`) — SQLite değil |
+| Hook | Codex `hooks.json` → `pala_hook.py`; ağ/test/build yok; DB’ye yazmaz |
+| Taşınabilir skill notu | `docs/PALA_EVERYWHERE.md`: Claude/Cursor için SKILL çekirdeği **ileride**; aynı UX iddiası yok |
+
+**İnce mimari (MVP):**
+
+```text
+[ Proje klasörü: STATUS/PLAN/… ]     ← kaynak gerçek (çalışma belleği metin)
+              ↑ okur / yazar (agent + CLI)
+[ pala.sqlite  tek yol, aynı makine ] ← projeler-arası katalog + olaylar
+              ↑ aynı Python API (pala_db / catalog / report / state)
+   ┌──────────┼──────────┐
+Codex plugin   Cursor yüzeyi   CLI (pala_* / Install)
+(hooks+skill)  (rules/skill;   (Status, memory, seed)
+               hook ayrı veya yok)
+```
+
+**Paylaşılır:** DB yolu sözleşmesi, katalog/olay şeması, memory contract okuma
+sırası, kanıt etiketleri, Status HTML üretimi, secretsız export
+(`pala-catalog.json` / `INDEX.md`).
+
+**Yüzeye özel kalır:** Codex marketplace + `/hooks` trust; Cursor rule/skill
+keşfi; host-specific SessionStart biçimi; RTK PreToolUse rewrite.
+
+**Sync modeli:** Tek makine, tek dosya. Cloud multi-user **yok** (ADR-015).
+Taşıma = aynı `PALA_DB_PATH` veya Desktop/Codex klasörünü kopyala; migration
+zaten `migrate_from_json` + mevcut yol override’ları.
+
+**MVP vs sonra**
+
+| MVP (M25) | Sonra (ayrı ADR) |
+| --- | --- |
+| Tek DB yolu + CLI’nin her yüzeyden aynı store’u okuması | Cursor native hook parity |
+| İnce taşınabilir skill çekirdeği (agentskills) | Claude Code tam paket |
+| Cursor’da rules/AGENTS ile “önce STATUS oku” | İkinci orkestratör / sync SaaS |
+| Doktor: “hangi yüzey hazır?” dürüst rapor | Bulut veya çok kiracı DB |
+
+### Görev kartları (plan only — uygulama başlamadı)
+
+#### M25-T1 — Ajan-Araştır: bugünkü gerçek haritası
+- **Sahip ajan:** Ajan-Araştır
+- **Amaç:** Codex vs Cursor vs CLI / DB yolu / ADR sınırlarını tek doğru özetle.
+- **Dosyalar:** (salt okuma) `PROJECT.md`, `DECISIONS.md`, `docs/PALA_EVERYWHERE.md`,
+  `scripts/pala_db.py`, hook/skill yüzeyleri
+- **Bitti sayılır:** Bu PLAN bölümündeki “Bugünkü gerçek” tablosu kanıtlı; yalan
+  “Cursor’da çalışıyor” yok.
+- **Bağımlılık:** Yok
+- **Kanıt:** `passed` (bu turda araştırma yazıldı; ürün uygulaması yok)
+
+#### M25-T2 — Store sözleşmesini yüzeyler için dondur
+- **Sahip ajan:** Ajan-Sözleşme
+- **Amaç:** “Tek store API = `pala_db` + env yolu; hook yazmaz; secret yok”u
+  ADR notu / kısa sözleşme maddesi olarak kilitle (kod şişirmeden).
+- **Dosyalar:** `DECISIONS.md` (yeni ADR taslağı veya ADR-015 ek not),
+  gerekirse 1 sayfa `docs/PALA_SHARED_MEMORY.md`
+- **Bitti sayılır:** Paylaşılır / paylaşılmaz listesi ve migration yolu yazılı;
+  bulut sync önerilmez.
+- **Bağımlılık:** M25-T1
+- **Kanıt:** `not-run`
+
+#### M25-T3 — CLI tek kapı: memory / status / doctor yüzey etiketi
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** Mevcut `pala_state` / `pala_report` / Doctor çıktısında “store
+  yolu + hangi host bekleniyor” net olsun; yeni daemon yok.
+- **Dosyalar:** `scripts/pala_state.py`, `scripts/pala_report.py`,
+  `scripts/pala_installer.py` (Doctor metni), ilgili dar testler
+- **Bitti sayılır:** Aynı `pala.sqlite` yolunu CLI her yerden gösterir; soft
+  “Cursor kurulu” iddiası yok.
+- **Bağımlılık:** M25-T2
+- **Kanıt:** `not-run`
+
+#### M25-T4 — Cursor ince yüzey (skill/rules only)
+- **Sahip ajan:** Ajan-Yüzey
+- **Amaç:** agentskills uyumlu ince `SKILL.md` + isteğe bağlı Cursor rule:
+  memory contract + “CLI ile Status/DB”; Codex hook’larını Cursor’da varmış gibi
+  satma.
+- **Dosyalar:** yeni ince skill/rules taslağı (konum T2’de karar),
+  `docs/PALA_EVERYWHERE.md` güncellemesi
+- **Bitti sayılır:** Cursor’da agent STATUS okuyup CLI Status açabilsin; Install
+  “Codex plugin” iddiasını Cursor’a taşımaz; sözleşme testi veya self-audit
+  dürüst `configured-not-verified` / `not-run` kullanır.
+- **Bağımlılık:** M25-T2
+- **Kanıt:** `not-run`
+
+#### M25-T5 — Codex regress + tek makine kanıtı
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** Codex plugin davranışı bozulmadan aynı DB’yi üç yüzeyin okuduğunu
+  tek makinede kanıtla (Cursor = skill/rules; Codex = plugin; CLI = script).
+- **Dosyalar:** `scripts/test_pala_db.py` (+ gerekirse ince entegrasyon),
+  `STATUS.md` / `PROGRESS.md` kanıt satırları
+- **Bitti sayılır:** Dar test yeşil; owner canary: aynı `pala.sqlite` yolu üç
+  yüzeyden görünür; hook hâlâ ağ/test/build başlatmaz.
+- **Bağımlılık:** M25-T3, M25-T4
+- **Kanıt:** `not-run`
+
+### Bilerek yapılmayanlar (M25)
+
+- Bulut / çok kullanıcı sync DB
+- Cursor’da Codex hook parity veya “Pala Cursor’da kurulu” yalanı
+- Ruflo / ikinci orkestör / MCP-zorunlu hafıza sunucusu
+- Secret / transcript’i SQLite’a yazma
+- Bu turda M25 uygulama kodu, commit, release

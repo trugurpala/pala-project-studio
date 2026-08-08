@@ -794,6 +794,19 @@ def doctor_installation(
     experts_ready = bool(node_path and uv_path)
     healthy = plugin_ready
     hooks_next = hooks_next_step_message(project)
+    self_audit_script = source / "scripts" / "pala_self_audit.py"
+    self_audit = {
+        "status": (
+            "configured-not-verified"
+            if self_audit_script.is_file()
+            else "not-run"
+        ),
+        "command": "py -3 scripts/pala_self_audit.py",
+        "detail": (
+            "Fork/presence kalite kapisi Doctor icinde otomatik kosulmaz; "
+            "verify.py veya acik self-audit komutu gerekir."
+        ),
+    }
     return {
         "schema_version": SCHEMA_VERSION,
         "healthy": healthy,
@@ -801,6 +814,7 @@ def doctor_installation(
         "experts_ready": experts_ready,
         "status": "ready" if healthy else "attention_required",
         "hooks_next_step": hooks_next,
+        "self_audit": self_audit,
         "plugin": bundle["plugin"],
         "adapters": bundle.get("adapters", {}),
         "codex": codex,

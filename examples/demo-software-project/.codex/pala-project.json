@@ -1,0 +1,15 @@
+{
+  "managed_by": "pala-project-finisher",
+  "project_kind": "existing",
+  "profiles": ["runtime-delivery"],
+  "documents": {
+    "project": "PROJECT.md",
+    "plan": "PLAN.md",
+    "status": "STATUS.md",
+    "progress": "PROGRESS.md",
+    "decisions": "DECISIONS.md",
+    "agents": "AGENTS.md",
+    "tooling": "TOOLING_DECISIONS.md",
+    "debugging": "DEBUGGING.md"
+  }
+}

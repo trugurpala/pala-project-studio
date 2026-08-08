@@ -91,6 +91,26 @@ def validate_reproducible_package() -> str:
         return hashlib.sha256(first.read_bytes()).hexdigest().upper()
 
 
+def run_self_audit() -> None:
+    spec = importlib.util.spec_from_file_location(
+        "pala_verify_self_audit", SCRIPTS / "pala_self_audit.py"
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("pala_self_audit.py could not be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    payload = module.run_audit(ROOT)
+    if payload.get("status") != "passed":
+        failed = [
+            item["name"]
+            for item in payload.get("checks", [])
+            if isinstance(item, dict) and item.get("status") == "failed"
+        ]
+        raise RuntimeError(
+            "self-audit failed: " + (", ".join(failed) if failed else "unknown")
+        )
+
+
 def main() -> int:
     try:
         announce("JSON sözleşmeleri kontrol ediliyor")
@@ -101,6 +121,8 @@ def main() -> int:
         run_contract_tests()
         announce("Taşınabilir paket iki kez üretiliyor")
         digest = validate_reproducible_package()
+        announce("Fork/presence self-audit çalıştırılıyor")
+        run_self_audit()
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
         print(f"[pala] FAILED: {error}", file=sys.stderr)
         return 1

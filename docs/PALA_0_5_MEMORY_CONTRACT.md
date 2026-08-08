@@ -11,10 +11,14 @@ Every Implementation-mode session reads, in order:
 3. `PROGRESS.md`
 4. Active plan (active ticket section only)
 5. `TOOLING_DECISIONS.md`
-6. `DEBUGGING.md` (or registered troubleshooting path)
+6. `DEBUGGING.md` (or registered troubleshooting path) — durable error brain
+   with `## Format` and optional `### INC-…` incidents (root cause, symptoms,
+   fix criteria, proved-by commands, related files, date, status).
 7. Git status (`--short --branch`)
 
-Chat history is never the source of truth.
+Chat history is never the source of truth. Fail-closed parse lives in
+`scripts/pala_memory.py` (`parse_debugging_brain`) and self-audit
+`debugging_brain`.
 
 ## Tool memory statuses
 
@@ -36,6 +40,15 @@ Soft “bitti/done/ok” without a structured check is refused.
 ## Ticket coherence
 
 Before/after checkpoint, Pala compares `active_ticket` with the recorded next work. Mismatch is written into workflow + `CURRENT_STATUS.md`.
+
+## Agent task cards (optional)
+
+`PLAN.md` may list optional agent task cards (`M*-T*` / ticket IDs) with fields:
+**ID**, **Sahip ajan**, **Amaç**, **Dosyalar**, **Bitti sayılır**, **Bağımlılık**,
+**Kanıt**. Before implementation read `STATUS.md`, then the active cards in
+`PLAN.md`, then `DEBUGGING.md`. Each agent turn picks exactly one ID; respect
+owner and file ownership; do not re-plan closed cards. Evidence uses
+`passed|not-run|blocked|configured-not-verified`.
 
 ## Cross-project catalog
 

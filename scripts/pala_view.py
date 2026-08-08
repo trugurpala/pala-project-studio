@@ -60,12 +60,42 @@ def _update_banner(
     return f'<div class="warnline">Pala guncellik: cevrimdisi / bilinmiyor{checked}</div>'
 
 
-def _now_line(next_action: object) -> str:
+def _now_line(next_action: object, active_ticket: object = None) -> str:
+    ticket = str(active_ticket).strip() if active_ticket else ""
     text = str(next_action).strip() if next_action else ""
-    if not text:
-        text = "Henuz sonraki is yok — register veya begin calistir."
-    return f'<div class="nowline"><span class="now-k">Simdi:</span> {_e(text)}</div>'
+    if ticket and text:
+        if ticket not in text:
+            text = f"{ticket} — {text}"
+    elif ticket:
+        text = ticket
+    elif not text:
+        text = "Henüz sonraki iş yok — register veya begin çalıştır."
+    return f'<div class="nowline"><span class="now-k">Şimdi:</span> {_e(text)}</div>'
 
+
+def _brain_line(brain: object) -> str:
+    if not isinstance(brain, dict) or not brain.get("ok"):
+        detail = ""
+        if isinstance(brain, dict) and brain.get("detail"):
+            detail = f" ({_e(brain.get('detail'))})"
+        return (
+            f'<div class="warnline">Hata beyni: okunamadı{detail} — '
+            "DEBUGGING.md Format / INC alanlarını kontrol et.</div>"
+        )
+    open_count = int(brain.get("open") or 0)
+    fixed_count = int(brain.get("fixed") or 0)
+    total = int(brain.get("total") or 0)
+    path = _e(brain.get("path") or "DEBUGGING.md")
+    if open_count:
+        cls = "alert"
+        note = f"{open_count} açık / {fixed_count} kapalı (toplam {total})"
+    else:
+        cls = "okline"
+        note = f"açık yok; {fixed_count} kapalı (toplam {total})"
+    return (
+        f'<div class="{cls}">Hata beyni: {note} — önce <span class="mono">{path}</span> '
+        "oku.</div>"
+    )
 
 def _progress_block(progress: dict[str, object]) -> str:
     ready = int(progress.get("ready") or 0)
@@ -276,6 +306,7 @@ def render(model: dict[str, object], *, freshness_fn: Any) -> str:
     update = update if isinstance(update, dict) else None
     update_checked_at = model.get("update_checked_at")
     next_action = model.get("next_action")
+    brain = model.get("debugging_brain")
 
     mismatch = bool(coherence.get("mismatch"))
     mismatch_banner = (
@@ -295,7 +326,8 @@ def render(model: dict[str, object], *, freshness_fn: Any) -> str:
     current_panel = (
         '<section id="panel-current" class="panel">'
         "<h2>Aktif proje</h2>"
-        f"{_now_line(next_action)}"
+        f"{_now_line(next_action, coherence.get('active'))}"
+        f"{_brain_line(brain)}"
         f"{mismatch_banner}"
         f"{_progress_block(progress)}"
         '<div class="grid">'

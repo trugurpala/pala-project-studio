@@ -1188,8 +1188,32 @@ class PalaHookTests(unittest.TestCase):
             reconciliation={"needed": False, "reasons": []},
         )
         message = result["hookSpecificOutput"]["additionalContext"]
+        self.assertTrue(message.startswith(pala_hook.PRESENCE_LINE))
         self.assertIn("Pala local health: plugin=loaded; python=ready; git=ready; hook=running.", message)
-        self.assertLessEqual(len(message), 800)
+        self.assertLessEqual(len(message), pala_hook.SESSION_CONTEXT_LIMIT)
+        for banned in ("token büyüt", "kota artır", "% daha hızlı", "plus install"):
+            self.assertNotIn(banned.casefold(), message.casefold())
+
+    def test_session_context_presence_survives_long_fields(self) -> None:
+        long_next = "x" * 500
+        result = pala_hook.session_context(
+            {"project": "PROJECT.md", "status": "STATUS.md", "plan": "PLAN.md"},
+            {
+                "schema_version": 2,
+                "active_ticket": "PALA-M21",
+                "next_action": long_next,
+                "dirty": True,
+                "blockers": ["a", "b", "c"],
+            },
+            compacted=True,
+            project_kind="existing",
+            health={"plugin": "loaded", "python": "ready", "git": "ready", "hook": "running"},
+            reconciliation={"needed": True, "reasons": ["one", "two"]},
+            tools_summary="tools=n/a",
+        )
+        message = result["hookSpecificOutput"]["additionalContext"]
+        self.assertTrue(message.startswith(pala_hook.PRESENCE_LINE))
+        self.assertLessEqual(len(message), pala_hook.SESSION_CONTEXT_LIMIT)
 
     def test_new_workflow_does_not_require_reconciliation_before_first_checkpoint(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

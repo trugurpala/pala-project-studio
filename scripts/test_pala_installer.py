@@ -102,6 +102,9 @@ def make_bundle(root: Path, version: str = "0.4.0+codex.test") -> Path:
     )
     (source / "scripts" / "pala_state.py").write_text("VALUE = 1\n", encoding="utf-8")
     (source / "scripts" / "pala_hook.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_self_audit.py").write_text(
+        "VALUE = 1\n", encoding="utf-8"
+    )
     (source / "hooks" / "hooks.json").write_text("{}\n", encoding="utf-8")
     (source / "skills" / "pala-project-finisher" / "SKILL.md").write_text(
         "---\nname: pala-project-finisher\ndescription: test\n---\n",
@@ -250,6 +253,10 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertIn("/hooks", report["hooks_next_step"])
             self.assertIn("hook_safety=passed", report["hooks_next_step"])
             self.assertIn("dosya", report["hooks_next_step"].casefold())
+            self.assertEqual(
+                report["self_audit"]["status"], "configured-not-verified"
+            )
+            self.assertIn("pala_self_audit.py", report["self_audit"]["command"])
             self.assertIn(
                 "hook_safety=passed",
                 self.installer.hooks_next_step_message(

@@ -7,19 +7,36 @@ ship a separate MCP server by default (see `DECISIONS.md`).
 ## Before you change anything
 
 1. Read `AGENTS.md`, `DECISIONS.md`, and `docs/CODEX_SCOPE_AND_LIMITS.md`.
-2. Prefer the smallest change that preserves:
+2. If `PLAN.md` has task cards (`M*-T*`), claim one ID and keep file ownership
+   non-overlapping with other agents.
+3. Prefer the smallest change that preserves:
    - single install door (`Install-Pala.ps1`)
    - local-first / secrets-free behavior
    - no network/test/build inside hooks
    - evidence-gated “done” (no soft “bitti/ok” without structured status)
-3. New behavior needs a **failing contract test first**, then the fix.
+4. New behavior needs a **failing contract test first**, then the fix.
+
+## Fork in 5 minutes
+
+```powershell
+git clone https://github.com/trugurpala/pala-project-studio.git
+cd pala-project-studio
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Doctor
+py -3 scripts\pala_demo.py seed --demo-root examples\demo-software-project --catalog-root $env:USERPROFILE\Desktop\Codex
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Status
+py -3 scripts\pala_self_audit.py
+```
+
+Details: [docs/FORK_PACK.md](docs/FORK_PACK.md). SessionStart should show
+`Pala burada — bu oturumda yanındayım.` on registered projects.
 
 ## Local setup
 
 ```powershell
 git clone https://github.com/trugurpala/pala-project-studio.git
 cd pala-project-studio
-py -3 -m unittest scripts.test_pala_tools scripts.test_plugin_experience scripts.test_pala_memory -v
+py -3 -m unittest scripts.test_pala_tools scripts.test_plugin_experience scripts.test_pala_memory scripts.test_pala_demo scripts.test_pala_self_audit -v
 py -3 scripts\verify.py
 ```
 
@@ -43,6 +60,10 @@ py -3 scripts\pala_state.py memory --cwd .
 py -3 scripts\pala_report.py --cwd . --open
 # or
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Status
+
+# Fork demo seed + self-audit
+py -3 scripts\pala_demo.py seed --demo-root examples\demo-software-project
+py -3 scripts\pala_self_audit.py
 ```
 
 ## Branch and PR habits

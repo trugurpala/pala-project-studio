@@ -15,6 +15,9 @@
 4. Skill ve referans belgeleri.
 
 - Kalıcı kuralları `AGENTS.md`, değişen işi plan/status/progress içinde tut.
+- Bilinen hatayı tekrarlamadan önce `DEBUGGING.md` oku; yeni arızada kök neden,
+  belirtiler, fix criteria, kanıt komutları ve ilgili dosyaları `### INC-…`
+  formatında kaydet (sır/token/transcript yok).
 - Skill gövdesini kısa tut; ayrıntıyı doğrudan bağlı referanslara ve deterministik scriptlere taşı.
 - Pala hiçbir hook içinde test, build, commit, push veya ağ çağrısını kendiliğinden başlatmaz.
 - Ölçülmemiş hız, token veya kalite yüzdesi raporlama.
@@ -28,6 +31,14 @@
 - Secret, token, transcript, gerçek proje verisi veya kullanıcıya ait plugin
   verisini kaynak pakete, Git'e ya da hook çıktısına yazma.
 - Commit, push, PR, release, görünürlük değişimi ve deploy ayrı yetkilerdir.
+
+## Çoklu ajan / görev kartı
+
+- Uygulama öncesi: `STATUS.md` → aktif `PLAN.md` görev kartları (`M*-T*` / ticket ID) → `DEBUGGING.md`.
+- Tam olarak bir görev ID'si seç; `Sahip ajan` ve `Dosyalar` sahipliğine uy.
+- Kanıt etiketleri: `passed|not-run|blocked|configured-not-verified`.
+- Kapalı veya kanıtlı kartları yeniden planlama; yalnız seçilen ID'yi uygula.
+- Hook'lar test, build veya ağ çağrısını kendiliğinden başlatmaz.
 
 ## Doğrulama komutları
 

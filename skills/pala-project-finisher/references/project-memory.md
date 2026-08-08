@@ -15,6 +15,11 @@ Prefer existing documents and register their real paths:
 | Open source | `OPEN_SOURCE.md`, `docs/OPEN_SOURCE.md`, notices | `docs/codex/OPEN_SOURCE.md` |
 | Owner demo | `reports/OWNER_DEMO.md`, `DEMO.md` | `reports/OWNER_DEMO.md` |
 
+`DEBUGGING.md` is the durable error brain: read it before repeating a known
+failure; append `### INC-…` entries with Symptoms, Root cause, Fix criteria,
+Proved by, Related files, Date, Status. Parser: `pala_memory.parse_debugging_brain`.
+SessionStart exposes `debug_open=N`; Status HTML shows a “Hata beyni” line.
+
 ## Project Memory Contract (0.5)
 
 Forced bootstrap order every Implementation session:
@@ -32,7 +37,10 @@ See [project-memory-contract.md](project-memory-contract.md) and `docs/PALA_0_5_
 
 The product document owns users, outcome, scope, non-goals, architecture,
 trust boundaries, and definition of done. The plan owns ordered milestones and
-coherent tickets. Expand only the active ticket to exact files, interfaces,
+coherent tickets. When `PLAN.md` uses agent task cards, each card may list:
+**ID**, **Sahip ajan**, **Amaç**, **Dosyalar**, **Bitti sayılır**,
+**Bağımlılık**, **Kanıt** — one ID per agent turn; respect owner and file
+ownership. Expand only the active ticket to exact files, interfaces,
 tests, commands, dependencies, acceptance evidence, and one lifecycle state.
 
 The short status checkpoint contains the current milestone/ticket, last

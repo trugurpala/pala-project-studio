@@ -1,42 +1,51 @@
 # Pala Project Studio Durumu
 
-- Güncelleme: 2026-08-08 (gece — Codex UI Automation canary)
-- Aktif milestone: M20 — Gerçeklik + vibe ilk 10 dk (`completed` canary dahil).
-- Aktif ticket: Yok.
-- Plugin/manifest sürümü: `0.7.1+codex.20260807190000`.
-- Son GitHub release: `v0.7.1` (`passed`).
-  - URL: https://github.com/trugurpala/pala-project-studio/releases/tag/v0.7.1
-  - SHA-256: `4CD388A40392B7C8AAE0A1A742307993F829F116FB3D4F08989FB1A009230A9D`
+- Güncelleme: 2026-08-08 (M26 — v0.8.0 GitHub release)
+- Aktif milestone: **M26**
+- Aktif ticket: **M26-T3** (commit → push → tag → release)
+- Plugin/manifest sürümü: `0.8.0+codex.20260808021500` (kaynak; GitHub’da henüz yok)
+- Son GitHub release: `v0.7.1` (`passed`); `v0.8.0` release ZIP: `not-run`
+- Repo görünürlük: **public** (`passed`).
+- `origin/main`: `ac57dd1`; yerel 0.8.0 working tree commit bekliyor.
 
-## Owner canary A–Z (bu makine — 2026-08-08)
+## Şu an tek sonraki iş
 
-| Adım | Sonuç | Kanıt |
+**M26-T3…T5:** Commit → push `main` → tag `v0.8.0` → `gh release create` +
+portable ZIP. (Owner: “release olana kadar uygula”.)
+
+## M26 ajan → görev
+
+| Task | Sahip | Kanıt |
 | --- | --- | --- |
-| A Kurulum kökü | `passed` | `C:\Users\Pala-Pc\Desktop\Cursor\pala-project-studio` |
-| B Doctor | `passed` | Update sonrası `healthy=True`, `plugin_ready=True`, `hook_safety=passed` |
-| C Status + SQLite | `passed` | HTML + `pala.sqlite` |
-| D Plugin | `passed` | enabled `0.7.1…` |
-| D2 Codex desktop | `passed` | Store app canlı; `codex app` proje açtı |
-| E1 Hook safety (dosya) | `passed` | Doctor `hook_safety=passed` |
-| E2 Codex hook trust (UI) | `passed` | Codex → Eklentiler → Pala Project Studio → **Tümüne güven** (UI Automation); buton yeniden açılışta yok; bypass **kullanılmadı** |
-| F Yeni sohbet | `passed` | `pala-project-studio içinde yeni sohbet`; session `019fde68-8ad6-77d2-b8ad-60c981a9dbce` |
-| G1 Örtük sürdürme | `passed` | G1 mesajı composer’a gönderildi (UI) |
-| G2 Açık skill | `passed` | `pala-project-finisher` okundu; STATUS/PLAN okundu; edit/commit/push yok |
-| G3 Status raporu | `passed` | Session içinde `py -3 scripts/pala_report.py --cwd .` |
-| H Negatif yetki | `passed` | G2 açıkça commit/push yapmadı |
-| I Plus / Pro web | `not-run` | Desteklenmez |
+| M26-T1 Plan panosu | Ajan-Plan | `passed` |
+| M26-T2 Final verify | Ajan-Kapı | `passed` |
+| M26-T3 Commit | Ajan-Yayın | `not-run` |
+| M26-T4 Push main | Ajan-Yayın | `not-run` |
+| M26-T5 Tag + gh release | Ajan-Yayın | `not-run` |
+| M26-T6 Evidence docs | Ajan-Plan | `not-run` |
 
-Session kanıtı:
-`C:\Users\Pala-Pc\.codex\sessions\2026\08\08\rollout-2026-08-08T01-47-01-019fde68-8ad6-77d2-b8ad-60c981a9dbce.jsonl`
+## M26 / release kanıt
 
-Not: Oturum cevabı STATUS’un eski “hâlâ /hooks yap” satırını tekrarladı çünkü o anki STATUS henüz E2’yi `passed` yazmamıştı. Bu güncelleme drift’i kapatır.
+| Kapı | Sonuç | Not |
+| --- | --- | --- |
+| Tam yerel kapı `verify.py` | `passed` | 234 test + self-audit |
+| Portable ZIP SHA-256 | `passed` | `3EA17A1CEFF7DEEBF906D03184D9B9F09F800B4B64B4AD0D880AD30C22A6916E` |
+| GitHub `v0.8.0` release | `not-run` | sıradaki adım |
 
-## Açık artımlar (blokör değil)
+## Önceki kapılar (özet)
+
+| Kapı | Sonuç |
+| --- | --- |
+| M24 ajan görevleri + verify | `passed` |
+| M23 yerel release hazırlığı | `passed` |
+| M22 demo Status + hata beyni | `passed` |
+| M21 presence + fork pack | `passed` |
+| GitHub `v0.7.1` | `passed` |
+
+## Açık ama blokör değil
 
 - M10 RTK / Context7-Playwright MCP: `not-run`
-- Taşınabilir Claude/Cursor skill: ayrı ticket
-
-## Tek sonraki iş
-
-1. Dünya yüzeyi bu turda eklendi (CHANGELOG/SUPPORT/PR template/docs index/public).
-2. İsteğe bağlı: M10 artığı veya gerçek ürün ticket’ı seç.
+- M25 ortak hafıza ürünü: DRAFT / uygulama yok
+- Açık eski PR `#5` (0.5A): release blokörü değil
+- DEMO-005 owner handoff (demo örneği): isteğe bağlı
+- Owner Install/Doctor/UI canary bu turda yeniden koşulmadı: `not-run`

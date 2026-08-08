@@ -1,0 +1,8 @@
+{
+  "schema_version": 2,
+  "active_ticket": "DEMO-005",
+  "next_action": "Optional: write owner handoff note without fake screenshots",
+  "dirty": false,
+  "needs_reconcile": false,
+  "blockers": []
+}

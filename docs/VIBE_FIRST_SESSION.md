@@ -31,17 +31,29 @@ STATUS.md ve docs/VIBE_FIRST_SESSION.md ile uyumlu ilerle; tek sonraki işi söy
 ```
 
 5. Beklenen ilk sonuç:
+   - SessionStart veya skill açılışı: **Pala burada — bu oturumda yanındayım.**
+     (güven satırı; token/kota büyütme iddiası yok)
    - STATUS/PROGRESS/workflow okunur
    - Aktif ticket yoksa açıkça söylenir (uydurma ticket yok)
    - Commit/push/verify otomatik başlamaz
+
+**Çoklu ajan / görev:** İşe başlamadan önce `STATUS.md` → `PLAN.md` içindeki
+aktif `M*-T*` veya `DEMO-*` kartları → `DEBUGGING.md` sırasıyla oku; **tek bir
+task ID** seç ve o kartın dosyalarında kal. Kanıt yalnız
+`passed` | `not-run` | `blocked` | `configured-not-verified`. Hook'lar test,
+build veya ağ çağrısını kendiliğinden başlatmaz.
+
 6. İsteğe bağlı dışarıdan:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Status
 py -3 scripts\pala_state.py memory --cwd .
+py -3 scripts\pala_demo.py seed --demo-root examples\demo-software-project
+py -3 scripts\pala_self_audit.py
 ```
 
 Yerel store: `%USERPROFILE%\Desktop\Codex\pala.sqlite`.
+Fork paketi: [FORK_PACK.md](FORK_PACK.md).
 
 ## Bilerek yok
 

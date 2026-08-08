@@ -45,8 +45,15 @@ STUB_BODIES = {
     ),
     "debugging": (
         "# Debugging log\n\n"
-        "Record root cause, fix criteria, and verification status. "
-        "Do not claim fixed without evidence.\n"
+        "Durable error brain for this project. Read before repeating a known failure.\n"
+        "No secrets, tokens, transcripts, or real user plugin data.\n\n"
+        "## Format\n\n"
+        "Each incident uses heading `### INC-YYYYMMDD-slug` and these fields:\n"
+        "Symptoms, Root cause, Fix criteria, Proved by, Related files, Date, Status.\n"
+        "Status may be `open`, `fixed`, or `wontfix`; fixed requires evidence labels "
+        "(passed | not-run | blocked | configured-not-verified), not soft done/ok.\n\n"
+        "## Incidents\n\n"
+        "(none yet)\n"
     ),
 }
 
@@ -61,6 +68,236 @@ TICKET_RE = re.compile(r"\b([A-Z]{1,8}\d*-T\d+|[A-Z]{2,12}-\d+|F\d+-T\d+)\b")
 NEXT_LINE_RE = re.compile(
     r"(?im)^\s*(?:[-*]\s*)?(?:next(?:\s+action)?|sonraki(?:\s+i[sş]e?)?)\s*[:\-]\s*(.+)$"
 )
+
+DEBUGGING_REQUIRED_FIELDS = (
+    "Symptoms",
+    "Root cause",
+    "Fix criteria",
+    "Proved by",
+    "Related files",
+    "Date",
+    "Status",
+)
+INCIDENT_HEADING_RE = re.compile(r"(?m)^###\s+(INC-[A-Za-z0-9][\w.-]*)\s*$")
+INCIDENT_FIELD_RE = re.compile(
+    r"(?im)^\s*[-*]\s*\*\*("
+    + "|".join(re.escape(name) for name in DEBUGGING_REQUIRED_FIELDS)
+    + r"):\*\*\s*(.*)$"
+)
+
+AGENT_TASK_HEADING_RE = re.compile(
+    r"(?m)^#{4}\s+(M\d+-T\d+)\s*[—–-]\s*(.+?)\s*$"
+)
+AGENT_TASK_FIELD_LABELS = (
+    "Sahip ajan",
+    "Amaç",
+    "Dosyalar",
+    "Bitti sayılır",
+    "Bağımlılık",
+    "Kanıt",
+)
+AGENT_TASK_FIELD_RE = re.compile(
+    r"(?im)^\s*[-*]\s*\*\*("
+    + "|".join(re.escape(name) for name in AGENT_TASK_FIELD_LABELS)
+    + r"):\*\*\s*(.*)$"
+)
+VALID_EVIDENCE_LABELS = frozenset(
+    {
+        "passed",
+        "not-run",
+        "blocked",
+        "configured-not-verified",
+        "failed",
+        "timeout",
+    }
+)
+
+
+def parse_debugging_brain(text: str) -> dict[str, object]:
+    """Fail-closed parse of DEBUGGING.md Format + INC-* incident entries."""
+    body = text or ""
+    format_match = re.search(r"(?im)^##\s+Format\s*$", body)
+    if not format_match:
+        return {
+            "ok": False,
+            "detail": "missing ## Format section",
+            "incidents": [],
+        }
+    next_heading = re.search(r"(?m)^##\s+\S+", body[format_match.end() :])
+    format_end = (
+        format_match.end() + next_heading.start()
+        if next_heading
+        else len(body)
+    )
+    format_block = body[format_match.start() : format_end]
+    missing_labels = [
+        name
+        for name in DEBUGGING_REQUIRED_FIELDS
+        if name.casefold() not in format_block.casefold()
+    ]
+    if missing_labels:
+        return {
+            "ok": False,
+            "detail": "Format missing field labels: " + ", ".join(missing_labels),
+            "incidents": [],
+        }
+
+    headings = list(INCIDENT_HEADING_RE.finditer(body))
+    incidents: list[dict[str, object]] = []
+    for index, match in enumerate(headings):
+        start = match.end()
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(body)
+        chunk = body[start:end]
+        fields: dict[str, str] = {}
+        for field_match in INCIDENT_FIELD_RE.finditer(chunk):
+            key = field_match.group(1)
+            # Preserve canonical casing from DEBUGGING_REQUIRED_FIELDS.
+            canonical = next(
+                name for name in DEBUGGING_REQUIRED_FIELDS if name.casefold() == key.casefold()
+            )
+            fields[canonical] = field_match.group(2).strip()
+        missing = [name for name in DEBUGGING_REQUIRED_FIELDS if not fields.get(name)]
+        if missing:
+            return {
+                "ok": False,
+                "detail": f"{match.group(1)} missing fields: {', '.join(missing)}",
+                "incidents": incidents,
+            }
+        incidents.append({"id": match.group(1), "fields": fields})
+    return {"ok": True, "detail": "ok", "incidents": incidents}
+
+
+def _normalize_evidence(raw: str) -> str:
+    value = (raw or "").strip().strip("`").strip()
+    if not value:
+        return "not-run"
+    lowered = value.casefold()
+    if lowered in VALID_EVIDENCE_LABELS:
+        return lowered
+    for label in sorted(VALID_EVIDENCE_LABELS, key=len, reverse=True):
+        if label in lowered:
+            return label
+    return lowered
+
+
+def parse_agent_task_cards(text: str) -> dict[str, object]:
+    """Parse PLAN.md M*-T* agent task cards (Sahip ajan + Amaç required)."""
+    body = text or ""
+    headings = list(AGENT_TASK_HEADING_RE.finditer(body))
+    if not headings:
+        return {"ok": True, "detail": "no cards", "cards": []}
+
+    cards: list[dict[str, str]] = []
+    for index, match in enumerate(headings):
+        start = match.end()
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(body)
+        chunk = body[start:end]
+        fields: dict[str, str] = {}
+        for field_match in AGENT_TASK_FIELD_RE.finditer(chunk):
+            key = field_match.group(1)
+            canonical = next(
+                name
+                for name in AGENT_TASK_FIELD_LABELS
+                if name.casefold() == key.casefold()
+            )
+            fields[canonical] = field_match.group(2).strip()
+        card_id = match.group(1)
+        title = match.group(2).strip()
+        owner = fields.get("Sahip ajan", "").strip()
+        goal = fields.get("Amaç", "").strip()
+        if not owner or not goal:
+            missing = []
+            if not owner:
+                missing.append("Sahip ajan")
+            if not goal:
+                missing.append("Amaç")
+            return {
+                "ok": False,
+                "detail": f"{card_id} missing fields: {', '.join(missing)}",
+                "cards": cards,
+            }
+        cards.append(
+            {
+                "id": card_id,
+                "title": title,
+                "owner": owner,
+                "goal": goal,
+                "files": fields.get("Dosyalar", ""),
+                "done_when": fields.get("Bitti sayılır", ""),
+                "depends": fields.get("Bağımlılık", ""),
+                "evidence": _normalize_evidence(fields.get("Kanıt", "")),
+            }
+        )
+    return {"ok": True, "detail": "ok", "cards": cards}
+
+
+def debugging_brain_summary(
+    root: Path,
+    documents: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """Count open vs closed INC entries for SessionStart / Status surfaces."""
+    docs = documents if isinstance(documents, dict) else {}
+    rel = docs.get("debugging")
+    if isinstance(rel, str) and rel.strip():
+        path = root / rel
+    else:
+        path = root / DEFAULT_STUB_PATHS["debugging"]
+    if not path.is_file():
+        return {
+            "ok": False,
+            "detail": "DEBUGGING.md missing",
+            "path": str(path.relative_to(root)) if path.is_relative_to(root) else str(path),
+            "open": 0,
+            "fixed": 0,
+            "total": 0,
+        }
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {
+            "ok": False,
+            "detail": str(exc),
+            "path": str(path),
+            "open": 0,
+            "fixed": 0,
+            "total": 0,
+        }
+    parsed = parse_debugging_brain(text)
+    if not parsed.get("ok"):
+        return {
+            "ok": False,
+            "detail": str(parsed.get("detail") or "parse failed"),
+            "path": str(path.relative_to(root)) if path.is_relative_to(root) else str(path),
+            "open": 0,
+            "fixed": 0,
+            "total": 0,
+        }
+    open_count = 0
+    fixed_count = 0
+    for entry in parsed.get("incidents") or []:
+        if not isinstance(entry, dict):
+            continue
+        fields = entry.get("fields")
+        if not isinstance(fields, dict):
+            continue
+        status = str(fields.get("Status") or "").strip().casefold()
+        if status.startswith("open"):
+            open_count += 1
+        elif status.startswith("fixed") or status.startswith("wontfix"):
+            fixed_count += 1
+    total = len(parsed.get("incidents") or [])
+    try:
+        rel_path = str(path.relative_to(root)).replace("\\", "/")
+    except ValueError:
+        rel_path = str(path)
+    return {
+        "ok": True,
+        "detail": "ok",
+        "path": rel_path,
+        "open": open_count,
+        "fixed": fixed_count,
+        "total": total,
+    }
 
 
 def git_status_summary(root: Path) -> dict[str, object]:
@@ -222,6 +459,7 @@ def contract_context(
         "memory_contract_version": MEMORY_CONTRACT_VERSION,
         "read_order": resolve_read_order(root, docs),
         "ticket_coherence": coherence,
+        "debugging_brain": debugging_brain_summary(root, docs),
         "git": git_status_summary(root),
         "evidence_policy_version": 1,
     }

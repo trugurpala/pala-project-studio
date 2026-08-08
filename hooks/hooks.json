@@ -10,7 +10,7 @@
             "command": "python \"${PLUGIN_ROOT}/scripts/pala_hook.py\"",
             "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pala_hook.py\"",
             "timeout": 10,
-            "statusMessage": "Proje durumu yükleniyor",
+            "statusMessage": "Pala yanınızda",
             "additionalContextLimit": 800
           }
         ]

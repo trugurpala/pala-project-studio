@@ -17,6 +17,7 @@ FIXED_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:")
 FORBIDDEN_PARTS = {".git", ".ruff_cache", "__pycache__", ".codex"}
 FORBIDDEN_SUFFIXES = (".pyc", ".pyo", ".pem", ".key")
+DEMO_CODEX_PREFIX = ("examples", "demo-software-project", ".codex")
 
 
 def validate_archive_name(value: str) -> str:
@@ -46,11 +47,22 @@ def ensure_unique_names(names: Iterable[str]) -> None:
         seen[key] = normalized
 
 
+def is_demo_codex(path: Path) -> bool:
+    """Allow the fork demo's registered .codex state into the portable ZIP."""
+    parts = tuple(part.casefold() for part in path.parts)
+    prefix = tuple(part.casefold() for part in DEMO_CODEX_PREFIX)
+    return len(parts) >= len(prefix) and parts[: len(prefix)] == prefix
+
+
 def is_forbidden_source(path: Path) -> bool:
     """Return whether a source path must never enter the portable archive."""
     lowered_parts = {part.casefold() for part in path.parts}
-    if lowered_parts.intersection(FORBIDDEN_PARTS):
-        return True
+    blocked = lowered_parts.intersection({part.casefold() for part in FORBIDDEN_PARTS})
+    if blocked:
+        if blocked == {".codex"} and is_demo_codex(path):
+            pass
+        else:
+            return True
     if any(
         part.casefold() == ".env" or part.casefold().startswith(".env.")
         for part in path.parts
@@ -88,11 +100,15 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "docs" / "PALA_EVERYWHERE.md",
         plugin_root / "docs" / "PALA_INTERNAL_PROVISION.md",
         plugin_root / "docs" / "VIBE_FIRST_SESSION.md",
+        plugin_root / "docs" / "FORK_PACK.md",
+        plugin_root / "docs" / "RELEASE_0_8_0_CHECKLIST.md",
     ]
     for directory in ("hooks", "skills"):
         candidates.extend(
             path for path in (plugin_root / directory).rglob("*") if path.is_file()
         )
+    demo_root = plugin_root / "examples" / "demo-software-project"
+    candidates.extend(path for path in demo_root.rglob("*") if path.is_file())
     candidates.extend(
         path
         for pattern in ("*.py", "*.ps1")

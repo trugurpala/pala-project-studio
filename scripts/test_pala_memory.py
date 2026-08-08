@@ -191,7 +191,7 @@ class MemoryContractTests(unittest.TestCase):
             self.assertIn("<!doctype html>", markup)
             self.assertIn("Okuma sirasi", markup)
             self.assertIn("Proje katalogu", markup)
-            self.assertIn("Simdi:", markup)
+            self.assertIn("Şimdi:", markup)
             self.assertIn("hazir", markup)
             self.assertIn("Son olaylar", markup)
             self.assertIn("Son URL kurulumlari", markup)
@@ -252,7 +252,7 @@ class MemoryContractTests(unittest.TestCase):
                 update={"status": "current", "installed_version": "0.7.0"},
             )
             self.assertRegex(markup, r"\d+/7 hazir")
-            self.assertIn("Simdi:", markup)
+            self.assertIn("Şimdi:", markup)
             self.assertIn("F2-T2", markup)
 
     def test_report_sidebar_lists_catalog_projects(self) -> None:
@@ -413,6 +413,47 @@ class MemoryContractTests(unittest.TestCase):
             self.assertTrue((root / "PROGRESS.md").is_file())
             self.assertTrue((root / "TOOLING_DECISIONS.md").is_file())
             self.assertTrue((root / "DEBUGGING.md").is_file())
+
+    def test_parse_agent_task_cards_good_set(self) -> None:
+        text = """
+#### M24-T1 — First task
+- **Sahip ajan:** Ajan-Plan
+- **Amaç:** Align PLAN with reality
+- **Dosyalar:** PLAN.md
+- **Kanıt:** `not-run`
+
+#### M24-T2 — Second task
+- **Sahip ajan:** Ajan-Kapı
+- **Amaç:** Parse and audit cards
+- **Bağımlılık:** M24-T1
+- **Kanıt:** passed
+"""
+        result = pala_memory.parse_agent_task_cards(text)
+        self.assertTrue(result["ok"])
+        self.assertEqual(len(result["cards"]), 2)
+        first = result["cards"][0]
+        self.assertEqual(first["id"], "M24-T1")
+        self.assertEqual(first["title"], "First task")
+        self.assertEqual(first["owner"], "Ajan-Plan")
+        self.assertEqual(first["goal"], "Align PLAN with reality")
+        self.assertEqual(first["evidence"], "not-run")
+        second = result["cards"][1]
+        self.assertEqual(second["id"], "M24-T2")
+        self.assertEqual(second["evidence"], "passed")
+
+    def test_parse_agent_task_cards_missing_sahip_fails(self) -> None:
+        text = """
+#### M24-T1 — Incomplete card
+- **Amaç:** Goal only, no owner
+"""
+        result = pala_memory.parse_agent_task_cards(text)
+        self.assertFalse(result["ok"])
+        self.assertIn("Sahip ajan", str(result.get("detail")))
+
+    def test_parse_agent_task_cards_empty_ok(self) -> None:
+        result = pala_memory.parse_agent_task_cards("# Plan\n\nNo task cards yet.\n")
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["cards"], [])
 
     def test_plain_memory_report_is_human_readable(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import tempfile
 import unittest
 import zipfile
@@ -28,6 +29,7 @@ def load_packager():
 class UserExperienceContractTests(unittest.TestCase):
     def test_readme_exposes_current_release_and_expert_worker_boundary(self) -> None:
         readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
+        status = (PLUGIN_ROOT / "STATUS.md").read_text(encoding="utf-8")
         normalized = " ".join(readme.casefold().split())
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(
@@ -35,18 +37,41 @@ class UserExperienceContractTests(unittest.TestCase):
             )
         )
         release_version = manifest["version"].split("+", maxsplit=1)[0]
-
-        self.assertIn(
+        green_badge = f"img.shields.io/badge/release-v{release_version}-2ea44f"
+        published_zip = (
             "releases/latest/download/"
-            f"pala-project-studio-{release_version}.zip",
-            readme,
+            f"pala-project-studio-{release_version}.zip"
         )
-        self.assertIn(
-            f"img.shields.io/badge/release-v{release_version}-2ea44f",
-            readme,
+        release_pending = bool(
+            re.search(
+                rf"`v?{re.escape(release_version)}`[^\n]*`not-run`",
+                status,
+                flags=re.IGNORECASE,
+            )
         )
-        self.assertIn(f"releases/tag/v{release_version}", readme)
+
+        self.assertIn(release_version, readme)
         self.assertNotIn("img.shields.io/github/v/release/", readme)
+        if release_pending:
+            # Do not advertise a green "published" badge or primary ZIP for
+            # a version STATUS still marks not-run.
+            self.assertNotIn(green_badge, readme)
+            self.assertTrue(
+                "not-run" in normalized
+                or "henüz" in normalized
+                or "yayınlanmad" in normalized,
+                "README must state GitHub publish is pending while STATUS says not-run",
+            )
+            self.assertIn("v0.7.1", readme)
+            self.assertIn(
+                "pala-project-studio-0.7.1.zip",
+                readme,
+                "While 0.8.0 is pending, README must point at last published ZIP",
+            )
+        else:
+            self.assertIn(published_zip, readme)
+            self.assertIn(green_badge, readme)
+            self.assertIn(f"releases/tag/v{release_version}", readme)
         for required in (
             "güvenli uzman işçileri",
             "graphify",
@@ -102,7 +127,7 @@ class UserExperienceContractTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        self.assertTrue(manifest["version"].startswith("0.7.1+codex."))
+        self.assertTrue(manifest["version"].startswith("0.8.0+codex."))
         self.assertEqual(
             manifest["repository"],
             "https://github.com/trugurpala/pala-project-studio",
@@ -260,13 +285,27 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertEqual(
             status_messages,
             [
-                "Proje durumu yükleniyor",
+                "Pala yanınızda",
                 "Güvenli komut optimizasyonu kontrol ediliyor",
                 "Çalışma bağlamı kaydediliyor",
                 "Oturum sahipliği kapatılıyor",
                 "İlerleme kaydı kontrol ediliyor",
             ],
         )
+
+    def test_skill_opens_with_presence_and_no_quota_claims(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        normalized = " ".join(skill.casefold().split())
+        self.assertIn("pala burada — bu oturumda yanındayım.", normalized)
+        self.assertIn("read-only discovery comes first", normalized)
+        self.assertIn("no larger context, quota, or speedup claims", normalized)
+        for banned in (
+            "increases your context window",
+            "kota artırır",
+            "token büyütür",
+            "% faster",
+        ):
+            self.assertNotIn(banned.casefold(), normalized)
 
     def test_github_reference_excludes_secrets_and_requires_separate_authority(self) -> None:
         text = (REFERENCE_ROOT / "github-persistence.md").read_text(
@@ -290,6 +329,22 @@ class UserExperienceContractTests(unittest.TestCase):
         files = packager.source_files(PLUGIN_ROOT)
         self.assertIn(PLUGIN_ROOT / "scripts" / "pala_update.py", files)
         self.assertIn(PLUGIN_ROOT / "managed-tools.lock.json", files)
+        self.assertIn(PLUGIN_ROOT / "docs" / "FORK_PACK.md", files)
+        self.assertIn(PLUGIN_ROOT / "docs" / "RELEASE_0_8_0_CHECKLIST.md", files)
+        self.assertIn(
+            PLUGIN_ROOT / "examples" / "demo-software-project" / "STATUS.md",
+            files,
+        )
+        self.assertIn(
+            PLUGIN_ROOT
+            / "examples"
+            / "demo-software-project"
+            / ".codex"
+            / "pala-workflow.json",
+            files,
+        )
+        self.assertIn(PLUGIN_ROOT / "scripts" / "pala_demo.py", files)
+        self.assertIn(PLUGIN_ROOT / "scripts" / "pala_self_audit.py", files)
 
     def test_windows_single_entry_delegates_to_atomic_installer_core(self) -> None:
         entry = (PLUGIN_ROOT / "Install-Pala.ps1").read_text(encoding="utf-8")

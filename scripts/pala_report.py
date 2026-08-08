@@ -101,6 +101,7 @@ def build_status_model(
     now: datetime | None = None,
     update: dict[str, object] | None = None,
     update_checked_at: str | None = None,
+    catalog_root: Path | None = None,
 ) -> dict[str, object]:
     """Collect the status page data model from live memory + local store."""
     from pala_memory import contract_context
@@ -130,13 +131,15 @@ def build_status_model(
     memory = contract_context(root, documents, workflow)
     coherence = memory.get("ticket_coherence")
     coherence = coherence if isinstance(coherence, dict) else {}
+    brain = memory.get("debugging_brain")
+    brain = brain if isinstance(brain, dict) else {}
     git = memory.get("git")
     git = git if isinstance(git, dict) else {}
     read_order = memory.get("read_order")
     read_order = read_order if isinstance(read_order, list) else []
-    projects = pala_catalog.list_projects()
+    projects = pala_catalog.list_projects(catalog_dir=catalog_root)
 
-    db = pala_catalog.db_path()
+    db = pala_catalog.db_path(catalog_root)
     try:
         events = pala_db.recent_events(limit=15, path=db)
     except (OSError, ValueError, TypeError):
@@ -160,6 +163,7 @@ def build_status_model(
         "root_path": str(root),
         "stamp": now.astimezone().strftime("%Y-%m-%d %H:%M"),
         "coherence": coherence,
+        "debugging_brain": brain,
         "git": git,
         "read_order": read_order,
         "progress": _read_order_progress(read_order),
@@ -180,6 +184,7 @@ def render_html(
     now: datetime | None = None,
     update: dict[str, object] | None = None,
     update_checked_at: str | None = None,
+    catalog_root: Path | None = None,
 ) -> str:
     """Build the full HTML document from live memory + catalog data."""
     model = build_status_model(
@@ -188,6 +193,7 @@ def render_html(
         now=now,
         update=update,
         update_checked_at=update_checked_at,
+        catalog_root=catalog_root,
     )
     stamp_now = model.get("now")
     if isinstance(stamp_now, datetime):
@@ -209,6 +215,7 @@ def write_report(
     now: datetime | None = None,
     update: dict[str, object] | None = None,
     update_checked_at: str | None = None,
+    catalog_root: Path | None = None,
 ) -> Path:
     target = out or (root / REPORT_REL)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -219,12 +226,12 @@ def write_report(
             now=now,
             update=update,
             update_checked_at=update_checked_at,
+            catalog_root=catalog_root,
         ),
         encoding="utf-8",
         newline="\n",
     )
     return target
-
 
 def open_report(path: Path) -> None:
     """Open the status page in the default browser (agent/Status path only)."""

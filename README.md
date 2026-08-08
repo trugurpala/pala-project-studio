@@ -1,6 +1,7 @@
 # Pala Project Studio
 
 ![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
+[![Source v0.8.0](https://img.shields.io/badge/source-v0.8.0-yellow)](CHANGELOG.md)
 [![Release v0.7.1](https://img.shields.io/badge/release-v0.7.1-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.7.1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-index-0A66C2)](docs/README.md)
@@ -17,20 +18,24 @@ eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bul
 aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
 göre katmanlandırır.
 
-- Güncel sürüm `v0.7.1`'dir (her yerde kur: Windows Codex PATH keşfi + core/experts
-  ayrımı; 0.7 yerel store üzerine). Windows kurucusu, taşınabilir ZIP, `Update` ve
-  `Doctor` akışları 0.4.x üzerinde doğrulanmıştır; bellek sözleşmesi, durum sayfası
-  ve yerel store `verify` ile kanıtlanır.
+- Kaynak sürüm **0.8.0** (manifest; M21–M22: presence + fork demo + self-audit +
+  hata beyni). Son **yayımlanmış** GitHub release: **v0.7.1**. `v0.8.0` GitHub
+  ZIP: henüz yok (`not-run`) — [release checklist](docs/RELEASE_0_8_0_CHECKLIST.md).
 - Değişiklik günlüğü: [CHANGELOG.md](CHANGELOG.md) · Destek: [SUPPORT.md](SUPPORT.md)
   · Doküman dizini: [docs/README.md](docs/README.md)
+- Fork paketi: [docs/FORK_PACK.md](docs/FORK_PACK.md)
 
 ## Hızlı başlangıç
 
 **Vibe / first 10 minutes:** [docs/VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md)
 
-En güncel, taşınabilir sürümü indir:
+Son yayımlanmış taşınabilir sürümü indir:
 
-[Pala Project Studio 0.7.1'ı indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.7.1.zip)
+[Pala Project Studio 0.7.1'i indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.7.1.zip)
+
+0.8.0 kaynağından kurmak için bu repo kökünde `Install-Pala.ps1` kullan (veya
+`py -3 scripts/verify.py` ile üretilen portable ZIP). GitHub’da
+`pala-project-studio-0.8.0.zip` asset’i yayınlanana kadar o dosya yoktur.
 
 ZIP'i açtıktan sonra içindeki klasörde şu komutu çalıştır:
 
@@ -42,6 +47,7 @@ Pala kurulum sırasında ne yapacağını açıkça gösterir. `-WhatIf` ile ön
 önizleyebilir, `-Mode Doctor` ile kurulumun sağlığını kontrol edebilirsin.
 
 Sonra: Codex Work → `/hooks` (Pala'ya güven) → **yeni sohbet** → yazılım işi söyle.
+Kayıtlı projede SessionStart: `Pala burada — bu oturumda yanındayım.`
 
 Durum sayfasını (sol menülü yerel HTML) üretip açmak için:
 
@@ -52,6 +58,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Sta
 Panel açılınca: **Şimdi** (sonraki iş), okuma sırası ilerlemesi (`N/7`), son
 olaylar ve URL kurulumları. Yerel store: `%USERPROFILE%\Desktop\Codex\pala.sqlite`
 ([0.7 yerel store](docs/PALA_0_7_LOCAL_STORE.md)).
+
+Fork demo verisini Status paneline doldurmak için:
+
+```powershell
+py -3 scripts\pala_demo.py seed --demo-root examples\demo-software-project --catalog-root $env:USERPROFILE\Desktop\Codex
+py -3 scripts\pala_self_audit.py
+```
 
 Kayıtlı bir projede hafızayı insan dilinde görmek için:
 

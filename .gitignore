@@ -14,3 +14,4 @@ build/
 .codex/pala-workflow.json
 .codex/pala-status.html
 .codex/pala-project.json
+reports/pdf_ingest_scratch/
