@@ -7,6 +7,7 @@ No secrets or transcripts.
 
 Each incident uses heading `### INC-YYYYMMDD-slug` and these fields:
 Symptoms, Root cause, Fix criteria, Proved by, Related files, Date, Status.
+Optional: Attempts (append-only notes when a fix is tried).
 
 ## Incidents
 
