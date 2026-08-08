@@ -75,6 +75,7 @@ def expert_executable(name: str, state_root: Path | None = None) -> Path:
     locations = {
         "graphify": root / "python-bin" / "graphify.exe",
         "serena": root / "python-bin" / "serena.exe",
+        "code-review-graph": root / "python-bin" / "code-review-graph.exe",
         "codebase-memory": root / "codebase-memory" / "0.9.0" / "expanded" / "codebase-memory-mcp.exe",
         "ollama": root / "ollama" / "0.32.6" / "expanded" / "ollama.exe",
     }

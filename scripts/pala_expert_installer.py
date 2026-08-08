@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 import zipfile
 
 
-PYTHON_EXPERTS = frozenset({"graphify", "serena"})
+PYTHON_EXPERTS = frozenset({"graphify", "serena", "code-review-graph"})
 ZIP_EXPERTS = {
     "codebase-memory": "codebase-memory-mcp.exe",
     "ollama": "ollama.exe",
@@ -290,7 +290,7 @@ def install_expert_suite(
 ) -> dict[str, object]:
     """Install Pala's explicitly allowlisted expert workers, never arbitrary lock entries."""
     experts: dict[str, dict[str, object]] = {}
-    names = ("graphify", "serena", "codebase-memory", "ollama")
+    names = ("graphify", "serena", "code-review-graph", "codebase-memory", "ollama")
     for name in names:
         spec = lock.get(name)
         if not isinstance(spec, dict):
@@ -299,7 +299,9 @@ def install_expert_suite(
         if dry_run:
             continue
         if name in PYTHON_EXPERTS:
-            experts[name] = install_python_tool(name, spec, state_root, uv=uv, allow_build=name == "serena", run=run)
+            experts[name] = install_python_tool(
+                name, spec, state_root, uv=uv, allow_build=name == "serena", run=run
+            )
         else:
             experts[name] = expand_verified_zip(name, spec, state_root, ZIP_EXPERTS[name])
     if dry_run:
