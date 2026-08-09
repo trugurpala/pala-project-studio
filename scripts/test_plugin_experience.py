@@ -236,8 +236,8 @@ class UserExperienceContractTests(unittest.TestCase):
 
     def test_orchestrator_is_concise_and_declares_human_contract(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
-        # Premium kontrol checklist + marketplace path guidance share this budget.
-        self.assertLessEqual(len(skill.split()), 650)
+        # Thin skill for Codex progressive disclosure (detail in references/).
+        self.assertLessEqual(len(skill.split()), 480)
         for principle in (
             "Understand before changing.",
             "Choose the smallest correct and sustainable path.",
@@ -246,6 +246,7 @@ class UserExperienceContractTests(unittest.TestCase):
         ):
             self.assertIn(principle, skill)
         self.assertIn("(references/specialist-routing.md)", skill)
+        self.assertIn("references/kontrol-et.md", skill)
         self.assertIn("1–3 short lines", skill)
         self.assertIn("user's language", skill)
 
@@ -267,10 +268,10 @@ class UserExperienceContractTests(unittest.TestCase):
     def test_kontrol_et_readonly_checklist_markers(self) -> None:
         """Premium 'pala kontrol et' Codex checklist stays explicit and read-only."""
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        ref = (REFERENCE_ROOT / "kontrol-et.md").read_text(encoding="utf-8")
+        for marker in ("kontrol et", "rapor", "denetle", "references/kontrol-et.md"):
+            self.assertIn(marker, skill)
         for marker in (
-            "kontrol et",
-            "rapor",
-            "denetle",
             "Presence",
             "pala_report",
             "discover",
@@ -278,16 +279,14 @@ class UserExperienceContractTests(unittest.TestCase):
             "PLAN",
             "DEBUGGING",
             "pala-status.html",
-            "do not register, begin",
         ):
-            self.assertIn(marker, skill)
-        # Numbered steps covering presence → report → discover → docs → gates → URL
+            self.assertIn(marker, ref)
+        self.assertIn("do not register, begin", ref.casefold())
         for step in ("1.", "2.", "3.", "4.", "5.", "6.", "7."):
-            self.assertIn(step, skill)
-        readonly_block = skill.split("## Task Modes", 1)[-1].split("## Operating", 1)[0]
-        self.assertIn("register", readonly_block.casefold())
+            self.assertIn(step, ref)
+        self.assertIn("do not register, begin, edit, or write state", skill.casefold())
         self.assertRegex(
-            readonly_block,
+            skill,
             r"(?is)do not register.*begin",
         )
 
