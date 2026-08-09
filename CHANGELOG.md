@@ -11,6 +11,7 @@ M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
 0.8.1 release ground (no GitHub tag yet).
 
 ### Added
+- Pala↔Superpowers continuity design + refs (`using-pala`, plan/execute tickets, debugging→INC-) and verification-before-done gate wording.
 - Delivery Quality Engine: read-only project-native gate discovery,
   ignored per-ticket evidence ledger, safe artefact references, truthful
   `passed`/`blocked` decision, and five-signal Status HTML.
@@ -30,6 +31,7 @@ M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
   artifact contract (see 0.8.1 section for the shipped narrative).
 
 ### Changed
+- Skill points at `references/using-pala.md`; specialist-routing prefers Pala continuity refs before optional `superpowers:`.
 - SessionStart dual budget under Codex ~1000-token `additionalContext` hard
   cap: `SESSION_CONTEXT_CHAR_LIMIT=1800`, `SESSION_CONTEXT_TOKEN_BUDGET=900`;
   cold packet preferred over long health prose; `hooks.json` limit synced.

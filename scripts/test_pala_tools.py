@@ -1340,6 +1340,14 @@ class PluginContractTests(unittest.TestCase):
             self.assertIn(tier, normalized)
         self.assertIn("do not report a speed or token-saving percentage", normalized)
         self.assertIn("same environment", normalized)
+        self.assertIn("verification before done", normalized)
+        self.assertIn("configured-not-verified", normalized)
+        self.assertIn("not-run", normalized)
+        self.assertIn("do not invent soft", normalized)
+        self.assertRegex(
+            text,
+            r"Report each applicable gate as `passed`, `not-run`, `blocked`, or\s*`configured-not-verified`",
+        )
 
     def test_orchestrator_continues_authorized_local_work(self) -> None:
         skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")

@@ -10,7 +10,7 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 | Alan | Değer |
 | --- | --- |
-| Güncelleme | 2026-08-09 — Context restore honesty (unutunca kendini getir) |
+| Güncelleme | 2026-08-09 — Superpowers continuity refs (M31-T1) |
 | Branch | `feat/m30-vibe-codex-host-fit` (yerel; push/PR bu turda yok) |
 | Manifest | `0.8.1+codex.20260808124500` |
 | Son GitHub release | `v0.8.0` (`passed`) — https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0 |
@@ -24,6 +24,24 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 3. Hazırsan `docs/RELEASE_0.8.1_CHECKLIST.md` ile `v0.8.1` tag + release bas.  
 
 Soft full-product “A/B fixed”: **yok**.
+
+## Superpowers continuity (M31-T1) — 2026-08-09
+
+Superpowers skill-only akışından Pala’ya uyarlanan süreklilik ritüeli:
+`using-pala` + plan/execute ticket refs + debugging→INC- + verification-before-done.
+Skill ≤480 kelime; ayrıntı `references/`. Push yok; `/hooks` trust owner.
+
+| Kapı | Sonuç | Not |
+| --- | --- | --- |
+| Design note vs Superpowers | `passed` | `docs/superpowers/specs/2026-08-09-pala-vs-superpowers-continuity-design.md` |
+| Refs using/plan/execute/debugging | `passed` | Pala M*-T* + INC-; Claude-only yok |
+| quality-gates verification-before-done | `passed` | labels `passed|not-run|blocked|configured-not-verified` |
+| SKILL pointer ≤480 | `passed` | `references/using-pala.md` |
+| Focused unittest (continuity + host_fit) | `passed` | continuity contract OK |
+| Tam `verify.py` | `passed` | Ran 350 / OK (skipped=1); reproducible_zip SHA-256 `57AC888A7CAB67189E25D83B311466B8FD09C40F48C1A52BA18CD4F5886BEAD1` |
+| Final Desktop ZIP | `passed` | `pala-project-studio-0.8.1-final.zip`; SHA-256 `57AC888A7CAB67189E25D83B311466B8FD09C40F48C1A52BA18CD4F5886BEAD1`; 140 entries |
+| `/hooks` trust | `configured-not-verified` | owner |
+| Push / PR | `not-run` | istenmedi |
 
 ## Context restore honesty — 2026-08-09
 

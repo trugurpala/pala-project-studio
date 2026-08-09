@@ -385,6 +385,51 @@ class UserExperienceContractTests(unittest.TestCase):
             r"(?is)do not register.*begin",
         )
 
+    def test_continuity_refs_using_pala_plan_execute_debug(self) -> None:
+        """Superpowers-inspired continuity refs stay thin and Pala-shaped."""
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("references/using-pala.md", skill)
+        self.assertLessEqual(len(skill.split()), 480)
+        using = (REFERENCE_ROOT / "using-pala.md").read_text(encoding="utf-8")
+        plan = (REFERENCE_ROOT / "plan-tickets.md").read_text(encoding="utf-8")
+        execute = (REFERENCE_ROOT / "execute-tickets.md").read_text(encoding="utf-8")
+        debug = (REFERENCE_ROOT / "debugging-inc.md").read_text(encoding="utf-8")
+        design = (
+            PLUGIN_ROOT
+            / "docs"
+            / "superpowers"
+            / "specs"
+            / "2026-08-09-pala-vs-superpowers-continuity-design.md"
+        ).read_text(encoding="utf-8")
+        for text in (using, plan, execute, debug, design):
+            self.assertLessEqual(len(text.split()), 900)
+        for marker in (
+            "active ticket only",
+            "passed",
+            "not-run",
+            "blocked",
+            "configured-not-verified",
+            "plan-tickets.md",
+            "execute-tickets.md",
+            "debugging-inc.md",
+            "quality-gates.md",
+        ):
+            self.assertIn(marker, using)
+        self.assertIn("M*-T*", plan)
+        self.assertIn("Kanıt", plan)
+        self.assertIn("begin --ticket", execute)
+        self.assertIn("INC-", debug)
+        self.assertIn("Iron law", debug)
+        qg = (REFERENCE_ROOT / "quality-gates.md").read_text(encoding="utf-8")
+        self.assertIn("Verification before done", qg)
+        self.assertIn("configured-not-verified", qg)
+        self.assertIn("do not invent soft", qg.casefold())
+        routing = (REFERENCE_ROOT / "specialist-routing.md").read_text(encoding="utf-8")
+        self.assertIn("using-pala.md", routing)
+        self.assertIn("Claude-only", routing)
+        self.assertIn("What Pala already beats", design)
+        self.assertIn("What we deliberately skip", design)
+
     def test_specialist_routing_is_conditional_and_current(self) -> None:
         path = REFERENCE_ROOT / "specialist-routing.md"
         if not path.is_file():

@@ -892,3 +892,27 @@ host-fit contract tests, evidence bind. Checkpoint ayrıca
 - Soft “A/B fixed”
 - Marketplace sync of M30 without Install after merge
 
+## M31 — Superpowers continuity for Codex (2026-08-09)
+
+Amaç: Superpowers process skill’lerinden Pala ürününe uyan süreklilik boşluklarını
+(using ritual, ticket plan/execute, INC- debug, verify-before-done) ince
+`references/` + contract test ile kapatmak. Design:
+`docs/superpowers/specs/2026-08-09-pala-vs-superpowers-continuity-design.md`.
+
+#### M31-T1 — Continuity refs + skill pointer
+
+- **Sahip ajan:** Cursor agent
+- **Amaç:** Pala continuity refs + tests + local ZIP; Superpowers wholesale yok.
+- **Dosyalar:** `docs/superpowers/specs/2026-08-09-pala-vs-superpowers-continuity-design.md`, `skills/pala-project-finisher/references/using-pala.md`, `skills/pala-project-finisher/references/plan-tickets.md`, `skills/pala-project-finisher/references/execute-tickets.md`, `skills/pala-project-finisher/references/debugging-inc.md`, `skills/pala-project-finisher/references/quality-gates.md`, `skills/pala-project-finisher/references/specialist-routing.md`, `skills/pala-project-finisher/SKILL.md`, `scripts/test_plugin_experience.py`, `scripts/test_pala_tools.py`, `STATUS.md`, `CHANGELOG.md`, `PLAN.md`, `docs/README.md`
+- **Bitti sayılır:** Focused unittest + `verify.py` passed; Desktop final ZIP+SHA; local commit; no push; `/hooks` trust claimed değil.
+- **Bağımlılık:** M30
+- **Kanıt:** `passed` (continuity contract + host_fit; verify/ZIP this turn)
+
+- [x] M31-T1: Continuity refs + skill pointer
+
+### Bilerek yapılmayanlar (M31)
+
+- Superpowers skill tree wholesale copy
+- Claude-only subagent/companion as Codex features
+- Push / PR / tag / `/hooks` trust = passed
+

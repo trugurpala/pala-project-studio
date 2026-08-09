@@ -13,6 +13,10 @@ Start here if you are new:
 9. [Shared memory / multi-host](PALA_SHARED_MEMORY.md) — ADR-017 hit/miss + Doctor `shared_store`
 10. [Codex scope & limits](CODEX_SCOPE_AND_LIMITS.md) — honest capability boundary
 
+11. [0.9 Delivery Quality Engine](PALA_0_9_QUALITY_ENGINE.md) — evidence ledger and honest delivery gate
+12. [0.9 OSS pattern benchmark](PALA_0_9_BENCHMARK.md) — intake matrix; no copied third-party skills
+13. [Pala vs Superpowers continuity](superpowers/specs/2026-08-09-pala-vs-superpowers-continuity-design.md) — adopt/skip for Codex memory
+
 ## Versioned product notes
 
 | Doc | Topic |
@@ -21,6 +25,7 @@ Start here if you are new:
 | [PALA_0_5_MEMORY_CONTRACT.md](PALA_0_5_MEMORY_CONTRACT.md) | Memory / read order |
 | [PALA_0_6_STATUS_SURFACE.md](PALA_0_6_STATUS_SURFACE.md) | Local HTML status page |
 | [PALA_0_7_LOCAL_STORE.md](PALA_0_7_LOCAL_STORE.md) | SQLite catalog / timeline |
+| [PALA_0_9_QUALITY_ENGINE.md](PALA_0_9_QUALITY_ENGINE.md) | Delivery quality plan, ledger and checkpoint gate |
 | [PALA_SHARED_MEMORY.md](PALA_SHARED_MEMORY.md) | Multi-host same sqlite (Wave E) |
 | [PALA_INTERNAL_PROVISION.md](PALA_INTERNAL_PROVISION.md) | URL → local provision |
 
