@@ -57,8 +57,12 @@ STATUS.md ve docs/VIBE_FIRST_SESSION.md ile uyumlu ilerle; tek sonraki işi söy
 
 ## 5) Beklenen ilk sonuç
 
-- SessionStart veya skill açılışı: **Pala burada — bu oturumda yanındayım.**
-  (güven satırı; token/kota büyütme iddiası yok)
+- **Kayıtlı projede** SessionStart veya skill açılışı:
+  **Pala burada — bu oturumda yanındayım.** (güven satırı; token/kota büyütme
+  iddiası yok)
+- **Kayıtsız klasörde** SessionStart **boş** kalır — bozuk kurulum değil;
+  önce Pala register / `pala_state` akışı gerekir. Plugin kurulu ≠ her cwd’de
+  otomatik hafıza.
 - SessionStart metni Codex `additionalContext` token tavanının altında kalır
   (Pala çift bütçe: char + approx-token). Uzun sağlık düzyazısı cold packet’in
   önüne geçmez; middle-truncate olsa bile presence satırı korunacak şekilde

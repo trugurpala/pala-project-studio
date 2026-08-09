@@ -55,10 +55,16 @@ packet), durum belgesi, planın yalnız aktif ticket bölümü, sonra gerekliyse
 ürün/karar/domain belgeleri. Uzun komut çıktısı sohbet yerine kısa kanıt
 özetiyle durum belgesine yazılır.
 
-SessionStart çift bütçe kullanır: karakter tavanı (`additionalContextLimit`) ve
-yaklaşık token bütçesi (host ~1000 sert tavanın altında). Uzun sağlık düzyazısı
-cold packet’in önüne geçmez; budama gerektiğinde middle kesilirken presence ve
-kuyruk (next action / gate) korunur.
+SessionStart çift bütçe kullanır:
+
+- **Karakter tavanı** (`SESSION_CONTEXT_CHAR_LIMIT` = 1800). `hooks.json`
+  içindeki `additionalContextLimit: 1800` bu Pala char-sync alanıdır; Codex
+  host’un “token spill eşiği” semantiğiyle aynı şey değildir.
+- **Yaklaşık token bütçesi** (`SESSION_CONTEXT_TOKEN_BUDGET` = 900), host
+  ~1000-token `additionalContext` sert tavanının altında.
+
+Uzun sağlık düzyazısı cold packet’in önüne geçmez; budama gerektiğinde middle
+kesilirken presence ve kuyruk (next action / gate) korunur.
 
 “%60–80 hızlanma” gibi bir sayı ölçüm olmadan doğru kabul edilemez. Yüzde iddia
 edilecekse aynı makine, aynı başlangıç durumu, aynı iş, aynı komutlar ve birden

@@ -30,6 +30,9 @@ py -3 scripts/verify.py --mode installed
 ```
 
 Vibe-install focused unittest (2026-08-09): Ran 43 / OK (`passed`).
+Full source `verify.py` (2026-08-09 local quality close): Ran 320 / OK (`passed`);
+reproducible_zip SHA-256
+`C5647286C63A889CC5B41C192F53E3A57FBEDD7810FFFDF464015C49B99E2A48`.
 
 Yerel portable deneme (publish değil):
 

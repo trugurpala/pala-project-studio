@@ -95,9 +95,11 @@ Ayrıntı: kök [KUR.md](../KUR.md).
 | Kontrol | Anlamı |
 | --- | --- |
 | Doctor `plugin_ready` / `healthy` | Python, Git, Codex CLI, plugin envanteri (çekirdek) |
+| Doctor `plugin=drifted` | source≠install fingerprint; **healthy sayma** → Repair/Update/marketplace sync |
 | Doctor `hook_safety` | `hooks.json` + `pala_hook.py` + workflow dosya sağlığı |
 | Codex `/hooks` trust | İnsan tıklaması; UI adımı |
 | `hooks_next_step` | Doctor’ın “şimdi `/hooks` + yeni sohbet” hatırlatması |
+| `plugin_next_step` | Doctor’ın drifted onarım satırı (source≠install) |
 
 `hook_safety=passed` yazmak `/hooks` güvenini `passed` yapmaz → genelde
 `configured-not-verified` kalır ta ki Work’te güvenirsin.
@@ -105,8 +107,8 @@ Ayrıntı: kök [KUR.md](../KUR.md).
 ## Başarı belirtileri
 
 - `codex plugin list` içinde `pala-project-studio@pala-project-studio` (enabled)
-- Yeni sohbette presence satırı
-- Doctor çekirdek `plugin_ready` / `healthy` (ZIP/Install yolunda)
+- **Kayıtlı** projede yeni sohbette presence satırı
+- Doctor çekirdek `plugin_ready` / `healthy` (ZIP/Install yolunda; drifted değil)
 - İlk iş: STATUS → PLAN aktif kart → tek task ID (uydurma ticket yok)
 
 ## Başarısızlık / sık sürtünme
@@ -119,7 +121,9 @@ Ayrıntı: kök [KUR.md](../KUR.md).
 | `codex` bulunamadı | PATH veya Install-Pala (Windows konum taraması) |
 | Defender / Bypass uyarısı | Beklenen sürtünme; Bypass yalnız o script çalıştırma |
 | Eski sohbette hook yok | **Yeni sohbet** |
-| Doctor yeşil, presence yok | `/hooks` trust eksik olabilir |
+| Doctor yeşil, presence yok | Önce cwd **kayıtlı mı** bak; kayıtlıysa `/hooks` trust |
+| Plugin kurulu, SessionStart boş | Kayıtsız klasör — bozuk değil; Pala register et |
+| `plugin=drifted` / `healthy=False` | `Install-Pala -Mode Repair` veya Update / marketplace sync |
 | 0.8.0 vs 0.8.1 karışıklığı | İndirme linki hâlâ 0.8.0 ise o asset’i kullan; kaynak 0.8.1 = henüz tag yoksa `not-run` |
 
 ## Güncelleme fiilleri

@@ -523,6 +523,30 @@ def tree_fingerprint(root: Path) -> str:
     return digest.hexdigest().upper()
 
 
+def install_has_user_added_files(install_root: Path) -> bool:
+    """True when install root has non-junk files outside the allowlisted bundle.
+
+    Fingerprint ignores extras (issue #13). Uninstall must still refuse to wipe
+    user-added content that sits beside the owned allowlist.
+    """
+    install_root = install_root.resolve()
+    if not install_root.is_dir():
+        return False
+    allowed = {
+        path.relative_to(install_root).as_posix().casefold()
+        for path in bundle_files(install_root)
+    }
+    for path in install_root.rglob("*"):
+        if not path.is_file() or path.is_symlink():
+            continue
+        relative = path.relative_to(install_root)
+        if not safe_source_file(relative):
+            continue
+        if relative.as_posix().casefold() not in allowed:
+            return True
+    return False
+
+
 def bundle_fingerprint(source: Path) -> str:
     source = source.resolve()
     digest = hashlib.sha256()
@@ -736,6 +760,24 @@ def hooks_next_step_message(project: dict[str, object] | None) -> str:
     )
 
 
+def plugin_drift_next_step_message(plugin: dict[str, object] | None) -> str:
+    """Tell vibe users how to clear source≠install fingerprint drift.
+
+    ``plugin=drifted`` after local edits is expected honesty, not soft-healthy.
+    Runtime junk must not cause drift (Issue #13); real drift needs Repair/sync.
+    """
+    status = ""
+    if isinstance(plugin, dict):
+        status = str(plugin.get("status") or "").strip().casefold()
+    if status != "drifted":
+        return ""
+    return (
+        "plugin=drifted (source!=install fingerprint). "
+        "Install-Pala -Mode Repair veya Update / marketplace sync; "
+        "healthy sayma. Sonra Doctor tekrar."
+    )
+
+
 def install_gui_next_steps_lines() -> list[str]:
     """Turkish Codex Work follow-ups after a successful Install (no network)."""
     return [
@@ -831,6 +873,10 @@ def doctor_installation(
     experts_ready = bool(node_path and uv_path)
     healthy = plugin_ready
     hooks_next = hooks_next_step_message(project)
+    plugin_payload = bundle["plugin"]
+    plugin_next = plugin_drift_next_step_message(
+        plugin_payload if isinstance(plugin_payload, dict) else None
+    )
     self_audit_script = source / "scripts" / "pala_self_audit.py"
     self_audit = {
         "status": (
@@ -862,6 +908,7 @@ def doctor_installation(
         "experts_ready": experts_ready,
         "status": "ready" if healthy else "attention_required",
         "hooks_next_step": hooks_next,
+        "plugin_next_step": plugin_next,
         "gui_next_steps": install_gui_next_steps_message(),
         "self_audit": self_audit,
         "shared_store": shared_store,
@@ -1108,7 +1155,9 @@ def uninstall_bundle(
     if state is None:
         return {"status": "external_conflict", "changed": False}
     actual = tree_fingerprint(install_root)
-    if state.get("fingerprint") != actual:
+    if state.get("fingerprint") != actual or install_has_user_added_files(
+        install_root
+    ):
         return {"status": "modified", "changed": False}
     if dry_run:
         return {"status": "would_uninstall", "changed": False}

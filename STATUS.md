@@ -10,7 +10,7 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 | Alan | Değer |
 | --- | --- |
-| Güncelleme | 2026-08-09 — vibe-install UX + M30 close (yerel; publish yok) |
+| Güncelleme | 2026-08-09 — yerel kalite kapanışı (verify yeşil; publish yok) |
 | Branch | `feat/m30-vibe-codex-host-fit` (yerel; push/PR bu turda yok) |
 | Manifest | `0.8.1+codex.20260808124500` |
 | Son GitHub release | `v0.8.0` (`passed`) — https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0 |
@@ -32,9 +32,10 @@ Soft full-product “A/B fixed”: **yok**.
 | --- | --- |
 | Hooks UI `/hooks` trust | `configured-not-verified` |
 | Soft “A/B fixed” | yok |
-| Tam source `verify.py` | `not-run` (bu kapanışta) |
+| Tam source `verify.py` | `passed` (2026-08-09 local quality close; 320 tests + reproducible ZIP) |
 | Push / PR / tag / `gh release` (bu ajan turu) | yapılmadı (owner) |
 | Marketplace Install sync (diğer makineler) | `not-run` |
+| Doctor after Repair (bu makine) | `passed` (çekirdek `plugin=ready` / `healthy=True`) |
 
 **Hatırlatma:** Doctor `hook_safety=passed` yalnızca dosya sözleşmesidir. Codex
 `/hooks` UI trust ayrı insan adımıdır.
@@ -65,9 +66,10 @@ Soft full-product “A/B fixed”: **yok**.
 | Gate0 p0-smoke | `passed` | 9/9; SHA-256 `6FE7A3EC63D850BE8DE145EB260A0E401170D08FAB4C85A1BC5C50DD69680AEB` |
 | Portable ZIP m30-local (önceki) | `passed` | `artifacts/portable/pala-project-studio-0.8.1-m30-local.zip`; SHA-256 `6270BC34F20678AD3C3A25381DA727AEBB4C4D173292D021CE4E219242ABAE1E`; 130 entries |
 | Honesty contract (thin skill ticket wording) | `passed` | Test accepts SKILL `only the active ticket`; `…section` stays in memory-contract ref; `scripts.test_pala_tools` 68/OK |
-| Tam source verify | `not-run` | — |
+| Tam source verify | `passed` | Ran 320 / OK; reproducible_zip SHA-256 `C5647286C63A889CC5B41C192F53E3A57FBEDD7810FFFDF464015C49B99E2A48` |
 | Soft A/B fixed | yok | — |
-| Doctor install fingerprint after local edits | `configured-not-verified` | source≠install drift beklenir; repair: re-run Install-Pala / marketplace sync — sağlıklı sayma |
+| Doctor install fingerprint after Repair | `passed` | `Install-Pala -Mode Repair` → Doctor `plugin=ready` / `healthy=True` (çekirdek); `/hooks` hâlâ insan |
+| Honesty P1 (kayıtsız SessionStart + drifted next-step + limit semantiği) | `passed` | VIBE docs; `plugin_next_step`; CODEX_SCOPE char≠host-token; uninstall user-added refuse |
 
 Plan/spec: `docs/superpowers/plans/2026-08-09-vibe-codex-host-fit.md`,
 `docs/superpowers/specs/2026-08-09-m30-close-081-local-release-design.md`.
@@ -88,7 +90,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Doctor
 ```
 
-- Doctor çekirdek: `plugin_ready` / `healthy` beklenir; yerel edit sonrası `plugin=drifted` (source≠install) → Install-Pala / marketplace sync, sağlıklı iddia etme.  
+- Doctor çekirdek: `plugin_ready` / `healthy` beklenir; yerel edit sonrası `plugin=drifted` (source≠install) → `Install-Pala -Mode Repair` / Update / marketplace sync (`plugin_next_step`); sağlıklı iddia etme.  
 - `hook_safety=passed` ≠ `/hooks` trust.  
 - Kaynak ağaçta: `py -3 scripts/verify.py --mode installed` (marketplace varken).  
 - Vibe kurulum: `docs/VIBE_INSTALL.md`; ilk oturum: `docs/VIBE_FIRST_SESSION.md`.  

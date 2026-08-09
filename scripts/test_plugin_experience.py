@@ -306,6 +306,12 @@ class UserExperienceContractTests(unittest.TestCase):
             vibe_first.casefold(),
             r"zip-upload|zip yükleme",
         )
+        # Unregistered cwd: SessionStart silent (not a broken install).
+        self.assertIn("Kayıtsız klasörde", vibe_first)
+        self.assertIn("SessionStart **boş**", vibe_first)
+        self.assertIn("Kayıtsız klasör", vibe_install)
+        self.assertIn("plugin=drifted", vibe_install)
+        self.assertIn("Repair", vibe_install)
 
     def test_skill_metadata_uses_consistent_brand_and_narrow_implicit_invocation(self) -> None:
         metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(

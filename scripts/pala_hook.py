@@ -17,9 +17,11 @@ from pala_tokens import approx_tokens
 MANIFEST = Path(".codex/pala-project.json")
 WORKFLOW = Path(".codex/pala-workflow.json")
 WORKFLOW_SCHEMA_VERSIONS = (1, 2)
-# Presence + minimal cold packet; hooks.json additionalContextLimit must match.
+# Presence + minimal cold packet for registered projects only.
 PRESENCE_LINE = "Pala burada — bu oturumda yanındayım."
-# Char ceiling for hooks.json additionalContextLimit (must match).
+# Pala product char ceiling. hooks.json additionalContextLimit mirrors this
+# number for self-audit sync — it is NOT the Codex host token-spill semantic
+# by itself. Real clip is the approx-token budget below (host hard ~1000).
 SESSION_CONTEXT_CHAR_LIMIT = 1800
 # Approx-token budget under Codex hard ~1000-token additionalContext cap.
 SESSION_CONTEXT_TOKEN_BUDGET = 900

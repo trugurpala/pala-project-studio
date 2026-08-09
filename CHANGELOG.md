@@ -28,17 +28,24 @@ M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
   cold packet preferred over long health prose; `hooks.json` limit synced.
 - Skill body kept ≤480 words (progressive disclosure); kontrol checklist lives
   in the reference file.
-- `docs/CODEX_SCOPE_AND_LIMITS.md` refreshed 2026-08-09.
+- `docs/CODEX_SCOPE_AND_LIMITS.md` refreshed 2026-08-09; clarifies
+  `additionalContextLimit` is Pala **char-sync**, not the host token-spill
+  semantic (clip still approx-token ≤900).
 - STATUS rewritten for 2026-08-09 truth; Vibe path points at release checklist.
 - Install story: Codex-native CLI first (`marketplace add` + `plugin add`);
   ZIP/`Kur.cmd` secondary offline toolkit. Marketplace local `path` is `"."`
   (not `"./"`). README / `VIBE_FIRST_SESSION` / `PALA_EVERYWHERE` / release
   checklist aligned; Plus-paste and ZIP-upload-as-primary stay myths.
+- Vibe honesty: unregistered cwd → SessionStart silent; Doctor
+  `plugin_next_step` for `plugin=drifted` (Repair/Update/sync).
 
 ### Fixed
 - Checkpoint / commit materialization no longer treats
   `.codex/plugin-data/**` (v3 tickets) as user working-tree changes — same
   exclusion class as `.codex/pala-workflow.json`.
+- Uninstall again refuses user-added non-junk files beside the allowlist
+  (`status=modified`) while `__pycache__` junk still does not block uninstall
+  or mark drift (issue #13).
 
 ### Evidence (local close — 2026-08-09)
 - Branch `feat/m30-vibe-codex-host-fit`; push/PR/tag **not run** (owner).
@@ -58,7 +65,11 @@ M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
   SHA-256 `18DA984F548B54C450016D46135B6920CF382E62C1446F3E88BE0912C06ABA36`
   (132 entries).
 - `verify.py --mode installed`: `passed` (prior M30 run).
-- Full source `verify.py`: `not-run`.
+- Full source `verify.py`: `passed` (Ran 320 / OK;
+  reproducible_zip SHA-256
+  `C5647286C63A889CC5B41C192F53E3A57FBEDD7810FFFDF464015C49B99E2A48`).
+- Doctor after `Install-Pala -Mode Repair`: çekirdek `plugin=ready` /
+  `healthy=True` (`passed`).
 - Hooks UI trust: `configured-not-verified`. Soft “A/B fixed”: yok.
 
 ## [0.8.1] - 2026-08-08

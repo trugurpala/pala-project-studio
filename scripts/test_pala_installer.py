@@ -309,6 +309,19 @@ class InstallerCoreTests(unittest.TestCase):
             )
             self.assertIn("hook_safety=blocked", blocked)
             self.assertIn("/hooks", blocked)
+            drifted = self.installer.plugin_drift_next_step_message(
+                {"status": "drifted"}
+            )
+            self.assertIn("plugin=drifted", drifted)
+            self.assertIn("Repair", drifted)
+            self.assertIn("healthy", drifted.casefold())
+            self.assertEqual(
+                self.installer.plugin_drift_next_step_message({"status": "ready"}),
+                "",
+            )
+            self.assertIn("plugin_next_step", report)
+            # Healthy fixture install is not drifted.
+            self.assertEqual(report["plugin_next_step"], "")
 
     def test_doctor_reports_verified_pala_owned_expert_artifact(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-experts-") as temp:
@@ -1383,6 +1396,23 @@ class InstallerCoreTests(unittest.TestCase):
 
             self.assertEqual(report["status"], "modified")
             self.assertTrue(marker.is_file())
+
+    def test_uninstall_allows_runtime_pycache_junk(self) -> None:
+        """Issue #13 junk must not block uninstall the way user-added files do."""
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root)
+            install_root = root / "home" / "plugins" / "pala-project-studio"
+            state_root = root / "local" / "Pala"
+            self.installer.install_bundle(source, install_root, state_root)
+            pyc = install_root / "scripts" / "__pycache__"
+            pyc.mkdir(parents=True)
+            (pyc / "x.pyc").write_bytes(b"abc")
+
+            report = self.installer.uninstall_bundle(install_root, state_root)
+
+            self.assertEqual(report["status"], "uninstalled")
+            self.assertFalse(install_root.exists())
 
     def test_source_root_install_repair_uninstall_in_clean_profile(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-clean-") as temp:

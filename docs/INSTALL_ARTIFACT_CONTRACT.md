@@ -17,6 +17,9 @@ require the **source tree**, not `%LOCALAPPDATA%\Pala\marketplace`.
 `tree_fingerprint` hashes only allowlisted `bundle_files`. Runtime junk such as
 `__pycache__` / `*.pyc` must not mark a healthy install as `drifted` (issue #13).
 
+Uninstall still refuses (`status=modified`) when non-junk **user-added** files
+sit outside the allowlist, even though those files do not change the fingerprint.
+
 ## Evidence labels
 
 Use only: `passed` | `not-run` | `blocked` | `configured-not-verified`.
