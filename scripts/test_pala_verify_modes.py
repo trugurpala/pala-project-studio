@@ -7,6 +7,7 @@ import importlib.util
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -38,6 +39,24 @@ class VerifyModeTests(unittest.TestCase):
             pala_installer.copy_bundle(ROOT, dest)
             code = verify.main(["--mode", "installed", "--root", str(dest)])
             self.assertEqual(code, 0)
+
+    def test_verify_portable_mode_extracts_a_clean_archive(self) -> None:
+        verify = load_verify()
+        packager = verify.load_packager()
+        with tempfile.TemporaryDirectory(prefix="pala-verify-portable-") as temp:
+            archive = Path(temp) / "pala.zip"
+            packager.build_archive(archive, ROOT)
+            code = verify.main(["--mode", "portable", "--root", str(archive)])
+            self.assertEqual(code, 0)
+
+    def test_verify_portable_mode_rejects_unsafe_archive_path(self) -> None:
+        verify = load_verify()
+        with tempfile.TemporaryDirectory(prefix="pala-verify-portable-") as temp:
+            archive = Path(temp) / "unsafe.zip"
+            with zipfile.ZipFile(archive, "w") as payload:
+                payload.writestr("../outside.txt", "no")
+            code = verify.main(["--mode", "portable", "--root", str(archive)])
+            self.assertEqual(code, 1)
 
 
 if __name__ == "__main__":

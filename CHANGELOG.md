@@ -53,6 +53,8 @@ M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
   skill mid-turn re-read line (no fake continuous memory).
 
 ### Fixed
+- Packaging allowlist refuses `credentials.json`, `id_rsa` / secret-shaped
+  basenames, and `*.sqlite` in both portable ZIP and install bundle paths.
 - Checkpoint / commit materialization no longer treats
   `.codex/plugin-data/**` (v3 tickets) as user working-tree changes — same
   exclusion class as `.codex/pala-workflow.json`.

@@ -916,3 +916,25 @@ Amaç: Superpowers process skill’lerinden Pala ürününe uyan süreklilik bo�
 - Claude-only subagent/companion as Codex features
 - Push / PR / tag / `/hooks` trust = passed
 
+## M32 — Delivery Quality Engine 0.9 (2026-08-09)
+
+Amaç: Proje-yerel kalite kapılarını keşfet, ticket başına kanıt defteri tut,
+checkpoint/complete’te fail-closed kal; hook’tan gate çalıştırma.
+
+#### M32-T1 — pala_quality engine + packaging secret allowlist
+
+- **Sahip ajan:** Cursor agent
+- **Amaç:** `pala_quality` plan/init/record/status; Status HTML beş sinyal;
+  portable/install secret-shaped forbid; verify + Desktop final ZIP.
+- **Dosyalar:** `scripts/pala_quality.py`, `scripts/test_pala_quality.py`,
+  `scripts/pala_state.py`, `scripts/pala_report.py`, `scripts/pala_view.py`,
+  `scripts/verify.py`, `scripts/build_portable.py`, `scripts/pala_installer.py`,
+  `docs/PALA_0_9_QUALITY_ENGINE.md`, `docs/PALA_0_9_BENCHMARK.md`,
+  `STATUS.md`, `CHANGELOG.md`, `PLAN.md`
+- **Bitti sayılır:** Quality unittest + packaging contract + `verify.py` passed;
+  Desktop `pala-project-studio-0.8.1-final.zip` + SHA; push/PR/tag yok.
+- **Bağımlılık:** M31
+- **Kanıt:** `not-run` (verify this turn)
+
+- [ ] M32-T1: Delivery Quality Engine + packaging P1
+

@@ -35,6 +35,10 @@ percentage without a measured baseline and comparison in the same environment.
 Record warm/cold conditions, command, run count, and duration when performance
 matters.
 
+For Pala's local Delivery Quality Engine (discover → ledger → explicit record →
+status), use `scripts/pala_quality.py` and
+`docs/PALA_0_9_QUALITY_ENGINE.md`. Hooks never run gates.
+
 ## Verification before done
 
 Iron law: no completion, fix, or satisfaction claim without fresh verification

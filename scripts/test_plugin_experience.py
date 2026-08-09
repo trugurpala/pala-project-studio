@@ -719,6 +719,22 @@ class PortablePackageContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             packager.ensure_unique_names(["Root/File.py", "root/file.py"])
 
+    @unittest.skipUnless(PACKAGER_PATH.is_file(), "packager not implemented")
+    def test_packager_forbids_secret_shaped_and_sqlite_sources(self) -> None:
+        packager = load_packager()
+        for relative in (
+            Path("scripts/credentials.json"),
+            Path("hooks/id_rsa"),
+            Path("hooks/id_rsa.pub"),
+            Path("skills/secrets.json"),
+            Path("data/pala.sqlite"),
+            Path("scripts/token.pem"),
+        ):
+            with self.subTest(relative=str(relative)):
+                self.assertTrue(packager.is_forbidden_source(relative))
+        self.assertFalse(packager.is_forbidden_source(Path("scripts/pala_quality.py")))
+        self.assertFalse(packager.is_forbidden_source(Path("docs/SECURITY.md")))
+
 
 if __name__ == "__main__":
     unittest.main()

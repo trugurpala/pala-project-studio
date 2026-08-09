@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -42,7 +43,11 @@ PACKAGE_FILES = (
     "managed-tools.lock.json",
 )
 FORBIDDEN_PARTS = {".git", ".codex", "__pycache__", ".pytest_cache", ".ruff_cache"}
-FORBIDDEN_SUFFIXES = {".pyc", ".pyo", ".pem", ".key"}
+FORBIDDEN_SUFFIXES = {".pyc", ".pyo", ".pem", ".key", ".sqlite"}
+FORBIDDEN_BASENAMES = {"credentials.json", "id_rsa"}
+SECRET_SHAPED_BASENAME = re.compile(
+    r"(?i)^(?:id_rsa(?:\.[^.]+)?|credentials(?:\.[^.]+)?|secrets?(?:\.[^.]+)?)$"
+)
 
 
 def now_utc() -> str:
@@ -508,7 +513,12 @@ def safe_source_file(relative: Path) -> bool:
     lowered = {part.casefold() for part in relative.parts}
     if lowered.intersection(FORBIDDEN_PARTS):
         return False
-    if relative.name.casefold().endswith(tuple(FORBIDDEN_SUFFIXES)):
+    name = relative.name
+    if name.casefold().endswith(tuple(FORBIDDEN_SUFFIXES)):
+        return False
+    if name.casefold() in {item.casefold() for item in FORBIDDEN_BASENAMES}:
+        return False
+    if SECRET_SHAPED_BASENAME.fullmatch(name):
         return False
     if any(
         part.casefold() == ".env" or part.casefold().startswith(".env.")

@@ -144,6 +144,19 @@ class InstallerCoreTests(unittest.TestCase):
         self._codex_home_patcher.stop()
         self._codex_home_dir.cleanup()
 
+    def test_safe_source_file_forbids_secret_shaped_and_sqlite(self) -> None:
+        for relative in (
+            Path("credentials.json"),
+            Path("hooks/id_rsa"),
+            Path("scripts/secrets.json"),
+            Path("data/pala.sqlite"),
+            Path("scripts/token.key"),
+        ):
+            with self.subTest(relative=str(relative)):
+                self.assertFalse(self.installer.safe_source_file(relative))
+        self.assertTrue(self.installer.safe_source_file(Path("scripts/pala_quality.py")))
+        self.assertTrue(self.installer.safe_source_file(Path("SECURITY.md")))
+
     def test_installed_fingerprint_stable_after_pycache(self) -> None:
         """Issue #13: runtime __pycache__ must not mark a healthy install drifted."""
         with tempfile.TemporaryDirectory(prefix="pala-fp-pycache-") as temp:

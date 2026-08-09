@@ -16,7 +16,12 @@ ARCHIVE_ROOT = "pala-project-studio"
 FIXED_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:")
 FORBIDDEN_PARTS = {".git", ".ruff_cache", "__pycache__", ".codex"}
-FORBIDDEN_SUFFIXES = (".pyc", ".pyo", ".pem", ".key")
+FORBIDDEN_SUFFIXES = (".pyc", ".pyo", ".pem", ".key", ".sqlite")
+FORBIDDEN_BASENAMES = {"credentials.json", "id_rsa"}
+# Secret-shaped basenames beyond the exact forbid list (private keys, secrets files).
+SECRET_SHAPED_BASENAME = re.compile(
+    r"(?i)^(?:id_rsa(?:\.[^.]+)?|credentials(?:\.[^.]+)?|secrets?(?:\.[^.]+)?)$"
+)
 DEMO_CODEX_PREFIX = ("examples", "demo-software-project", ".codex")
 
 
@@ -68,7 +73,12 @@ def is_forbidden_source(path: Path) -> bool:
         for part in path.parts
     ):
         return True
-    return path.name.casefold().endswith(FORBIDDEN_SUFFIXES)
+    name = path.name
+    if name.casefold() in {item.casefold() for item in FORBIDDEN_BASENAMES}:
+        return True
+    if SECRET_SHAPED_BASENAME.fullmatch(name):
+        return True
+    return name.casefold().endswith(FORBIDDEN_SUFFIXES)
 
 
 def source_files(plugin_root: Path) -> list[Path]:
@@ -101,6 +111,8 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "docs" / "PALA_0_5_MEMORY_CONTRACT.md",
         plugin_root / "docs" / "PALA_0_6_STATUS_SURFACE.md",
         plugin_root / "docs" / "PALA_0_7_LOCAL_STORE.md",
+        plugin_root / "docs" / "PALA_0_9_QUALITY_ENGINE.md",
+        plugin_root / "docs" / "PALA_0_9_BENCHMARK.md",
         plugin_root / "docs" / "PALA_EVERYWHERE.md",
         plugin_root / "docs" / "PALA_INTERNAL_PROVISION.md",
         plugin_root / "docs" / "VIBE_FIRST_SESSION.md",
