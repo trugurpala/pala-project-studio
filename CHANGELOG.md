@@ -7,8 +7,27 @@ Versioning follows the plugin manifest (`0.x.y+codex.…`) and GitHub tags `v0.x
 
 ## [Unreleased]
 
-M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
-0.8.1 release ground (no GitHub tag yet).
+Status HTML control center (admin-like page): theme + feature toggles,
+GOAL docs, post-`v0.8.1` honesty updates.
+
+### Added
+- `GOAL.md` + `docs/GOAL_0_8_1_FINISH.md` — product goal, required plugins
+  (Pala, Context7, Chrome/browser, product-design; Filament UX-only),
+  completeness audit, publish URLs.
+- Status HTML control center sections: Overview, Install/Doctor, Hooks trust,
+  Quality engine, Memory/store, Tickets, Yetki/özellik; theme toggle and
+  display prefs via `localStorage` (inline script only).
+- Contract test `test_status_html_has_admin_control_landmarks`.
+
+### Changed
+- ADR-014 / `docs/PALA_0_6_STATUS_SURFACE.md`: allow single inline UI-prefs
+  script; no external assets; `/hooks` stays `configured-not-verified`.
+- README points at `v0.8.1` release ZIP asset name.
+
+## [0.8.1] — 2026-08-09
+
+M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + GitHub
+`v0.8.1` release.
 
 ### Added
 - Pala↔Superpowers continuity design + refs (`using-pala`, plan/execute tickets, debugging→INC-) and verification-before-done gate wording.

@@ -42,6 +42,10 @@ class UserExperienceContractTests(unittest.TestCase):
             "releases/latest/download/"
             f"pala-project-studio-{release_version}.zip"
         )
+        published_zip_final = (
+            "releases/latest/download/"
+            f"pala-project-studio-{release_version}-final.zip"
+        )
         release_pending = bool(
             re.search(
                 rf"`v?{re.escape(release_version)}`[^\n]*`not-run`",
@@ -78,7 +82,13 @@ class UserExperienceContractTests(unittest.TestCase):
                     "While next release is pending, README must point at last published ZIP",
                 )
         else:
-            self.assertIn(published_zip, readme)
+            self.assertTrue(
+                published_zip in readme or published_zip_final in readme,
+                msg=(
+                    "README must link published ZIP "
+                    f"({published_zip} or {published_zip_final})"
+                ),
+            )
             self.assertIn(green_badge, readme)
             self.assertIn(f"releases/tag/v{release_version}", readme)
         for required in (
@@ -115,7 +125,12 @@ class UserExperienceContractTests(unittest.TestCase):
                 readme,
             )
         else:
-            self.assertIn(f"pala-project-studio-{version}.zip", readme)
+            classic = f"pala-project-studio-{version}.zip"
+            final = f"pala-project-studio-{version}-final.zip"
+            self.assertTrue(
+                classic in readme or final in readme,
+                msg=f"README must name published ZIP ({classic} or {final})",
+            )
 
     def test_04_single_door_plan_is_opinionated_and_codex_safe(self) -> None:
         project = (PLUGIN_ROOT / "PROJECT.md").read_text(encoding="utf-8")

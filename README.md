@@ -71,8 +71,10 @@ Durum sayfasını (sol menülü yerel HTML) üretip açmak için:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Status
 ```
 
-Panel açılınca: **Şimdi** (sonraki iş), okuma sırası ilerlemesi (`N/7`), son
-olaylar ve URL kurulumları. Yerel store: `%USERPROFILE%\Desktop\Codex\pala.sqlite`
+Panel açılınca: **Pala kontrol merkezi** — tema (koyu/açık), Genel bakış,
+Kurulum/Doctor, Hooks trust, Quality 0.9, Hafıza/store, Ticket, Yetki/özellik.
+Hedef: [GOAL.md](GOAL.md) · [docs/GOAL_0_8_1_FINISH.md](docs/GOAL_0_8_1_FINISH.md).
+Yerel store: `%USERPROFILE%\Desktop\Codex\pala.sqlite`
 ([0.7 yerel store](docs/PALA_0_7_LOCAL_STORE.md)).
 
 Fork demo verisini Status paneline doldurmak için:

@@ -254,11 +254,13 @@ class MemoryContractTests(unittest.TestCase):
             self.assertIn("Son olaylar", markup)
             self.assertIn("Son URL kurulumlari", markup)
             self.assertIn('name="pala-nav"', markup)
-            self.assertIn('id="nav-current"', markup)
-            self.assertNotIn("<script", markup)
+            self.assertIn('id="nav-overview"', markup)
+            self.assertIn('id="pala-admin-nav"', markup)
+            self.assertIn("localStorage", markup)
             self.assertNotIn("<link", markup)
             self.assertNotIn('src="http', markup)
             self.assertNotIn("src='http", markup)
+            self.assertNotIn('src="https', markup)
 
     def test_report_shows_timeline_and_empty_states(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -329,10 +331,10 @@ class MemoryContractTests(unittest.TestCase):
                 a,
                 update={"status": "current", "installed_version": "0.6.0"},
             )
-            self.assertIn('id="nav-0"', markup)
-            self.assertIn('id="nav-1"', markup)
-            self.assertIn('id="panel-0"', markup)
-            self.assertIn('id="panel-1"', markup)
+            self.assertIn('id="nav-project-0"', markup)
+            self.assertIn('id="nav-project-1"', markup)
+            self.assertIn('id="panel-project-0"', markup)
+            self.assertIn('id="panel-project-1"', markup)
             self.assertIn("alpha", markup)
             self.assertIn("beta", markup)
 

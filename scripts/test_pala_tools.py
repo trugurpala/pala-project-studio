@@ -1435,6 +1435,34 @@ class PalaViewA11yTests(unittest.TestCase):
         self.assertNotIn('tabindex="-1"', html)
         self.assertNotIn("tabindex='-1'", html)
 
+    def test_status_html_has_admin_control_landmarks(self) -> None:
+        html = self._sample_html(
+            store_path="C:/tmp/pala.sqlite",
+            verification_tier="ticket",
+        )
+        self.assertIn('id="pala-admin-nav"', html)
+        self.assertIn('id="pala-admin-hero"', html)
+        self.assertIn('id="pala-theme-toggle"', html)
+        self.assertIn('id="pala-feature-toggles"', html)
+        self.assertIn('id="pala-hooks-trust"', html)
+        self.assertIn('data-evidence="configured-not-verified"', html)
+        self.assertIn('data-admin-section="overview"', html)
+        self.assertIn('data-admin-section="install"', html)
+        self.assertIn('data-admin-section="hooks"', html)
+        self.assertIn('data-admin-section="quality"', html)
+        self.assertIn('data-admin-section="memory"', html)
+        self.assertIn('data-admin-section="tickets"', html)
+        self.assertIn('data-admin-section="features"', html)
+        self.assertIn("pala.ui.theme", html)
+        self.assertIn("localStorage", html)
+        self.assertIn('id="pref-show-experts"', html)
+        self.assertIn('id="pref-soft-fail-closed"', html)
+        self.assertIn('id="pref-show-quality-tier"', html)
+        self.assertNotIn("src=\"http", html.casefold())
+        self.assertNotIn("<link ", html.casefold())
+        self.assertIn("ucretli kilit yok", html.casefold())
+        self.assertNotIn("purple", html.casefold())
+
     def test_decision_strip_has_five_signals_no_vanity_speed(self) -> None:
         html = self._sample_html()
         self.assertIn('class="decision-strip"', html)

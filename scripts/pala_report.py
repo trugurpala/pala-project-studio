@@ -2,8 +2,9 @@
 """Server-free local HTML status page for Pala (ADR-013 / ADR-014 / ADR-015).
 
 Collects the Project Memory Contract snapshot, catalog, events and provisions,
-then delegates HTML rendering to pala_view. No server, no external assets, no
-scripts. Deterministic scripts remain the source of truth; this only reads them.
+then delegates HTML rendering to pala_view. No server, no external assets.
+One inline script may persist UI prefs (theme/toggles) in localStorage only.
+Deterministic scripts remain the source of truth; this only reads them.
 """
 
 from __future__ import annotations
@@ -287,6 +288,10 @@ def build_status_model(
         or workflow.get("next_action")
         or ""
     )
+    try:
+        store_path = str(db.resolve())
+    except OSError:
+        store_path = str(db)
 
     return {
         "root_name": root.name,
@@ -303,6 +308,9 @@ def build_status_model(
         "next_action": next_action,
         "last_gate": last_gate_signal(workflow, events),
         "quality": quality,
+        "verification_tier": str(workflow.get("verification_tier") or "not-run"),
+        "store_path": store_path,
+        "hooks_trust": "configured-not-verified",
         "freshness_level": active_freshness_level(
             root, projects, workflow, now=now
         ),

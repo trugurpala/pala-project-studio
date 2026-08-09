@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""HTML view layer for the Pala status page (no scripts, no external assets)."""
+"""HTML view layer for the Pala control / status page.
+
+Server-free, no external assets. One optional inline script may persist UI
+prefs (theme + display toggles) in localStorage only — no network calls.
+"""
 
 from __future__ import annotations
 
 import html
-from datetime import datetime, timezone
 from typing import Any
 
 _PURPOSE_LABELS = {
@@ -25,6 +28,16 @@ _KIND_LABELS = {
     "provision": "provision",
     "mismatch": "uyumsuzluk",
 }
+
+_SECTION_NAV = (
+    ("overview", "Genel bakis"),
+    ("install", "Kurulum / Doctor"),
+    ("hooks", "Hooks trust"),
+    ("quality", "Quality engine"),
+    ("memory", "Hafiza / store"),
+    ("tickets", "Ticket / sonraki is"),
+    ("features", "Yetki / ozellik"),
+)
 
 
 def _e(value: object) -> str:
@@ -91,56 +104,8 @@ def _decision_strip(
     freshness_level: object,
     quality: object,
 ) -> str:
-    """Top decision strip: max 5 signals (Şimdi | INC | ticket | gate | tazelik)."""
-    now_text = _now_text(next_action, coherence.get("active"))
-    open_inc = 0
-    if isinstance(brain, dict) and brain.get("ok"):
-        open_inc = int(brain.get("open") or 0)
-    elif isinstance(brain, dict) and brain.get("open") is not None:
-        try:
-            open_inc = int(brain.get("open") or 0)
-        except (TypeError, ValueError):
-            open_inc = 0
-    mismatch = bool(coherence.get("mismatch"))
-    if mismatch:
-        ticket_label = "uyumsuz"
-        ticket_tone = "alert"
-        ticket_detail = str(coherence.get("note") or "ticket uyumsuz")
-    else:
-        ticket_label = "tamam"
-        ticket_tone = "ok"
-        ticket_detail = str(coherence.get("active") or "uyum tamam")
-
-    gate = last_gate if isinstance(last_gate, dict) else {}
-    gate_status = str(gate.get("status") or "not-run")
-    gate_label = str(gate.get("label") or gate_status or "not-run")
-    if gate_status == "passed":
-        gate_tone = "ok"
-    elif gate_status in {"blocked", "failed"}:
-        gate_tone = "alert"
-    else:
-        gate_tone = "warn"
-
-    fresh = str(freshness_level or "stale")
-    fresh_labels = {"fresh": "taze", "aging": "eskiyor", "stale": "bayat"}
-    fresh_tone = {
-        "fresh": "ok",
-        "aging": "warn",
-        "stale": "alert",
-    }.get(fresh, "warn")
-
-    inc_tone = "alert" if open_inc else "ok"
-    inc_label = f"{open_inc} açık" if open_inc else "açık yok"
-
-    cells = [
-        ("Şimdi", now_text, "now"),
-        ("açık INC", inc_label, inc_tone),
-        ("ticket uyumu", f"{ticket_label} — {ticket_detail}"[:72], ticket_tone),
-        ("son gate", gate_label[:72], gate_tone),
-        ("tazelik", fresh_labels.get(fresh, fresh), fresh_tone),
-    ]
-    # Delivery Quality Engine replaces generic status hints with the five
-    # concrete shipping signals. It intentionally carries no command output.
+    """Top decision strip: five shipping signals from the quality engine."""
+    coherence = coherence if isinstance(coherence, dict) else {}
     quality = quality if isinstance(quality, dict) else {}
     risk = quality.get("risk") if isinstance(quality.get("risk"), dict) else {}
     coverage = quality.get("coverage") if isinstance(quality.get("coverage"), dict) else {}
@@ -153,15 +118,29 @@ def _decision_strip(
         "ok" if quality_status == "passed" else "alert"
         if quality_status in {"blocked", "failed"} else "warn"
     )
-    risk_tone = "alert" if risk_level == "high" else "warn" if risk_level in {"medium", "unknown"} else "ok"
-    coverage_label = f"{int(coverage.get('passed') or 0)}/{int(coverage.get('required') or 0)} passed"
+    risk_tone = (
+        "alert" if risk_level == "high"
+        else "warn" if risk_level in {"medium", "unknown"} else "ok"
+    )
+    coverage_label = (
+        f"{int(coverage.get('passed') or 0)}/{int(coverage.get('required') or 0)} passed"
+    )
     cells = [
         ("Aktif ticket", ticket[:72], "now"),
         ("Risk seviyesi", risk_label[:72], risk_tone),
         ("Quality coverage", coverage_label, quality_tone),
-        ("Son eksik gate", str(quality.get("last_problem") or "quality ledger not initialized")[:72], quality_tone),
-        ("Tek sonraki eylem", str(quality.get("next_action") or next_action or "yok")[:120], "now"),
+        (
+            "Son eksik gate",
+            str(quality.get("last_problem") or "quality ledger not initialized")[:72],
+            quality_tone,
+        ),
+        (
+            "Tek sonraki eylem",
+            str(quality.get("next_action") or next_action or "yok")[:120],
+            "now",
+        ),
     ]
+    _ = (brain, last_gate, freshness_level)
     parts: list[str] = []
     for key, value, tone in cells:
         parts.append(
@@ -189,6 +168,10 @@ def _brain_line(brain: object) -> str:
     fixed_count = int(brain.get("fixed") or 0)
     total = int(brain.get("total") or 0)
     path = _e(brain.get("path") or "DEBUGGING.md")
+    soft_note = (
+        '<span class="soft-closed-note muted-inline"> '
+        f"(kapalı {fixed_count} — soft-fail kapalı hatırlatma açık)</span>"
+    )
     if open_count:
         cls = "alert"
         note = f"{open_count} açık / {fixed_count} kapalı (toplam {total})"
@@ -197,15 +180,15 @@ def _brain_line(brain: object) -> str:
         note = f"açık yok; {fixed_count} kapalı (toplam {total})"
     return (
         f'<div class="{cls}">Hata beyni: {note} — önce <span class="mono">{path}</span> '
-        "oku.</div>"
+        f"oku.{soft_note}</div>"
     )
+
 
 def _progress_block(progress: dict[str, object]) -> str:
     ready = int(progress.get("ready") or 0)
     total = int(progress.get("total") or 0)
     missing = progress.get("missing")
     missing_list = missing if isinstance(missing, list) else []
-    missing_html = ""
     if missing_list:
         items = "".join(f"<li>{_e(item)}</li>" for item in missing_list[:7])
         missing_html = f'<p class="gap-note">Eksik:</p><ul class="gap-list">{items}</ul>'
@@ -319,29 +302,138 @@ def _project_detail_html(item: dict[str, object], freshness_fn: Any) -> str:
     )
 
 
+def _theme_script() -> str:
+    """Inline prefs only: theme + display toggles via localStorage (no network)."""
+    return """
+<script>
+(function () {
+  var KEYS = {
+    theme: "pala.ui.theme",
+    experts: "pala.ui.showExperts",
+    softFail: "pala.ui.softFailClosed",
+    qualityTier: "pala.ui.showQualityTier"
+  };
+  function read(key, fallback) {
+    try {
+      var v = localStorage.getItem(key);
+      return v == null ? fallback : v;
+    } catch (e) {
+      return fallback;
+    }
+  }
+  function write(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) {}
+  }
+  function apply() {
+    var root = document.documentElement;
+    var theme = read(KEYS.theme, "dark");
+    if (theme !== "light" && theme !== "dark") theme = "dark";
+    root.setAttribute("data-theme", theme);
+    root.setAttribute("data-show-experts", read(KEYS.experts, "1") === "0" ? "0" : "1");
+    root.setAttribute("data-soft-fail-closed", read(KEYS.softFail, "0") === "1" ? "1" : "0");
+    root.setAttribute("data-show-quality-tier", read(KEYS.qualityTier, "1") === "0" ? "0" : "1");
+    var themeBtn = document.getElementById("pala-theme-toggle");
+    if (themeBtn) {
+      themeBtn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+      themeBtn.textContent = theme === "dark" ? "Acik tema" : "Koyu tema";
+    }
+    var map = [
+      ["pref-show-experts", KEYS.experts, "1"],
+      ["pref-soft-fail-closed", KEYS.softFail, "0"],
+      ["pref-show-quality-tier", KEYS.qualityTier, "1"]
+    ];
+    for (var i = 0; i < map.length; i++) {
+      var el = document.getElementById(map[i][0]);
+      if (!el) continue;
+      var on = read(map[i][1], map[i][2]) === "1";
+      el.checked = on;
+    }
+  }
+  function bind() {
+    var themeBtn = document.getElementById("pala-theme-toggle");
+    if (themeBtn) {
+      themeBtn.addEventListener("click", function () {
+        var next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+        write(KEYS.theme, next);
+        apply();
+      });
+    }
+    function wire(id, key) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("change", function () {
+        write(key, el.checked ? "1" : "0");
+        apply();
+      });
+    }
+    wire("pref-show-experts", KEYS.experts);
+    wire("pref-soft-fail-closed", KEYS.softFail);
+    wire("pref-show-quality-tier", KEYS.qualityTier);
+  }
+  apply();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bind);
+  } else {
+    bind();
+  }
+})();
+</script>
+"""
+
+
 def _css(checked_label_css: str, show_css: str) -> str:
     return f"""
-  :root {{
-    color-scheme: light dark;
-    --bg: #0f1117;
+  :root, html[data-theme="dark"] {{
+    color-scheme: dark;
+    --bg: #12151c;
+    --bg-accent: #181c26;
     --fg: #e8eaef;
-    --muted: #a8b0bf;
-    --panel: #171a22;
-    --line: #2a3142;
-    --accent: #9ec5ff;
-    --focus: #f5d76e;
-    --ok-bg: #0f2a1c;
-    --ok-fg: #7ddea8;
-    --warn-bg: #2a2e3a;
+    --muted: #9aa3b5;
+    --panel: #1a1f2a;
+    --line: #2c3446;
+    --brand: #e8dcc8;
+    --accent: #c4a574;
+    --focus: #e6c35c;
+    --ok-bg: #14261c;
+    --ok-fg: #8fcea8;
+    --warn-bg: #2a2e38;
     --warn-fg: #d0d5e0;
     --alert-bg: #3a2320;
-    --alert-fg: #f3a796;
-    --now-bg: #152238;
-    --now-bd: #3a5f96;
+    --alert-fg: #f0a898;
+    --now-bg: #1a2434;
+    --now-bd: #3d5678;
+    --sidebar: #151922;
+    --nav-hover: #1e2430;
+    --nav-active: #243044;
+  }}
+  html[data-theme="light"] {{
+    color-scheme: light;
+    --bg: #f3f5f7;
+    --bg-accent: #e8ecf1;
+    --fg: #1c1f26;
+    --muted: #5c6575;
+    --panel: #ffffff;
+    --line: #cfd5de;
+    --brand: #1c1f26;
+    --accent: #3d6a8a;
+    --focus: #3d6a8a;
+    --ok-bg: #e5f2ea;
+    --ok-fg: #1f5c3a;
+    --warn-bg: #eef0f3;
+    --warn-fg: #5c5340;
+    --alert-bg: #f7e6e2;
+    --alert-fg: #8a3a2e;
+    --now-bg: #e8eef5;
+    --now-bd: #b8c4d6;
+    --sidebar: #e7ebf0;
+    --nav-hover: #dce2ea;
+    --nav-active: #d0d8e2;
   }}
   * {{ box-sizing: border-box; }}
-  body {{ font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-         margin: 0; background: var(--bg); color: var(--fg); line-height: 1.45; }}
+  body {{
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    margin: 0; background: var(--bg); color: var(--fg); line-height: 1.45;
+  }}
   .skip-link {{
     position: absolute; left: -9999px; top: 0; z-index: 100;
     background: #fff; color: #111; padding: .6rem 1rem; border-radius: 6px;
@@ -350,28 +442,60 @@ def _css(checked_label_css: str, show_css: str) -> str:
   .skip-link:focus {{ left: 1rem; top: 1rem; outline: 3px solid var(--focus); outline-offset: 2px; }}
   input[type="radio"] {{ position: absolute; opacity: 0; width: 1px; height: 1px; }}
   .shell {{ display: grid; grid-template-columns: minmax(12rem, 15rem) 1fr; min-height: 100vh; }}
-  .sidebar {{ background: #14171f; border-right: 1px solid var(--line); padding: 16px 12px;
-             display: flex; flex-direction: column; gap: 6px; }}
-  .sidebar .nav-title {{ font-size: 14px; margin: 0 0 10px; color: var(--muted);
-                 text-transform: uppercase; letter-spacing: .04em; }}
-  .nav-item {{ display: flex; justify-content: space-between; align-items: center;
-              gap: 8px; padding: 10px 12px; border-radius: 8px; cursor: pointer;
-              border: 1px solid transparent; color: var(--fg); }}
-  .nav-item:hover {{ background: #1b2030; }}
+  .sidebar {{
+    background: var(--sidebar); border-right: 1px solid var(--line);
+    padding: 16px 12px; display: flex; flex-direction: column; gap: 4px;
+  }}
+  .brand-block {{
+    padding: 8px 10px 14px; margin-bottom: 8px; border-bottom: 1px solid var(--line);
+  }}
+  .brand-name {{
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.55rem; letter-spacing: .02em; color: var(--brand); margin: 0;
+  }}
+  .brand-tag {{ color: var(--muted); font-size: 12px; margin: 4px 0 0; }}
+  .sidebar .nav-title {{
+    font-size: 11px; margin: 12px 0 6px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .06em;
+  }}
+  .nav-item {{
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 8px; padding: 9px 12px; border-radius: 8px; cursor: pointer;
+    border: 1px solid transparent; color: var(--fg);
+  }}
+  .nav-item:hover {{ background: var(--nav-hover); }}
   .nav-item:focus-within, .nav-item:focus {{
     outline: 3px solid var(--focus); outline-offset: 2px;
   }}
   .nav-name {{ font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
   {checked_label_css}
-  .main {{ padding: 24px; max-width: 72rem; }}
+  .main {{ padding: 20px 24px 32px; max-width: 74rem; }}
+  .topbar {{
+    display: flex; flex-wrap: wrap; align-items: flex-start;
+    justify-content: space-between; gap: 12px; margin-bottom: 8px;
+  }}
   .panel {{ display: none; }}
   {show_css}
-  h1.title {{ font-size: 1.35rem; margin: 0 0 4px; }}
-  h2 {{ font-size: 15px; margin: 24px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }}
-  .sub {{ color: var(--muted); font-size: 13px; margin-bottom: 16px; }}
-  .nowline {{ background: var(--now-bg); border: 1px solid var(--now-bd); color: #e7f0ff;
-             padding: 14px 16px; border-radius: 10px; margin: 8px 0 16px; font-size: 1.05rem;
-             display: flex; flex-wrap: wrap; gap: .35rem .6rem; align-items: baseline; }}
+  h1.title {{ font-size: 1.45rem; margin: 0 0 4px; color: var(--brand); }}
+  h2 {{
+    font-size: 13px; margin: 22px 0 8px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .05em;
+  }}
+  .sub {{ color: var(--muted); font-size: 13px; margin-bottom: 12px; }}
+  .hero {{
+    background: var(--bg-accent); border: 1px solid var(--line);
+    border-radius: 12px; padding: 18px 20px; margin: 0 0 14px;
+  }}
+  .hero-brand {{
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.75rem; margin: 0 0 6px; color: var(--brand);
+  }}
+  .hero-lead {{ margin: 0; color: var(--muted); font-size: 14px; max-width: 42rem; }}
+  .nowline {{
+    background: var(--now-bg); border: 1px solid var(--now-bd); color: var(--fg);
+    padding: 14px 16px; border-radius: 10px; margin: 8px 0 16px; font-size: 1.05rem;
+    display: flex; flex-wrap: wrap; gap: .35rem .6rem; align-items: baseline;
+  }}
   .now-k {{ color: var(--accent); font-weight: 600; }}
   .decision-strip {{
     display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px;
@@ -381,42 +505,61 @@ def _css(checked_label_css: str, show_css: str) -> str:
     background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
     padding: 10px 12px; min-width: 0;
   }}
-  .signal-k {{ color: var(--muted); font-size: 11px; text-transform: uppercase;
-              letter-spacing: .04em; margin-bottom: 4px; }}
+  .signal-k {{
+    color: var(--muted); font-size: 11px; text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: 4px;
+  }}
   .signal-v {{ font-size: 13px; word-break: break-word; line-height: 1.35; }}
   .signal.tone-now {{ background: var(--now-bg); border-color: var(--now-bd); }}
   .signal.tone-ok {{ border-color: #1f4a34; }}
   .signal.tone-ok .signal-v {{ color: var(--ok-fg); }}
-  .signal.tone-warn {{ border-color: #4a4020; }}
-  .signal.tone-warn .signal-v {{ color: #e8c56a; }}
+  .signal.tone-warn {{ border-color: #5a4e28; }}
+  .signal.tone-warn .signal-v {{ color: #c9a84a; }}
+  html[data-theme="light"] .signal.tone-warn .signal-v {{ color: #7a6220; }}
   .signal.tone-alert {{ border-color: #5a2f2a; }}
   .signal.tone-alert .signal-v {{ color: var(--alert-fg); }}
-  .progress-block {{ background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-                    padding: 14px; margin: 8px 0 16px; }}
+  .progress-block {{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px; margin: 8px 0 16px;
+  }}
   .progress-head {{ font-size: 18px; margin-bottom: 8px; }}
   .gap-note {{ color: var(--alert-fg); margin: 0; }}
   .ok-note {{ color: var(--ok-fg); margin: 0; }}
   .gap-list {{ margin: 6px 0 0; padding-left: 18px; color: var(--alert-fg); }}
   .timeline {{ list-style: none; margin: 0; padding: 0; }}
-  .timeline li {{ padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px;
-                  display: grid; grid-template-columns: auto 1fr; gap: .35rem .75rem; }}
+  .timeline li {{
+    padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px;
+    display: grid; grid-template-columns: auto 1fr; gap: .35rem .75rem;
+  }}
   .timeline li:last-child {{ border-bottom: none; }}
-  .badge.kind {{ background: #1e2638; color: #c5cddc; }}
-  .badge.kind-checkpoint {{ background: #1a2e24; color: var(--ok-fg); }}
+  .badge.kind {{ background: var(--nav-active); color: var(--fg); }}
+  .badge.kind-checkpoint {{ background: var(--ok-bg); color: var(--ok-fg); }}
   .badge.kind-debug_attempt {{ background: #3a3218; color: #e8c56a; }}
-  .timeline-item.kind-debug_attempt {{ border-left: 3px solid #e8c56a; padding-left: 8px; }}
-  .timeline-item.kind-checkpoint {{ border-left: 3px solid #7ddea8; padding-left: 8px; }}
-  .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 12px 0; }}
-  .card {{ background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }}
+  html[data-theme="light"] .badge.kind-debug_attempt {{ background: #f3e8c8; color: #6a5418; }}
+  .timeline-item.kind-debug_attempt {{ border-left: 3px solid #c9a84a; padding-left: 8px; }}
+  .timeline-item.kind-checkpoint {{ border-left: 3px solid var(--ok-fg); padding-left: 8px; }}
+  .grid {{
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; margin: 12px 0;
+  }}
+  .card {{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+  }}
   .card .k {{ color: var(--muted); font-size: 12px; }}
   .card .v {{ font-size: 16px; margin-top: 4px; word-break: break-word; }}
-  table {{ width: 100%; border-collapse: collapse; background: var(--panel);
-          border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }}
-  th, td {{ text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }}
-  th {{ color: var(--muted); font-weight: 600; background: #14171f; }}
+  table {{
+    width: 100%; border-collapse: collapse; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  }}
+  th, td {{
+    text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13px;
+  }}
+  th {{ color: var(--muted); font-weight: 600; background: var(--sidebar); }}
   tr:last-child td {{ border-bottom: none; }}
   td.num {{ color: var(--muted); width: 34px; }}
-  .mono {{ font-family: ui-monospace, "Cascadia Code", Consolas, monospace; color: #c5cddc; }}
+  .mono {{
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace; color: var(--muted);
+  }}
   .muted {{ color: var(--muted); text-align: center; }}
   .muted-inline {{ color: var(--muted); font-size: 12px; }}
   .badge {{ display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; }}
@@ -425,21 +568,54 @@ def _css(checked_label_css: str, show_css: str) -> str:
   .badge.fresh {{ background: var(--ok-bg); color: var(--ok-fg); }}
   .badge.aging {{ background: #3a3218; color: #e8c56a; }}
   .badge.stale {{ background: var(--alert-bg); color: var(--alert-fg); }}
-  .alert {{ background: var(--alert-bg); color: var(--alert-fg); padding: 10px 14px; border-radius: 8px; margin: 8px 0; }}
-  .okline {{ background: var(--ok-bg); color: var(--ok-fg); padding: 10px 14px; border-radius: 8px; margin: 8px 0; }}
-  .warnline {{ background: var(--warn-bg); color: var(--warn-fg); padding: 10px 14px; border-radius: 8px; margin: 8px 0; }}
+  .alert {{
+    background: var(--alert-bg); color: var(--alert-fg); padding: 10px 14px;
+    border-radius: 8px; margin: 8px 0;
+  }}
+  .okline {{
+    background: var(--ok-bg); color: var(--ok-fg); padding: 10px 14px;
+    border-radius: 8px; margin: 8px 0;
+  }}
+  .warnline {{
+    background: var(--warn-bg); color: var(--warn-fg); padding: 10px 14px;
+    border-radius: 8px; margin: 8px 0;
+  }}
   a {{ color: var(--accent); }}
   a:focus-visible, button:focus-visible, .nav-item:focus-visible {{
     outline: 3px solid var(--focus); outline-offset: 2px;
   }}
+  .theme-toggle, .pref-row input {{ cursor: pointer; }}
+  .theme-toggle {{
+    background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 12px; font-size: 13px;
+  }}
+  .pref-list {{ list-style: none; margin: 0; padding: 0; }}
+  .pref-row {{
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); margin-bottom: 8px;
+  }}
+  .pref-row label {{ flex: 1; cursor: pointer; }}
+  .pref-title {{ font-weight: 600; display: block; margin-bottom: 2px; }}
+  .pref-desc {{ color: var(--muted); font-size: 13px; }}
+  .cmd {{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; font-size: 12px; overflow-x: auto; margin: 8px 0;
+  }}
+  .section-note {{ color: var(--muted); font-size: 13px; margin: 0 0 10px; }}
+  html[data-show-experts="0"] .experts-panel {{ display: none; }}
+  html[data-soft-fail-closed="0"] .soft-closed-note {{ display: none; }}
+  html[data-show-quality-tier="0"] .quality-tier-panel {{ display: none; }}
   footer {{ color: var(--muted); font-size: 12px; margin-top: 24px; }}
   .catalog-wrap {{ overflow-x: auto; -webkit-overflow-scrolling: touch; }}
   @media (max-width: 720px) {{
     .shell {{ grid-template-columns: 1fr; }}
-    .sidebar {{ border-right: none; border-bottom: 1px solid var(--line);
-               flex-direction: row; flex-wrap: wrap; gap: 8px;
-               max-height: 40vh; overflow-y: auto; }}
-    .sidebar .nav-title {{ width: 100%; margin-bottom: 4px; }}
+    .sidebar {{
+      border-right: none; border-bottom: 1px solid var(--line);
+      flex-direction: row; flex-wrap: wrap; gap: 8px;
+      max-height: 46vh; overflow-y: auto;
+    }}
+    .brand-block, .sidebar .nav-title {{ width: 100%; }}
     .nav-item {{ flex: 1 1 42%; min-width: 8rem; }}
     .main {{ padding: 16px; }}
     .nowline {{ font-size: 1rem; }}
@@ -451,8 +627,185 @@ def _css(checked_label_css: str, show_css: str) -> str:
 """
 
 
+def _section_overview(
+    *,
+    root_name: str,
+    decision: str,
+    now_line: str,
+    brain_line: str,
+    mismatch_banner: str,
+    progress_html: str,
+    coherence: dict[str, object],
+    git: dict[str, object],
+    next_action: object,
+) -> str:
+    return (
+        '<section id="panel-overview" class="panel" data-admin-section="overview">'
+        '<div class="hero" id="pala-admin-hero">'
+        '<p class="hero-brand">Pala</p>'
+        '<p class="hero-lead">Yerel kontrol merkezi — hafıza, ticket, kalite ve '
+        "kurulum. Bağlam penceresi büyütmez; yalnız gerekli sinyali gösterir.</p>"
+        "</div>"
+        f"{decision}"
+        f"{now_line}"
+        f"{brain_line}"
+        f"{mismatch_banner}"
+        f"{progress_html}"
+        '<div class="grid">'
+        '<div class="card"><div class="k">Aktif ticket</div>'
+        f'<div class="v">{_e(coherence.get("active") or "yok")}</div></div>'
+        '<div class="card"><div class="k">Sonraki is</div>'
+        f'<div class="v">{_e(coherence.get("inferred_next") or next_action or "yok")}</div></div>'
+        '<div class="card"><div class="k">Git</div>'
+        f'<div class="v mono">{_e(git.get("branch") or "?")}</div></div>'
+        '<div class="card"><div class="k">Degisen dosya</div>'
+        f'<div class="v">{_e(git.get("dirty_count", 0))}</div></div>'
+        "</div>"
+        f'<p class="muted-inline">Proje: {_e(root_name)}</p>'
+        "</section>"
+    )
+
+
+def _section_install() -> str:
+    return (
+        '<section id="panel-install" class="panel" data-admin-section="install">'
+        "<h2>Kurulum / Doctor</h2>"
+        '<p class="section-note">Hook icinde Install/Doctor calismaz. '
+        "Asagidaki komutlar agent veya Status yolunda elle calistirilir.</p>"
+        '<div class="cmd mono">codex plugin marketplace add trugurpala/pala-project-studio</div>'
+        '<div class="cmd mono">codex plugin add pala-project-studio@pala-project-studio</div>'
+        '<div class="cmd mono">powershell -NoProfile -ExecutionPolicy Bypass '
+        "-File .\\Install-Pala.ps1 -Mode Doctor</div>"
+        '<div class="cmd mono">powershell -NoProfile -ExecutionPolicy Bypass '
+        "-File .\\Install-Pala.ps1 -Mode Repair</div>"
+        '<div class="warnline">Doctor <span class="mono">healthy</span> / '
+        '<span class="mono">plugin_ready</span> dosya kanitidir; '
+        "/hooks trust degildir.</div>"
+        "</section>"
+    )
+
+
+def _section_hooks() -> str:
+    return (
+        '<section id="panel-hooks" class="panel" data-admin-section="hooks">'
+        "<h2>Hooks trust</h2>"
+        '<div class="warnline" id="pala-hooks-trust" data-evidence="configured-not-verified">'
+        "Kanit: <strong>configured-not-verified</strong> — Codex Work &rarr; "
+        '<span class="mono">/hooks</span> icinde Pala\'ya guven insan tiklamasidir. '
+        "Bu sayfa trust'i gecemez.</div>"
+        '<p class="section-note">hook_safety=passed yalniz dosya/sozlesme kontroludur; '
+        "UI trust ile karistirma.</p>"
+        "</section>"
+    )
+
+
+def _section_quality(quality: object, verification_tier: object) -> str:
+    quality = quality if isinstance(quality, dict) else {}
+    risk = quality.get("risk") if isinstance(quality.get("risk"), dict) else {}
+    coverage = quality.get("coverage") if isinstance(quality.get("coverage"), dict) else {}
+    tier = str(verification_tier or "not-run")
+    return (
+        '<section id="panel-quality" class="panel" data-admin-section="quality">'
+        "<h2>Quality engine (0.9)</h2>"
+        '<p class="section-note">Delivery Quality Engine: proje-yerel kapilar, '
+        "ledger kaniti, soft % yok.</p>"
+        '<div class="grid">'
+        '<div class="card"><div class="k">Durum</div>'
+        f'<div class="v">{_e(quality.get("status") or "not-run")}</div></div>'
+        '<div class="card"><div class="k">Ticket</div>'
+        f'<div class="v">{_e(quality.get("ticket") or "yok")}</div></div>'
+        '<div class="card"><div class="k">Risk</div>'
+        f'<div class="v">{_e(risk.get("level") or "unknown")}</div></div>'
+        '<div class="card"><div class="k">Coverage</div>'
+        f'<div class="v">{_e(int(coverage.get("passed") or 0))}/'
+        f'{_e(int(coverage.get("required") or 0))}</div></div>'
+        "</div>"
+        f'<div class="warnline">Son eksik: {_e(quality.get("last_problem") or "yok")}</div>'
+        f'<div class="okline">Sonraki: {_e(quality.get("next_action") or "yok")}</div>'
+        '<div class="quality-tier-panel card" id="pala-quality-tier">'
+        '<div class="k">Verification tier (gorunum)</div>'
+        f'<div class="v mono">{_e(tier)}</div>'
+        '<p class="pref-desc">Bu satir «quality tier goster» tercihiyle gizlenebilir; '
+        "workflow gercegini degistirmez.</p>"
+        "</div>"
+        "</section>"
+    )
+
+
+def _section_memory(store_path: object, events: list[object], provisions: list[object]) -> str:
+    return (
+        '<section id="panel-memory" class="panel" data-admin-section="memory">'
+        "<h2>Hafiza / store</h2>"
+        f'<p class="section-note">SQLite: <span class="mono">{_e(store_path or "?")}</span></p>'
+        '<div class="experts-panel card" id="pala-experts-panel">'
+        '<div class="k">Experts (istege bagli)</div>'
+        '<div class="v">Node/uv ile hazir olabilir; hook otomatik kurmaz/calistirmaz.</div>'
+        '<p class="pref-desc">«Uzmanlari goster» kapaliysa bu panel gizlenir.</p>'
+        "</div>"
+        "<h2>Son olaylar</h2>"
+        f"{_timeline_html(events)}"
+        "<h2>Son URL kurulumlari</h2>"
+        f"{_provisions_html(provisions)}"
+        "</section>"
+    )
+
+
+def _section_tickets(
+    *,
+    coherence: dict[str, object],
+    next_action: object,
+    read_order: list[object],
+) -> str:
+    return (
+        '<section id="panel-tickets" class="panel" data-admin-section="tickets">'
+        "<h2>Ticket / sonraki is</h2>"
+        f"{_now_line(next_action, coherence.get('active'))}"
+        '<div class="grid">'
+        '<div class="card"><div class="k">Aktif</div>'
+        f'<div class="v">{_e(coherence.get("active") or "yok")}</div></div>'
+        '<div class="card"><div class="k">Cikarilan sonraki</div>'
+        f'<div class="v">{_e(coherence.get("inferred_next") or next_action or "yok")}</div></div>'
+        "</div>"
+        "<h2>Okuma sirasi (zorunlu)</h2>"
+        "<table><thead><tr><th>#</th><th>Amac</th><th>Dosya</th><th>Durum</th>"
+        f"</tr></thead><tbody>{_read_order_rows(read_order)}</tbody></table>"
+        "</section>"
+    )
+
+
+def _section_features() -> str:
+    return (
+        '<section id="panel-features" class="panel" data-admin-section="features">'
+        "<h2>Yetki / ozellik</h2>"
+        '<p class="section-note">Yalniz gercek Pala gorunum tercihleri. '
+        "Ucretli kilit yok; ag ozeligi hook yolunda iddia edilmez. "
+        "Tercihler tarayici localStorage'da kalir.</p>"
+        '<ul class="pref-list" id="pala-feature-toggles">'
+        '<li class="pref-row">'
+        '<input type="checkbox" id="pref-show-experts" checked>'
+        '<label for="pref-show-experts">'
+        '<span class="pref-title">Uzmanlari goster</span>'
+        '<span class="pref-desc">Hafiza bolumunde experts panelini goster/gizle '
+        "(kurulum otomatik baslatmaz).</span></label></li>"
+        '<li class="pref-row">'
+        '<input type="checkbox" id="pref-soft-fail-closed">'
+        '<label for="pref-soft-fail-closed">'
+        '<span class="pref-title">Kapali INC soft-fail hatirlatma</span>'
+        '<span class="pref-desc">Hata beyni satirinda kapali kayit sayisini '
+        "ek hatirlatma olarak goster.</span></label></li>"
+        '<li class="pref-row">'
+        '<input type="checkbox" id="pref-show-quality-tier" checked>'
+        '<label for="pref-show-quality-tier">'
+        '<span class="pref-title">Quality tier goster</span>'
+        '<span class="pref-desc">Quality bolumunde verification_tier gorunumunu ac.</span>'
+        "</label></li>"
+        "</ul>"
+        "</section>"
+    )
+
+
 def render(model: dict[str, object], *, freshness_fn: Any) -> str:
-    """Render a status model dict into a single static HTML document."""
+    """Render a status / control-center model into a single static HTML document."""
     root_name = str(model.get("root_name") or "project")
     root_path = str(model.get("root_path") or "")
     stamp = str(model.get("stamp") or "")
@@ -480,6 +833,8 @@ def render(model: dict[str, object], *, freshness_fn: Any) -> str:
     if not isinstance(freshness_level, str) or not freshness_level:
         freshness_level = "stale"
     quality = model.get("quality")
+    store_path = model.get("store_path") or ""
+    verification_tier = model.get("verification_tier") or "not-run"
 
     mismatch = bool(coherence.get("mismatch"))
     mismatch_banner = (
@@ -497,75 +852,85 @@ def render(model: dict[str, object], *, freshness_fn: Any) -> str:
     )
 
     radios: list[str] = [
-        '<input type="radio" name="pala-nav" id="nav-current" checked>'
+        '<input type="radio" name="pala-nav" id="nav-overview" checked>'
     ]
-    labels: list[str] = [
-        '<label for="nav-current" class="nav-item">'
-        f'<span class="nav-name">{_e(root_name)}</span>'
-        '<span class="badge ok">aktif</span></label>'
+    for sec_id, _label in _SECTION_NAV[1:]:
+        radios.append(f'<input type="radio" name="pala-nav" id="nav-{sec_id}">')
+
+    labels: list[str] = []
+    for sec_id, label in _SECTION_NAV:
+        labels.append(
+            f'<label for="nav-{sec_id}" class="nav-item">'
+            f'<span class="nav-name">{_e(label)}</span></label>'
+        )
+
+    panels: list[str] = [
+        _section_overview(
+            root_name=root_name,
+            decision=decision,
+            now_line=_now_line(next_action, coherence.get("active")),
+            brain_line=_brain_line(brain),
+            mismatch_banner=mismatch_banner,
+            progress_html=_progress_block(progress),
+            coherence=coherence,
+            git=git,
+            next_action=next_action,
+        ),
+        _section_install(),
+        _section_hooks(),
+        _section_quality(quality, verification_tier),
+        _section_memory(store_path, events, provisions),
+        _section_tickets(
+            coherence=coherence,
+            next_action=next_action,
+            read_order=read_order,
+        ),
+        _section_features(),
     ]
-    current_panel = (
-        '<section id="panel-current" class="panel">'
-        "<h2>Aktif proje</h2>"
-        f"{decision}"
-        f"{_now_line(next_action, coherence.get('active'))}"
-        f"{_brain_line(brain)}"
-        f"{mismatch_banner}"
-        f"{_progress_block(progress)}"
-        '<div class="grid">'
-        '<div class="card"><div class="k">Aktif ticket</div>'
-        f'<div class="v">{_e(coherence.get("active") or "yok")}</div></div>'
-        '<div class="card"><div class="k">Sonraki is</div>'
-        f'<div class="v">{_e(coherence.get("inferred_next") or next_action or "yok")}</div></div>'
-        '<div class="card"><div class="k">Git</div>'
-        f'<div class="v mono">{_e(git.get("branch") or "?")}</div></div>'
-        '<div class="card"><div class="k">Degisen dosya</div>'
-        f'<div class="v">{_e(git.get("dirty_count", 0))}</div></div>'
-        "</div>"
-        "<h2>Okuma sirasi (zorunlu)</h2>"
-        "<table><thead><tr><th>#</th><th>Amac</th><th>Dosya</th><th>Durum</th>"
-        f"</tr></thead><tbody>{_read_order_rows(read_order)}</tbody></table>"
-        "<h2>Son olaylar</h2>"
-        f"{_timeline_html(events)}"
-        "<h2>Son URL kurulumlari</h2>"
-        f"{_provisions_html(provisions)}"
-        "</section>"
-    )
-    panels: list[str] = [current_panel]
 
     ordered = sorted(
         [p for p in projects if isinstance(p, dict)],
         key=lambda item: str(item.get("updated_at", "")),
         reverse=True,
     )
+    project_labels: list[str] = []
     for index, item in enumerate(ordered):
-        pid = f"nav-{index}"
+        pid = f"nav-project-{index}"
         radios.append(f'<input type="radio" name="pala-nav" id="{pid}">')
         level = freshness_fn(item.get("updated_at"))
-        labels.append(
+        project_labels.append(
             f'<label for="{pid}" class="nav-item">'
             f'<span class="nav-name">{_e(item.get("name"))}</span>'
             f"{_freshness_badge(level)}</label>"
         )
         panels.append(
-            f'<section id="panel-{index}" class="panel">'
+            f'<section id="panel-project-{index}" class="panel">'
             f'<h2>{_e(item.get("name"))}</h2>'
             f"{_project_detail_html(item, freshness_fn)}"
             f"</section>"
         )
 
-    show_rules = ["#nav-current:checked ~ .shell #panel-current { display: block; }"]
+    show_rules = [
+        f"#nav-{sec_id}:checked ~ .shell #panel-{sec_id} {{ display: block; }}"
+        for sec_id, _ in _SECTION_NAV
+    ]
     for index in range(len(ordered)):
         show_rules.append(
-            f"#nav-{index}:checked ~ .shell #panel-{index} {{ display: block; }}"
+            f"#nav-project-{index}:checked ~ .shell #panel-project-{index} {{ display: block; }}"
         )
     show_css = "\n  ".join(show_rules)
-    checked_labels = ['#nav-current:checked ~ .shell label[for="nav-current"]']
+
+    checked_labels = [
+        f'#nav-{sec_id}:checked ~ .shell label[for="nav-{sec_id}"]'
+        for sec_id, _ in _SECTION_NAV
+    ]
     for i in range(len(ordered)):
-        checked_labels.append(f'#nav-{i}:checked ~ .shell label[for="nav-{i}"]')
+        checked_labels.append(
+            f'#nav-project-{i}:checked ~ .shell label[for="nav-project-{i}"]'
+        )
     checked_label_css = (
         ",\n  ".join(checked_labels)
-        + " { background: #1e2638; border-color: #2f3a55; }"
+        + " { background: var(--nav-active); border-color: var(--line); }"
     )
 
     catalog_rows: list[str] = []
@@ -590,25 +955,39 @@ def render(model: dict[str, object], *, freshness_fn: Any) -> str:
                 "</tr>"
             )
 
+    project_nav = (
+        "".join(project_labels) if project_labels else '<p class="muted-inline">Kayit yok</p>'
+    )
     return f"""<!doctype html>
-<html lang="tr">
+<html lang="tr" data-theme="dark" data-show-experts="1" data-soft-fail-closed="0" data-show-quality-tier="1">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pala durum - {_e(root_name)}</title>
+<title>Pala kontrol - {_e(root_name)}</title>
 <style>{_css(checked_label_css, show_css)}</style>
 </head>
 <body>
   <a class="skip-link" href="#pala-main">İçeriğe geç</a>
   {"".join(radios)}
   <div class="shell">
-    <nav class="sidebar" aria-label="Kayıtlı projeler">
-      <p class="nav-title">Projeler</p>
+    <nav class="sidebar" aria-label="Pala kontrol menusu" id="pala-admin-nav">
+      <div class="brand-block">
+        <p class="brand-name">Pala</p>
+        <p class="brand-tag">kontrol merkezi</p>
+      </div>
+      <p class="nav-title">Bolumler</p>
       {"".join(labels)}
+      <p class="nav-title">Projeler</p>
+      {project_nav}
     </nav>
     <main id="pala-main" class="main">
-      <h1 class="title">Pala durum - {_e(root_name)}</h1>
-      <div class="sub">{_e(root_path)} &middot; {stamp}</div>
+      <div class="topbar">
+        <div>
+          <h1 class="title">Pala kontrol — {_e(root_name)}</h1>
+          <div class="sub">{_e(root_path)} &middot; {stamp}</div>
+        </div>
+        <button type="button" class="theme-toggle" id="pala-theme-toggle" aria-pressed="true">Acik tema</button>
+      </div>
       {_update_banner(update, update_checked_at if isinstance(update_checked_at, str) else None)}
       {"".join(panels)}
       <h2>Proje katalogu</h2>
@@ -620,9 +999,10 @@ def render(model: dict[str, object], *, freshness_fn: Any) -> str:
         </tbody>
       </table>
       </div>
-      <footer>Sohbet gecmisine guvenme; yukaridaki dosyalari sirayla oku. Bu sayfa yerel kayitlardan uretildi; guncellik 24 saat onbelleklidir (hook icinde ag yok).</footer>
+      <footer>Sohbet gecmisine guvenme; yukaridaki dosyalari sirayla oku. Bu sayfa yerel kayitlardan uretildi; guncellik 24 saat onbelleklidir (hook icinde ag yok). Tema/tercihler localStorage.</footer>
     </main>
   </div>
+  {_theme_script()}
 </body>
 </html>
 """

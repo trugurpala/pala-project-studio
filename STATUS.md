@@ -10,7 +10,7 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 | Alan | Değer |
 | --- | --- |
-| Güncelleme | 2026-08-09 — publish: PR #20 merged, tag/release v0.8.1 |
+| Güncelleme | 2026-08-09 — control center + GOAL; verify `5C16A96F…`; `v0.8.1` yayınlandı |
 | Branch | `main` @ `9cf3b0f` (PR #20 merged) |
 | Manifest | `0.8.1+codex.20260808124500` |
 | Son GitHub release | `v0.8.1` (`passed`) — https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.1 |
@@ -33,6 +33,20 @@ Soft full-product "A/B fixed": **yok**.
 | GitHub release | `passed` | https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.1 |
 | Release ZIP asset | `passed` | `pala-project-studio-0.8.1-final.zip`; SHA-256 `69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53` |
 | `/hooks` trust | `configured-not-verified` | owner UI; unchanged |
+
+## Control center + GOAL — 2026-08-09
+
+Status HTML kontrol merkezi (Filament yalnız UX esinlenmesi; PHP yok).
+Hedef: `GOAL.md` → `docs/GOAL_0_8_1_FINISH.md`.
+
+| Kapı | Sonuç | Not |
+| --- | --- | --- |
+| GOAL + completeness audit | `passed` | plugins: Pala, Context7, Chrome, product-design |
+| Admin Status HTML | `passed` | theme localStorage + sections + feature toggles |
+| Landmarks contract test | `passed` | `test_status_html_has_admin_control_landmarks` |
+| Tam `verify.py` | `passed` | Ran 362 / OK (skipped=1); reproducible_zip SHA-256 `5C16A96FA7D790969D84E36043D67E789E8ADEF835C29CF451EC0650F40FE65F` |
+| Desktop final ZIP (yeniden) | `passed` | `C:\Users\Pala-Pc\Desktop\pala-project-studio-0.8.1-final.zip`; SHA-256 `5C16A96F…E65F`; 143 entries (post-tag control-center build; GitHub `v0.8.1` asset hâlâ tag anındaki `69325B6E…`) |
+| `/hooks` trust | `configured-not-verified` | owner |
 
 ## M32 Delivery Quality Engine 0.9 + packaging P1 — 2026-08-09
 

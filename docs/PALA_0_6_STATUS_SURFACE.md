@@ -24,19 +24,24 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Sta
 
 ## Özellikler
 
-- Sol menü: aktif proje + katalog projeleri (CSS-only; JavaScript yok)
+- Sol menü: kontrol bölümleri + katalog projeleri (CSS-only radio + `:checked`)
+- İlk yüzey: marka Pala + karar şeridi + Şimdi (tam sayfa kontrol merkezi hissi)
+- Tema: koyu/açık — `localStorage` (`pala.ui.theme`); tek inline script, harici asset yok
+- Yetki/özellik satırları: experts göster, kapalı INC soft-fail hatırlatma, quality tier
 - Tazelik rozetleri: `<2 gün` taze, `2–7 gün` eskıyor, `>7 gün` bayat
 - Güncellik bannerı: 24 saat önbellekli `pala_update.check_update`
-- XSS'e karşı `html.escape`; harici `src` / `<link>` / `<script>` yok
+- XSS'e karşı `html.escape`; harici `src` / `<link>` yok
 - HTTPS linkler yalnız repo/release için serbest
+- `/hooks` trust satırı: her zaman `configured-not-verified` (insan)
 
 ## Sınırlar
 
 - Sunucu/port yok
 - Hook içinde ağ veya tarayıcı açma yok (ADR-007)
 - Deterministik script'ler tek kaynak gerçek olmaya devam eder
+- Inline script yalnız UI tercihi yazar; ağ çağrısı yok
 
-See also: `DECISIONS.md` ADR-013 / ADR-014.
+See also: `DECISIONS.md` ADR-013 / ADR-014 · `docs/GOAL_0_8_1_FINISH.md`
 
 ## İç kurulum (provision)
 

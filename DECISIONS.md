@@ -108,12 +108,14 @@ Pala 0.6, ADR-013 faz kapısının ilk gerçeklemesi olarak sunucusuz bir yerel
 HTML durum sayfasını zorunlu ilk yüzey yapar. Skill Implementation modunda
 oturumun ilk işi `pala_report.py --cwd . --open` ile sayfayı üretip açmaktır.
 Sayfa tek statik dosyadır (`.codex/pala-status.html`): inline CSS, CSS-only sol
-menü (radio + `:checked`), harici asset/script yok. Sol menü aktif proje ile
-katalogdaki diğer projeleri listeler; her kayıtta tazelik rozeti
-(`fresh`/`aging`/`stale`) vardır. Pala sürüm güncelliği `pala_update` 24 saat
-önbelleğiyle banner olarak gösterilir; ağ yalnız agent/Status yolunda ve günde
-en fazla bir kez çalışır. Hook içinde ağ veya tarayıcı açma yoktur (ADR-007);
-SessionStart yalnız `pala_report.py --open` dürtüsü verir.
+menü (radio + `:checked`), harici asset yok. 0.8.1 sonrası kontrol merkezi:
+bölümler (Genel / Doctor / Hooks / Quality / Hafıza / Ticket / Yetki) + katalog
+projeleri; tek inline script yalnız `localStorage` tema/tercih yazar (ağ yok).
+Sol menü tazelik rozeti (`fresh`/`aging`/`stale`) taşır. Pala sürüm güncelliği
+`pala_update` 24 saat önbelleğiyle banner olarak gösterilir; ağ yalnız
+agent/Status yolunda ve günde en fazla bir kez çalışır. Hook içinde ağ veya
+tarayıcı açma yoktur (ADR-007); SessionStart yalnız `pala_report.py --open`
+dürtüsü verir. `/hooks` UI trust bu sayfada `configured-not-verified` kalır.
 
 ## ADR-015 — Yerel SQLite store (0.7)
 
