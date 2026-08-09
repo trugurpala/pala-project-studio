@@ -25,5 +25,11 @@ guidance before changing plugin constants. Keep Pala's SessionStart message far
 below the host limit and never put test logs, full plans, secrets, or raw
 transcripts into hook context.
 
+Codex applies a hard per-value additionalContext token budget (about 1000
+tokens) with middle truncation. Pala SessionStart must keep presence, active
+ticket, next action, and blockers outside the truncated middle. Prefer the
+cold packet over repeating the same facts in long health prose. Re-check
+official Codex guidance before changing `SESSION_CONTEXT_*` constants.
+
 Measure token or speed improvements only with comparable runs. A shorter prompt
 is an optimization hypothesis, not proof of a percentage gain.
