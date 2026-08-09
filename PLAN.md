@@ -865,3 +865,39 @@ makinesi kurulumu bu milestonda yok.
 - Uzak Codex makinesine Install/Update/push/PR/release
 - Soft “A/B issues fixed” iddiası
 - Hooks UI trust = `passed` (CLI’dan iddia yok)
+
+## M30 — Vibe Codex host-fit (2026-08-09)
+
+Amaç: Codex host `additionalContext` ~1000-token sert tavanı + progressive
+disclosure altında vibe first-session’ı truncation-safe ve ince skill ile
+kilitlemek. Plan:
+`docs/superpowers/plans/2026-08-09-vibe-codex-host-fit.md`.
+
+### Görev kartları
+
+#### M30-T1 — Limits doc refresh
+- **Kanıt:** `passed` (`docs/CODEX_SCOPE_AND_LIMITS.md` 2026-08-09)
+
+#### M30-T2 — Shared approx tokens
+- **Kanıt:** `passed` (`pala_tokens` + cold_packet wire)
+
+#### M30-T3 — SessionStart dual budget
+- **Kanıt:** `passed` (char 1800 + token ≤900; host-fit tests)
+
+#### M30-T4 — Thin skill + kontrol-et reference
+- **Kanıt:** `passed` (SKILL ≤480 words)
+
+#### M30-T5 — Vibe contract tests
+- **Kanıt:** `passed`
+
+#### M30-T6 — Gates + evidence
+- **Kanıt:** focused 68 OK `passed`; installed verify `passed`; Gate0 9/9 `passed`;
+  full source verify `not-run`; hooks UI `configured-not-verified`
+
+### Bilerek yapılmayanlar (M30)
+
+- `/hooks` UI trust = `passed`
+- `v0.8.1` tag/release
+- Soft “A/B fixed”
+- Marketplace sync of M30 without Install after merge
+

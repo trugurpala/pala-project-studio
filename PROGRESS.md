@@ -320,3 +320,16 @@ Phase 0 + Phase 1 uygulandı; yayın yok.
   outputs `outputs/PALA_AB_LIVE_MINI.md` +
   `Desktop/PalaAB/meta/live-mini-08x/result.json`.
 - Soft full-product “A/B fixed”: **yok**. Next owner: hooks UI trust.
+
+## M30 — Vibe Codex host-fit (2026-08-09)
+
+- Plan: `docs/superpowers/plans/2026-08-09-vibe-codex-host-fit.md` — executed inline.
+- Dual SessionStart budget + thin skill + limits doc: `passed`.
+- Focused unittest Ran 68 / OK: `passed`.
+- `verify.py --mode installed`: `passed`.
+- Gate0 p0-smoke 9/9; SHA-256
+  `6FE7A3EC63D850BE8DE145EB260A0E401170D08FAB4C85A1BC5C50DD69680AEB`: `passed`.
+- Full source `verify.py`: `not-run`.
+- Hooks UI: `configured-not-verified`.
+- Branch: `feat/m30-vibe-codex-host-fit` (merge/PR owner).
+

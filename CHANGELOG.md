@@ -8,6 +8,8 @@ Versioning follows the plugin manifest (`0.x.y+codex.…`) and GitHub tags `v0.x
 ## [Unreleased]
 
 ### Added
+- M30 vibe Codex host-fit: `scripts/pala_tokens.py` approx-token helper;
+  `scripts/test_pala_host_fit.py`; `references/kontrol-et.md` for thin skill.
 - M29 Gate 0 P0 smoke runner `scripts/pala_p0_smoke.py` →
   `artifacts/codex-compat/p0-smoke.json` (launcher, lifecycle, fail-closed,
   path-memory, kontrol-et statuses).
@@ -20,10 +22,22 @@ Versioning follows the plugin manifest (`0.x.y+codex.…`) and GitHub tags `v0.x
   checkpoint fields). Wired into SessionStart + `pala_state context`.
 
 ### Changed
+- SessionStart dual budget: `SESSION_CONTEXT_CHAR_LIMIT=1800` +
+  `SESSION_CONTEXT_TOKEN_BUDGET=900` (under Codex ~1000-token additionalContext
+  hard cap); cold packet preferred over legacy health prose.
+- Skill body thinned (≤480 words); numbered `kontrol et` checklist moved to
+  `references/kontrol-et.md`.
+- `docs/CODEX_SCOPE_AND_LIMITS.md` refreshed 2026-08-09 for host caps.
 - Skill/report/state guidance stays plugin-root-aware via `pala_paths`
   (no `../../scripts` from project cwd).
-- SessionStart `additionalContextLimit` / `SESSION_CONTEXT_LIMIT` raised to
-  2048 to fit presence + cold packet snippet.
+
+### Evidence (M30 vibe Codex host-fit — 2026-08-09)
+- Branch `feat/m30-vibe-codex-host-fit`; focused unittest Ran 68 / OK.
+- `py -3 scripts/verify.py --mode installed` exit 0.
+- Gate0 `pala_p0_smoke.py` exit 0; 9/9; SHA-256
+  `6FE7A3EC63D850BE8DE145EB260A0E401170D08FAB4C85A1BC5C50DD69680AEB`.
+- Tam verify source full = `not-run`.
+- Hooks UI `configured-not-verified`; soft “A/B fixed” yok.
 
 ### Evidence (source application close — Codex conditional acceptance)
 - Gate0+M29 kaynak kabul; yeni P1 yok; push/PR/release/install bu turda yok.

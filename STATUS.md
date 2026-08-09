@@ -1,9 +1,9 @@
 # Pala Project Studio Durumu
 
-- Güncelleme: 2026-08-08 (Pala-Pc live: marketplace 0.8.1 sync + kontrol smoke + mini A/B n=1+1)
-- Aktif milestone: M29 tamamlandı (kaynak); canlı mini re-measure bu makinede alındı
-- Aktif ticket: yok (sonraki iş owner: hooks UI trust / v0.8.1 release)
-- Plugin/manifest sürümü: `0.8.1+codex.20260808124500` (kaynak + Local marketplace + temp profile `live-08x`)
+- Güncelleme: 2026-08-09 (M30 vibe Codex host-fit on `feat/m30-vibe-codex-host-fit`)
+- Aktif milestone: M30 kaynak tamamlandı (branch); merge/PR owner yetkisi
+- Aktif ticket: yok (sonraki iş owner: PR merge → hooks UI trust / v0.8.1 release)
+- Plugin/manifest sürümü: `0.8.1+codex.20260808124500` (kaynak; M30 host-fit henüz marketplace sync `not-run`)
 - Son GitHub release: `v0.8.0` (`passed`)
   https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0
 - GitHub tag/release `v0.8.1`: `not-run` (owner yetkisi ayrı)
@@ -11,7 +11,28 @@
 
 ## Şu an tek sonraki iş (owner)
 
+Branch `feat/m30-vibe-codex-host-fit` review/merge. Sonra Hooks UI `/hooks` trust (`configured-not-verified`). Soft full-product “A/B fixed”: **yok**.
+
+## M30 — Vibe Codex host-fit (2026-08-09)
+
+| Kapı | Sonuç | Not |
+| --- | --- | --- |
+| Codex limits doc refresh | `passed` | `docs/CODEX_SCOPE_AND_LIMITS.md` dated 2026-08-09; ~1000-token additionalContext hard cap |
+| Dual SessionStart budget | `passed` | char 1800 + approx-token ≤900; cold packet preferred |
+| Thin skill + kontrol-et.md | `passed` | SKILL.md ≤480 words; checklist in `references/kontrol-et.md` |
+| Focused unittest | `passed` | tokens+host_fit+cold+plugin+p0+self_audit Ran **68** / OK |
+| `verify.py --mode installed` | `passed` | exit 0 |
+| Gate0 `pala_p0_smoke.py` | `passed` | 9/9; SHA-256 `6FE7A3EC63D850BE8DE145EB260A0E401170D08FAB4C85A1BC5C50DD69680AEB` |
+| Branch HEAD | `passed` | `60e4cbd8da7f3442f3499e23b2bfd7648cfaddba` (+ evidence commit) |
+| Tam verify source full | `not-run` | bilerek |
+| Marketplace Install sync M30 | `not-run` | merge sonrası |
+| Hooks UI trust | `configured-not-verified` | insan adımı |
+| Soft “A/B fixed” | yok | — |
+
+## Şu an tek sonraki iş (owner) — önceki not
+
 Hooks UI `/hooks` trust (`configured-not-verified`). Soft full-product “A/B fixed”: **yok** (yalnız mini n=1+1). Push/PR/release ayrı yetki.
+
 
 ## Codex koşullu kabul — kaynak kanıt bağlamları (2026-08-08)
 
