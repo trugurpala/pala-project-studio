@@ -10,7 +10,7 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 | Alan | Değer |
 | --- | --- |
-| Güncelleme | 2026-08-09 — Codex cache fingerprint refresh (SessionEnd=3 doğrulandı) |
+| Güncelleme | 2026-08-09 — Hook clamp audit: başka clamp riski yok; final ZIP |
 | Branch | `feat/m30-vibe-codex-host-fit` (yerel; push/PR bu turda yok) |
 | Manifest | `0.8.1+codex.20260808124500` |
 | Son GitHub release | `v0.8.0` (`passed`) — https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0 |
@@ -19,11 +19,35 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 ## Şu an tek sonraki iş (owner)
 
-1. Desktop’teki vibe-install veya hooks-timeout-fix ZIP smoke + Codex Work’te native CLI / `Kur.cmd`.  
+1. Desktop `pala-project-studio-0.8.1-final.zip` smoke + Codex Work’te `/hooks` trust (insan).  
 2. Bu branch’i istediğin gibi push / PR / merge et.  
 3. Hazırsan `docs/RELEASE_0.8.1_CHECKLIST.md` ile `v0.8.1` tag + release bas.  
 
 Soft full-product “A/B fixed”: **yok**.
+
+## Hook clamp audit (post-SessionEnd=3) — 2026-08-09
+
+Kaynak: [Codex Hooks docs](https://developers.openai.com/codex/hooks) + `openai/codex` `discovery.rs` (`SESSION_END_MAX_TIMEOUT_SEC=3` yalnız SessionEnd).
+
+| Kapı | Sonuç | Not |
+| --- | --- | --- |
+| Codex timeout clamp (tüm eventler) | `passed` | Yalnız **SessionEnd** max 3s; diğerleri default 600, alt sınır 1 — üst clamp yok |
+| SessionStart `timeout: 10` | `passed` | Clamp riski yok |
+| PreToolUse `timeout: 5` | `passed` | Clamp riski yok |
+| PreCompact `timeout: 10` | `passed` | Clamp riski yok |
+| Stop `timeout: 10` | `passed` | Clamp riski yok |
+| SessionEnd `timeout: 3` | `passed` | Max ile eşit; clamp uyarısı üretmez |
+| `additionalContextLimit` yalnız SessionStart=1800 | `passed` | Desteklenen event; Stop/PreCompact/SessionEnd’de yok (yanlış yerde uyarı üretir) |
+| Açık GitHub clamp/timeout bug (openai/codex) | `passed` | SessionEnd clamp feature (merged); açık “başka event clamp” bug’ı bulunamadı |
+| Peer plugin timeouts | `passed` | Figma vb. çoğunlukla timeout alanı yok (Codex default 600) |
+| Source = cache = marketplace `hooks.json` | `passed` | SHA-256 `E3D20248…CB8E` üçü de; SessionEnd=3 |
+| Focused unittest (host_fit + self_audit + plugin_experience + PalaHookTests) | `passed` | 44 + 18 OK |
+| Doctor (çekirdek) | `passed` | Repair sonrası `healthy=True` / `plugin=ready` / `hook_safety=passed`; uzmanlar `attention_required` (blocker değil) |
+| Codex CLI hooks.json validate komutu | `not-run` | CLI’de ayrı validate yok; discovery runtime’da |
+| `/hooks` UI zero-warning + trust | `configured-not-verified` | Owner tıklaması gerekir |
+| Final Desktop ZIP | `passed` | `pala-project-studio-0.8.1-final.zip`; SHA-256 `F21E355E4B87DC7B8AAF039EA4AF61BECFA7DECB77C2E6C48A1A74729AECD2D4`; 132 entries |
+
+**Sonuç:** SessionEnd=3 sonrası ek timeout/clamp düzeltmesi gerekmedi; kaynak değişmedi.
 
 ## SessionEnd timeout fix — 2026-08-09
 
