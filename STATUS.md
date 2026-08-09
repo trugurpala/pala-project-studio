@@ -10,7 +10,7 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 | Alan | Değer |
 | --- | --- |
-| Güncelleme | 2026-08-09 — yerel kalite kapanışı (verify yeşil; publish yok) |
+| Güncelleme | 2026-08-09 — SessionEnd timeout ≤3s (Codex clamp uyarısı giderildi) |
 | Branch | `feat/m30-vibe-codex-host-fit` (yerel; push/PR bu turda yok) |
 | Manifest | `0.8.1+codex.20260808124500` |
 | Son GitHub release | `v0.8.0` (`passed`) — https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0 |
@@ -19,12 +19,23 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 ## Şu an tek sonraki iş (owner)
 
-1. Desktop’teki vibe-install ZIP smoke + Codex Work’te native CLI / `Kur.cmd`.  
-2. Bu branch’i istediğin gibi push / PR / merge et.  
-3. Codex Work’te `/hooks` ile Pala hook’larını güven (`configured-not-verified` → insan).  
+1. Bu düzeltmeli ZIP / Repair / marketplace sync ile Codex cache’deki `hooks.json`’ı yenile; `/hooks` clamp uyarısının kalktığını doğrula.  
+2. Desktop’teki vibe-install veya hooks-timeout-fix ZIP smoke + Codex Work’te native CLI / `Kur.cmd`.  
+3. Bu branch’i istediğin gibi push / PR / merge et.  
 4. Hazırsan `docs/RELEASE_0.8.1_CHECKLIST.md` ile `v0.8.1` tag + release bas.  
 
 Soft full-product “A/B fixed”: **yok**.
+
+## SessionEnd timeout fix — 2026-08-09
+
+| Kapı | Sonuç | Not |
+| --- | --- | --- |
+| Root cause | Codex SessionEnd max **3s**; kaynak `timeout: 10` clamp uyarısı üretiyordu | [Hooks docs](https://developers.openai.com/codex/hooks) |
+| `hooks.json` SessionEnd `timeout: 3` | `passed` | Handler yalnız yerel heartbeat |
+| Focused unittest (host_fit + self_audit + plugin_experience + SessionEnd) | `passed` | — |
+| Tam `verify.py` | `passed` | Ran 321 / OK; reproducible_zip SHA-256 `77A02501DC47B2F206FB3F5E651625182B2B0D1DDB7F739BBA13CE4C7CBEE7D4` |
+| Portable ZIP hooks-timeout-fix | `passed` | `artifacts/portable/pala-project-studio-0.8.1-hooks-timeout-fix.zip`; Desktop kopyası; SHA-256 `77A02501DC47B2F206FB3F5E651625182B2B0D1DDB7F739BBA13CE4C7CBEE7D4`; 132 entries |
+| Cache / `/hooks` UI after Repair | `configured-not-verified` | insan: Repair/reinstall veya marketplace sync |
 
 ## Owner sınırları (bilerek)
 
@@ -32,7 +43,7 @@ Soft full-product “A/B fixed”: **yok**.
 | --- | --- |
 | Hooks UI `/hooks` trust | `configured-not-verified` |
 | Soft “A/B fixed” | yok |
-| Tam source `verify.py` | `passed` (2026-08-09 local quality close; 320 tests + reproducible ZIP) |
+| Tam source `verify.py` | `passed` (2026-08-09 SessionEnd timeout fix; 321 tests + reproducible ZIP) |
 | Push / PR / tag / `gh release` (bu ajan turu) | yapılmadı (owner) |
 | Marketplace Install sync (diğer makineler) | `not-run` |
 | Doctor after Repair (bu makine) | `passed` (çekirdek `plugin=ready` / `healthy=True`) |

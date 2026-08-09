@@ -20,6 +20,13 @@ class SessionStartHostFitTests(unittest.TestCase):
             pala_hook.SESSION_CONTEXT_CHAR_LIMIT,
         )
 
+    def test_session_end_timeout_within_codex_clamp(self) -> None:
+        # Codex SessionEnd default 1s, hard max 3s; values >3 are clamped with a warning.
+        hooks = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+        session_end = hooks["hooks"]["SessionEnd"][0]["hooks"][0]
+        self.assertLessEqual(int(session_end["timeout"]), 3)
+        self.assertEqual(int(session_end["timeout"]), 3)
+
     def test_token_budget_under_host_hard_cap(self) -> None:
         self.assertLessEqual(pala_hook.SESSION_CONTEXT_TOKEN_BUDGET, 900)
         self.assertLess(pala_hook.SESSION_CONTEXT_TOKEN_BUDGET, 1000)

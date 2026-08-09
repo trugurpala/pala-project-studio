@@ -934,6 +934,8 @@ class PalaHookTests(unittest.TestCase):
     def test_hook_manifest_registers_session_end(self) -> None:
         hooks = json.loads((SCRIPT_DIR.parent / "hooks" / "hooks.json").read_text(encoding="utf-8"))
         self.assertIn("SessionEnd", hooks["hooks"])
+        session_end = hooks["hooks"]["SessionEnd"][0]["hooks"][0]
+        self.assertLessEqual(int(session_end["timeout"]), 3)
 
     def test_session_end_uses_event_session_without_emitting_its_raw_value(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

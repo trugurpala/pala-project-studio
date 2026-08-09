@@ -51,7 +51,7 @@
             "type": "command",
             "command": "python \"${PLUGIN_ROOT}/scripts/pala_hook.py\"",
             "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pala_hook.py\"",
-            "timeout": 10,
+            "timeout": 3,
             "statusMessage": "Oturum sahipliği kapatılıyor"
           }
         ]

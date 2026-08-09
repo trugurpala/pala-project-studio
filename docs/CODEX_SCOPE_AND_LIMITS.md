@@ -16,6 +16,7 @@ Codex kaynaklarını yeniden oku.
 | additionalContext | Her değer ~**1000 token** sert tavan; aşımda middle-truncate. | SessionStart **token+char** çift bütçe; cold packet öncelikli; presence + next action kenarda korunur. |
 | Oturum sıkıştırma | `PreCompact` + sonrası `SessionStart` olabilir. | Yalnız aktif ticket / reconcile / cold packet; tam plan veya test logu yok. |
 | Turn sonu | `Stop` `decision: block` otomatik devam istemi üretebilir. | Yalnız dirty aktif iş checkpoint; test/build başlatmaz. |
+| SessionEnd timeout | Varsayılan 1s; yapılandırılan değer **en fazla 3s**; aşım clamp + `/hooks` uyarısı. | `hooks.json` SessionEnd `timeout: 3`; handler yalnız yerel heartbeat (ağ/test yok). |
 | Hook güveni | UI’da incelenip güvenilmeli. | Doctor `hook_safety` ≠ `/hooks` trust (`configured-not-verified` until human). |
 
 Kaynaklar: [Build skills](https://learn.chatgpt.com/docs/build-skills),

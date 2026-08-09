@@ -97,6 +97,19 @@ def audit_hook_safety(root: Path) -> dict[str, str]:
             return _check("hook_safety", "failed", f"forbidden pattern: {banned}")
     if "SessionStart" not in text or "additionalContext" not in text:
         return _check("hook_safety", "failed", "SessionStart contract missing")
+    hooks_json = json.loads((root / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+    session_end = hooks_json.get("hooks", {}).get("SessionEnd", [{}])[0].get("hooks", [{}])[0]
+    try:
+        session_end_timeout = int(session_end.get("timeout") or 0)
+    except (TypeError, ValueError):
+        session_end_timeout = 0
+    # Codex clamps SessionEnd above 3s and warns in /hooks UI.
+    if session_end_timeout < 1 or session_end_timeout > 3:
+        return _check(
+            "hook_safety",
+            "failed",
+            f"SessionEnd timeout must be 1..3s (got {session_end_timeout})",
+        )
     return _check("hook_safety", "passed", "hook stays local and non-mutating")
 
 
