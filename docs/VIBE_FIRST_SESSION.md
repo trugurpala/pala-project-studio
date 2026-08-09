@@ -33,6 +33,10 @@ STATUS.md ve docs/VIBE_FIRST_SESSION.md ile uyumlu ilerle; tek sonraki işi söy
 5. Beklenen ilk sonuç:
    - SessionStart veya skill açılışı: **Pala burada — bu oturumda yanındayım.**
      (güven satırı; token/kota büyütme iddiası yok)
+   - SessionStart metni Codex `additionalContext` token tavanının altında kalır
+     (Pala çift bütçe: char + approx-token). Uzun sağlık düzyazısı cold packet’in
+     önüne geçmez; middle-truncate olsa bile presence satırı korunacak şekilde
+     tasarlanır.
    - STATUS/PROGRESS/workflow okunur
    - Aktif ticket yoksa açıkça söylenir (uydurma ticket yok)
    - Commit/push/verify otomatik başlamaz

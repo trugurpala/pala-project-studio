@@ -58,5 +58,22 @@ class SessionStartHostFitTests(unittest.TestCase):
         )
 
 
+class VibeFirstSessionTests(unittest.TestCase):
+    def test_vibe_doc_states_host_trust_boundary(self) -> None:
+        text = (ROOT / "docs" / "VIBE_FIRST_SESSION.md").read_text(encoding="utf-8")
+        self.assertIn("hook_safety", text)
+        self.assertIn("/hooks", text)
+        self.assertIn("Pala burada", text)
+        self.assertIn("additionalContext", text)
+        self.assertIn("token", text.casefold())
+
+    def test_skill_points_kontrol_reference(self) -> None:
+        skill = (
+            ROOT / "skills" / "pala-project-finisher" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("references/kontrol-et.md", skill)
+        self.assertNotRegex(skill, r"(?i)enlarges?\s+(context|quota)")
+
+
 if __name__ == "__main__":
     unittest.main()
