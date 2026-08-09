@@ -23,16 +23,10 @@ Branch `feat/m30-vibe-codex-host-fit` review/merge. Sonra Hooks UI `/hooks` trus
 | Focused unittest | `passed` | tokens+host_fit+cold+plugin+p0+self_audit Ran **68** / OK |
 | `verify.py --mode installed` | `passed` | exit 0 |
 | Gate0 `pala_p0_smoke.py` | `passed` | 9/9; SHA-256 `6FE7A3EC63D850BE8DE145EB260A0E401170D08FAB4C85A1BC5C50DD69680AEB` |
-| Branch HEAD | `passed` | `60e4cbd8da7f3442f3499e23b2bfd7648cfaddba` (+ evidence commit) |
 | Tam verify source full | `not-run` | bilerek |
 | Marketplace Install sync M30 | `not-run` | merge sonrası |
 | Hooks UI trust | `configured-not-verified` | insan adımı |
 | Soft “A/B fixed” | yok | — |
-
-## Şu an tek sonraki iş (owner) — önceki not
-
-Hooks UI `/hooks` trust (`configured-not-verified`). Soft full-product “A/B fixed”: **yok** (yalnız mini n=1+1). Push/PR/release ayrı yetki.
-
 
 ## Codex koşullu kabul — kaynak kanıt bağlamları (2026-08-08)
 
