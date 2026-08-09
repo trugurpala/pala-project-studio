@@ -736,6 +736,21 @@ def hooks_next_step_message(project: dict[str, object] | None) -> str:
     )
 
 
+def install_gui_next_steps_lines() -> list[str]:
+    """Turkish Codex Work follow-ups after a successful Install (no network)."""
+    return [
+        "Sonraki 3 adim (Codex Work):",
+        "1) Plugins'te Pala gorunuyor mu kontrol edin.",
+        "2) /hooks ile Pala hook guvenini (trust) verin.",
+        "3) Yeni bir sohbet acin.",
+    ]
+
+
+def install_gui_next_steps_message() -> str:
+    """Single printable block for Install / Kur.cmd success paths."""
+    return "\n".join(install_gui_next_steps_lines())
+
+
 def project_doctor(install_root: Path, project_root: Path) -> dict[str, object]:
     script = install_root / "scripts" / "pala_state.py"
     if not script.is_file():
@@ -847,6 +862,7 @@ def doctor_installation(
         "experts_ready": experts_ready,
         "status": "ready" if healthy else "attention_required",
         "hooks_next_step": hooks_next,
+        "gui_next_steps": install_gui_next_steps_message(),
         "self_audit": self_audit,
         "shared_store": shared_store,
         "plugin": bundle["plugin"],
@@ -1077,6 +1093,7 @@ def install_all(
         "bundle": bundle,
         "codex": codex,
         "update_cache": update_cache,
+        "gui_next_steps": install_gui_next_steps_message(),
     }
 
 

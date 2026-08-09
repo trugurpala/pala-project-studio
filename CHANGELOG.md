@@ -7,7 +7,8 @@ Versioning follows the plugin manifest (`0.x.y+codex.…`) and GitHub tags `v0.x
 
 ## [Unreleased]
 
-M30 vibe/Codex host-fit close + local 0.8.1 release ground (no GitHub tag yet).
+M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
+0.8.1 release ground (no GitHub tag yet).
 
 ### Added
 - Approx-token helper `scripts/pala_tokens.py` and host-fit contracts
@@ -15,6 +16,8 @@ M30 vibe/Codex host-fit close + local 0.8.1 release ground (no GitHub tag yet).
 - Thin-skill companion `skills/pala-project-finisher/references/kontrol-et.md`.
 - Owner release ground: `docs/RELEASE_0.8.1_CHECKLIST.md`, design
   `docs/superpowers/specs/2026-08-09-m30-close-081-local-release-design.md`.
+- Vibe-install UX: `docs/VIBE_INSTALL.md`, root `KUR.md` + `Kur.cmd`
+  (Bypass → Install-Pala), Turkish 3-step GUI next-steps after Install.
 - Prior wave carry-forward still landing with this branch: Gate0
   `pala_p0_smoke.py`, cmd memory, cold packet, shared memory, M10, install
   artifact contract (see 0.8.1 section for the shipped narrative).
@@ -27,6 +30,10 @@ M30 vibe/Codex host-fit close + local 0.8.1 release ground (no GitHub tag yet).
   in the reference file.
 - `docs/CODEX_SCOPE_AND_LIMITS.md` refreshed 2026-08-09.
 - STATUS rewritten for 2026-08-09 truth; Vibe path points at release checklist.
+- Install story: Codex-native CLI first (`marketplace add` + `plugin add`);
+  ZIP/`Kur.cmd` secondary offline toolkit. Marketplace local `path` is `"."`
+  (not `"./"`). README / `VIBE_FIRST_SESSION` / `PALA_EVERYWHERE` / release
+  checklist aligned; Plus-paste and ZIP-upload-as-primary stay myths.
 
 ### Fixed
 - Checkpoint / commit materialization no longer treats
@@ -35,13 +42,21 @@ M30 vibe/Codex host-fit close + local 0.8.1 release ground (no GitHub tag yet).
 
 ### Evidence (local close — 2026-08-09)
 - Branch `feat/m30-vibe-codex-host-fit`; push/PR/tag **not run** (owner).
-- Focused unittest (checkpoint + host-fit + self_audit + tokens): Ran 16 / OK.
+- Focused unittest (checkpoint + host-fit + self_audit + tokens): Ran 16 / OK
+  (M30 tur).
+- Vibe-install focused unittest
+  (`test_plugin_experience` + `test_pala_host_fit` + `test_pala_self_audit`):
+  Ran 43 / OK (`passed`).
 - Gate0 p0-smoke 9/9; SHA-256
   `6FE7A3EC63D850BE8DE145EB260A0E401170D08FAB4C85A1BC5C50DD69680AEB`.
-- Local portable ZIP (gitignored `*.zip`; digest only):
+- Prior local portable ZIP (gitignored `*.zip`; digest only):
   `artifacts/portable/pala-project-studio-0.8.1-m30-local.zip`
   SHA-256 `6270BC34F20678AD3C3A25381DA727AEBB4C4D173292D021CE4E219242ABAE1E`
   (130 entries).
+- Vibe-install portable ZIP (gitignored; Desktop smoke copy):
+  `artifacts/portable/pala-project-studio-0.8.1-vibe-install.zip`
+  SHA-256 `18DA984F548B54C450016D46135B6920CF382E62C1446F3E88BE0912C06ABA36`
+  (132 entries).
 - `verify.py --mode installed`: `passed` (prior M30 run).
 - Full source `verify.py`: `not-run`.
 - Hooks UI trust: `configured-not-verified`. Soft “A/B fixed”: yok.

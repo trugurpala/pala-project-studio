@@ -73,12 +73,16 @@ def is_forbidden_source(path: Path) -> bool:
 
 def source_files(plugin_root: Path) -> list[Path]:
     """Return the allowlisted source files for a portable package."""
+    # KUR.md is allowlisted but optional until the docs agent lands it.
+    optional = {plugin_root / "KUR.md"}
     candidates = [
         plugin_root / ".agents" / "plugins" / "marketplace.json",
         plugin_root / ".codex-plugin" / "plugin.json",
         plugin_root / "AGENTS.md",
         plugin_root / "DECISIONS.md",
         plugin_root / "Install-Pala.ps1",
+        plugin_root / "Kur.cmd",
+        plugin_root / "KUR.md",
         plugin_root / "LICENSE",
         plugin_root / "managed-tools.lock.json",
         plugin_root / "OPEN_SOURCE.md",
@@ -122,6 +126,8 @@ def source_files(plugin_root: Path) -> list[Path]:
     files: list[Path] = []
     for path in candidates:
         if not path.is_file():
+            if path in optional:
+                continue
             raise FileNotFoundError(f"required package file is missing: {path}")
         if path.is_symlink():
             raise ValueError(f"symbolic links are not portable: {path}")

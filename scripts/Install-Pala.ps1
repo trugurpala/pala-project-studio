@@ -82,6 +82,23 @@ function Parse-PalaJson([string]$RawText) {
     }
 }
 
+function Show-PalaGuiNextSteps([pscustomobject]$Payload) {
+    if ($null -ne $Payload.gui_next_steps -and "$($Payload.gui_next_steps)".Trim().Length -gt 0) {
+        Write-Host ""
+        foreach ($line in ("$($Payload.gui_next_steps)" -split "`r?`n")) {
+            if ("$line".Trim().Length -gt 0) {
+                Write-Host "[Pala] $line"
+            }
+        }
+        return
+    }
+    Write-Host ""
+    Write-Host "[Pala] Sonraki 3 adim (Codex Work):"
+    Write-Host "[Pala] 1) Plugins'te Pala gorunuyor mu kontrol edin."
+    Write-Host "[Pala] 2) /hooks ile Pala hook guvenini (trust) verin."
+    Write-Host "[Pala] 3) Yeni bir sohbet acin."
+}
+
 function Show-PalaResult([pscustomobject]$Payload) {
     if ($null -ne $Payload.healthy -and $null -ne $Payload.codex -and $null -ne $Payload.plugin) {
         $pluginStatus = $Payload.plugin.status
@@ -246,7 +263,11 @@ if ($Mode -in @("Install", "Update", "Repair")) {
     Show-PalaResult $doctor
     if ($doctorExit -ne 0) { exit $doctorExit }
     Invoke-PalaExperts "doctor"
-    Write-Host "[Pala] Yeni skill ve hook'larin yuklenmesi icin yeni bir Codex sohbeti acin."
+    if ($Mode -eq "Install") {
+        Show-PalaGuiNextSteps $doctor
+    } else {
+        Write-Host "[Pala] Yeni skill ve hook'larin yuklenmesi icin yeni bir Codex sohbeti acin."
+    }
     }
 } elseif ($Mode -eq "Doctor") {
     Invoke-PalaExperts "doctor"

@@ -88,7 +88,7 @@ def make_bundle(root: Path, version: str = "0.4.0+codex.test") -> Path:
                 "plugins": [
                     {
                         "name": "pala-project-studio",
-                        "source": {"source": "local", "path": "./"},
+                        "source": {"source": "local", "path": "."},
                         "policy": {
                             "installation": "AVAILABLE",
                             "authentication": "ON_INSTALL",

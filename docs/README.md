@@ -2,15 +2,16 @@
 
 Start here if you are new:
 
-1. [Vibe first 10 minutes](VIBE_FIRST_SESSION.md) — Codex Work install + `/hooks` + first prompt
-2. [Fork pack](FORK_PACK.md) — demo seed + self-audit in 5 minutes
-3. [0.8.0 release checklist](RELEASE_0_8_0_CHECKLIST.md) — Install → Doctor → hooks → seed → publish gate
-4. [0.8.1 release checklist](RELEASE_0.8.1_CHECKLIST.md) — owner tag/release ground (M30 close)
-5. [Install artifact contract](INSTALL_ARTIFACT_CONTRACT.md) — source vs installed verify
-6. [Codex plugin checklist](CODEX_PLUGIN_CHECKLIST.md) — M27 surface evidence table
-7. [Everywhere install contract](PALA_EVERYWHERE.md) — what surfaces exist / do not
-8. [Shared memory / multi-host](PALA_SHARED_MEMORY.md) — ADR-017 hit/miss + Doctor `shared_store`
-9. [Codex scope & limits](CODEX_SCOPE_AND_LIMITS.md) — honest capability boundary
+1. [Vibe install bible](VIBE_INSTALL.md) — zero-knowledge Codex-native install (myths, success/fail)
+2. [Vibe first 10 minutes](VIBE_FIRST_SESSION.md) — decision tree → 2 CLI → `/hooks` → first prompt
+3. [Fork pack](FORK_PACK.md) — demo seed + self-audit in 5 minutes
+4. [0.8.0 release checklist](RELEASE_0_8_0_CHECKLIST.md) — Install → Doctor → hooks → seed → publish gate
+5. [0.8.1 release checklist](RELEASE_0.8.1_CHECKLIST.md) — owner tag/release ground (M30 close)
+6. [Install artifact contract](INSTALL_ARTIFACT_CONTRACT.md) — source vs installed verify
+7. [Codex plugin checklist](CODEX_PLUGIN_CHECKLIST.md) — M27 surface evidence table
+8. [Everywhere install contract](PALA_EVERYWHERE.md) — what surfaces exist / do not (no native ZIP UI)
+9. [Shared memory / multi-host](PALA_SHARED_MEMORY.md) — ADR-017 hit/miss + Doctor `shared_store`
+10. [Codex scope & limits](CODEX_SCOPE_AND_LIMITS.md) — honest capability boundary
 
 ## Versioned product notes
 

@@ -213,10 +213,99 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertEqual(len(marketplace["plugins"]), 1)
         entry = marketplace["plugins"][0]
         self.assertEqual(entry["name"], "pala-project-studio")
-        self.assertEqual(entry["source"], {"source": "local", "path": "./"})
+        self.assertEqual(entry["source"], {"source": "local", "path": "."})
         self.assertEqual(entry["policy"]["installation"], "AVAILABLE")
         self.assertEqual(entry["policy"]["authentication"], "ON_INSTALL")
         self.assertEqual(entry["category"], "Developer Tools")
+        self.assertNotEqual(entry["source"]["path"], "")
+        self.assertNotEqual(entry["source"]["path"], "./")
+
+    def test_kur_cmd_runs_bypass_install_and_prints_turkish_next_steps(self) -> None:
+        kur = (PLUGIN_ROOT / "Kur.cmd").read_text(encoding="utf-8")
+        compact = " ".join(kur.split())
+        self.assertIn("ExecutionPolicy Bypass", compact)
+        self.assertIn(r"scripts\Install-Pala.ps1", kur)
+        self.assertIn("-Mode Install", compact)
+        lowered = kur.casefold()
+        for marker in ("plugins", "/hooks", "yeni bir sohbet"):
+            self.assertIn(marker, lowered)
+
+    def test_installer_gui_next_steps_cover_plugins_hooks_and_new_chat(self) -> None:
+        installer_path = PLUGIN_ROOT / "scripts" / "pala_installer.py"
+        spec = importlib.util.spec_from_file_location(
+            "pala_installer_ux", installer_path
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError("cannot load pala_installer.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        message = module.install_gui_next_steps_message()
+        lowered = message.casefold()
+        for marker in ("plugins", "/hooks", "yeni bir sohbet", "sonraki 3 adim"):
+            self.assertIn(marker, lowered)
+        wrapper = (PLUGIN_ROOT / "scripts" / "Install-Pala.ps1").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Show-PalaGuiNextSteps", wrapper)
+        self.assertIn("gui_next_steps", wrapper)
+        self.assertIn("Plugins'te Pala", wrapper)
+
+    def test_vibe_install_docs_contain_native_cli_and_forbid_install_myths(
+        self,
+    ) -> None:
+        """Native CLI is primary; Plus-paste / ZIP-upload-as-primary stay myths."""
+        marketplace_add = (
+            "codex plugin marketplace add trugurpala/pala-project-studio"
+        )
+        plugin_add = "codex plugin add pala-project-studio@pala-project-studio"
+        vibe_docs = (
+            PLUGIN_ROOT / "docs" / "VIBE_INSTALL.md",
+            PLUGIN_ROOT / "docs" / "VIBE_FIRST_SESSION.md",
+            PLUGIN_ROOT / "README.md",
+        )
+        for path in vibe_docs:
+            text = path.read_text(encoding="utf-8")
+            self.assertIn(marketplace_add, text, path.name)
+            self.assertIn(plugin_add, text, path.name)
+
+        vibe_install = (PLUGIN_ROOT / "docs" / "VIBE_INSTALL.md").read_text(
+            encoding="utf-8"
+        )
+        vibe_first = (PLUGIN_ROOT / "docs" / "VIBE_FIRST_SESSION.md").read_text(
+            encoding="utf-8"
+        )
+        readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
+
+        # Explicit myth denials in the vibe install bible.
+        self.assertIn("metin yapıştır = kurulum", vibe_install)
+        self.assertIn("ZIP yükle → Install", vibe_install)
+        self.assertIn("ZIP-upload UI yok", vibe_install)
+        self.assertRegex(
+            vibe_install,
+            r"metin yapıştır = kurulum\s*\|\s*\*\*Yok\.\*\*",
+        )
+        self.assertRegex(
+            vibe_install,
+            r"ZIP yükle → Install\s*\|\s*\*\*Yok\.\*\*",
+        )
+
+        # First-session + README must not sell ZIP-upload / Plus-paste as doors.
+        for name, text in (
+            ("VIBE_FIRST_SESSION.md", vibe_first),
+            ("README.md", readme),
+            ("VIBE_INSTALL.md", vibe_install),
+        ):
+            lowered = text.casefold()
+            self.assertNotIn("plus'a yapıştırarak kur", lowered, name)
+            self.assertNotIn("chatgpt plus paste install", lowered, name)
+            self.assertNotIn("upload the zip to plugins", lowered, name)
+            self.assertNotIn("plugins'e zip yükle ve install", lowered, name)
+
+        self.assertRegex(readme, r"ZIP Codex Plugins.e yüklenmez")
+        self.assertRegex(
+            vibe_first.casefold(),
+            r"zip-upload|zip yükleme",
+        )
 
     def test_skill_metadata_uses_consistent_brand_and_narrow_implicit_invocation(self) -> None:
         metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(
@@ -543,6 +632,12 @@ class PortablePackageContractTests(unittest.TestCase):
                 names,
             )
             self.assertIn("pala-project-studio/Install-Pala.ps1", names)
+            self.assertIn("pala-project-studio/Kur.cmd", names)
+            packager_source = PACKAGER_PATH.read_text(encoding="utf-8")
+            self.assertIn('plugin_root / "Kur.cmd"', packager_source)
+            self.assertIn('plugin_root / "KUR.md"', packager_source)
+            if (PLUGIN_ROOT / "KUR.md").is_file():
+                self.assertIn("pala-project-studio/KUR.md", names)
             self.assertIn("pala-project-studio/scripts/pala_installer.py", names)
             self.assertIn("pala-project-studio/README.md", names)
             self.assertIn("pala-project-studio/PROJECT.md", names)

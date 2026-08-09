@@ -8,8 +8,10 @@
 **English (30 seconds):** Pala is a **Codex plugin** (not a ChatGPT Plus chat
 add-on) that keeps long software projects durable across sessions: memory
 contract, local status HTML, SQLite catalog, evidence-gated verification, and a
-single Windows install door. It does **not** enlarge model context or quotas.
-First path: [docs/VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md).
+Codex-native install (`marketplace add` + `plugin add`; ZIP is extract-only —
+no Plugins ZIP-upload UI). It does **not** enlarge model context or quotas.
+Install: [docs/VIBE_INSTALL.md](docs/VIBE_INSTALL.md) · First 10 minutes:
+[docs/VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md).
 
 Pala Project Studio, Codex'in uzun soluklu yazılım projelerinde aktif işi
 kaybetmeden ilerlemesine yardımcı olan Türkçe odaklı bir proje yürütme
@@ -27,25 +29,44 @@ göre katmanlandırır.
 
 ## Hızlı başlangıç
 
-**Vibe / first 10 minutes:** [docs/VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md)
+**Kurulum kitabı (sıfır bilgi):** [docs/VIBE_INSTALL.md](docs/VIBE_INSTALL.md) ·
+**İlk 10 dakika:** [docs/VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md)
 
-Son yayımlanmış taşınabilir sürümü indir:
+### Birincil — Codex-native CLI (2 komut)
+
+Marketplace / eklenti: `pala-project-studio` →
+`pala-project-studio@pala-project-studio`. Codex’te native ZIP-upload UI **yok**.
+
+```powershell
+codex plugin marketplace add trugurpala/pala-project-studio
+codex plugin add pala-project-studio@pala-project-studio
+```
+
+Yerel checkout kökü:
+
+```powershell
+codex plugin marketplace add C:\path\to\pala-project-studio
+codex plugin add pala-project-studio@pala-project-studio
+```
+
+Sonra: Codex Work → `/hooks` (Pala'ya güven) → **yeni sohbet** → yazılım işi söyle.
+Kayıtlı projede SessionStart: `Pala burada — bu oturumda yanındayım.`
+
+### İkincil — ZIP / tam toolkit (çevrimdışı)
+
+Son yayımlanmış taşınabilir sürüm (şu an GitHub indirmesi **0.8.0**; kaynak
+ağaç **0.8.1** hazırlığı — tag owner işi):
 
 [Pala Project Studio 0.8.0'ı indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.8.0.zip)
 
-Kaynak ağaçtan kurmak için bu repo kökünde `Install-Pala.ps1` kullan.
-
-ZIP'i açtıktan sonra içindeki klasörde şu komutu çalıştır:
+ZIP’i **çıkar** (Plugins’e yükleme). Kökte `Kur.cmd` çift tık veya:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 ```
 
-Pala kurulum sırasında ne yapacağını açıkça gösterir. `-WhatIf` ile önce
-önizleyebilir, `-Mode Doctor` ile kurulumun sağlığını kontrol edebilirsin.
-
-Sonra: Codex Work → `/hooks` (Pala'ya güven) → **yeni sohbet** → yazılım işi söyle.
-Kayıtlı projede SessionStart: `Pala burada — bu oturumda yanındayım.`
+Kısa not: [KUR.md](KUR.md). `-WhatIf` / `-Mode Doctor` ile önizle veya sağlık
+kontrolü. Aynı `/hooks` → yeni sohbet adımları zorunlu.
 
 Durum sayfasını (sol menülü yerel HTML) üretip açmak için:
 
@@ -136,8 +157,18 @@ belgesine bakın.
 
 ## Windows kurulumu
 
-GitHub deposunu indirdikten veya portable ZIP'i açtıktan sonra kök klasörde tek
-komut yeterlidir:
+**Birincil kapı** Codex CLI’dır (Python kurucu gerekmez):
+
+```powershell
+codex plugin marketplace add trugurpala/pala-project-studio
+codex plugin add pala-project-studio@pala-project-studio
+```
+
+Yerel kök: `codex plugin marketplace add C:\path\to\pala-project-studio` sonra
+aynı `codex plugin add pala-project-studio@pala-project-studio`.
+
+**İkincil** — GitHub checkout veya portable ZIP kökünde tam toolkit
+(`Kur.cmd` / `Install-Pala.ps1`). ZIP Codex Plugins’e yüklenmez.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
@@ -166,18 +197,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Uni
 Kurulum aynı oturumda doğrulanır. Yeni skill ve hook'ların güvenilir biçimde
 yüklenmesi için kurulumdan sonra yeni bir Codex sohbeti açılır. Hook güveni
 eksikse kurucu güvenlik kontrolünü atlamaz; Codex'te `/hooks` komutunu gösterir.
+Doctor `hook_safety` ≠ `/hooks` UI trust.
 
-Saf Codex CLI ile git URL kapısı (Python kurucu olmadan):
-
-```powershell
-codex plugin marketplace add trugurpala/pala-project-studio
-codex plugin add pala-project-studio@pala-project-studio
-```
-
-Vibe coder ilk 10 dakika (Codex içi çağrı, Plus sohbet değil):
+Sıfır-bilgi kurulum: [VIBE_INSTALL.md](docs/VIBE_INSTALL.md). İlk 10 dakika:
 [VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md). “Her yerde çalışır”
-sözleşmesi ve multi-host gerçekliği:
-[PALA_EVERYWHERE.md](docs/PALA_EVERYWHERE.md).
+sözleşmesi: [PALA_EVERYWHERE.md](docs/PALA_EVERYWHERE.md). ZIP kökü:
+[KUR.md](KUR.md).
 
 ## Güvenli uzman işçileri
 

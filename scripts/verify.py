@@ -47,7 +47,7 @@ def validate_json(root: Path) -> None:
     if not isinstance(entry, dict) or entry.get("name") != "pala-project-studio":
         raise ValueError("repo marketplace plugin entry is invalid")
     source = entry.get("source")
-    if not isinstance(source, dict) or source != {"source": "local", "path": "./"}:
+    if not isinstance(source, dict) or source != {"source": "local", "path": "."}:
         raise ValueError("repo marketplace must load Pala from the repository root")
 
 
