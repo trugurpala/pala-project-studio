@@ -12,17 +12,62 @@ import sys
 from pathlib import Path
 
 from pala_store import WorkflowStore
+from pala_tokens import approx_tokens
 
 MANIFEST = Path(".codex/pala-project.json")
 WORKFLOW = Path(".codex/pala-workflow.json")
 WORKFLOW_SCHEMA_VERSIONS = (1, 2)
 # Presence + minimal cold packet; hooks.json additionalContextLimit must match.
 PRESENCE_LINE = "Pala burada — bu oturumda yanındayım."
-SESSION_CONTEXT_LIMIT = 2048
+# Char ceiling for hooks.json additionalContextLimit (must match).
+SESSION_CONTEXT_CHAR_LIMIT = 1800
+# Approx-token budget under Codex hard ~1000-token additionalContext cap.
+SESSION_CONTEXT_TOKEN_BUDGET = 900
+# Back-compat alias for older imports/tests during migration.
+SESSION_CONTEXT_LIMIT = SESSION_CONTEXT_CHAR_LIMIT
 
 
 def emit(value: dict[str, object]) -> None:
     sys.stdout.write(json.dumps(value, ensure_ascii=False))
+
+
+def _fit_session_message(message: str) -> str:
+    """Trim legacy middle first so presence + tail (cold packet / gate) survive."""
+    if (
+        len(message) <= SESSION_CONTEXT_CHAR_LIMIT
+        and approx_tokens(message) <= SESSION_CONTEXT_TOKEN_BUDGET
+    ):
+        return message
+    prefix = PRESENCE_LINE
+    if not message.startswith(prefix):
+        clipped = message[: SESSION_CONTEXT_CHAR_LIMIT - 3] + "..."
+        while approx_tokens(clipped) > SESSION_CONTEXT_TOKEN_BUDGET and len(clipped) > 64:
+            clipped = clipped[: max(64, len(clipped) - 64)]
+        return clipped
+    body = message[len(prefix) :].lstrip()
+    keep_tail = max(160, int(len(body) * 0.4))
+    while True:
+        candidate = f"{prefix} {body}"
+        if (
+            len(candidate) <= SESSION_CONTEXT_CHAR_LIMIT
+            and approx_tokens(candidate) <= SESSION_CONTEXT_TOKEN_BUDGET
+        ):
+            return candidate
+        if len(body) <= keep_tail + 32:
+            tail = body[-keep_tail:] if len(body) > keep_tail else body
+            candidate = f"{prefix} ...{tail}"
+            if len(candidate) > SESSION_CONTEXT_CHAR_LIMIT:
+                candidate = candidate[: SESSION_CONTEXT_CHAR_LIMIT - 3] + "..."
+            while (
+                approx_tokens(candidate) > SESSION_CONTEXT_TOKEN_BUDGET
+                and len(candidate) > len(prefix) + 32
+            ):
+                candidate = candidate[: max(len(prefix) + 16, len(candidate) - 48)]
+            return candidate
+        drop = max(48, (len(body) - keep_tail) // 4)
+        head = body[: max(0, len(body) - keep_tail - drop)]
+        tail = body[-keep_tail:]
+        body = f"{head}...{tail}"
 
 
 def git_root(cwd: Path) -> Path | None:
@@ -154,55 +199,68 @@ def session_context(
         if isinstance(cmd_memory, dict) and cmd_memory.get("hint"):
             cmd_hint = str(cmd_memory.get("hint") or "").strip() or None
     tools = tools_summary or "tools=n/a"
-    message = (
-        f"{PRESENCE_LINE} {prefix}{health_text}Pala project kind={kind}. "
-        f"Once durum sayfasini ac: pala_report.py --open. "
-        f"Memory read_order=AGENTS>CURRENT_STATUS>PROGRESS>plan>TOOLING>DEBUG>git. "
-        f"Read status first: status={status or project}; "
-        f"active ticket only in plan={plan}. "
-        f"active={active or 'none'}; next={next_action or 'reconcile first'}; "
-        f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
-        f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
-        f"ticket_mismatch={str(mismatch).lower()}; debug_open={debug_open}; {tools}. "
-        "Do not re-plan completed scope. Continue authorized local work; "
-        "full gate only at milestone/release; then checkpoint one ticket."
-    )
+    packet = (cold_packet_text or "").strip()
+    if packet:
+        message = (
+            f"{PRESENCE_LINE} {prefix}{health_text}"
+            f"kind={kind}; active={active or 'none'}; "
+            f"status={status or project}; plan={plan}. "
+            f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
+            f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
+            f"ticket_mismatch={str(mismatch).lower()}; debug_open={debug_open}."
+        )
+    else:
+        message = (
+            f"{PRESENCE_LINE} {prefix}{health_text}Pala project kind={kind}. "
+            f"Once durum sayfasini ac: pala_report.py --open. "
+            f"Memory read_order=AGENTS>CURRENT_STATUS>PROGRESS>plan>TOOLING>DEBUG>git. "
+            f"Read status first: status={status or project}; "
+            f"active ticket only in plan={plan}. "
+            f"active={active or 'none'}; next={next_action or 'reconcile first'}; "
+            f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
+            f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
+            f"ticket_mismatch={str(mismatch).lower()}; debug_open={debug_open}; {tools}. "
+            "Do not re-plan completed scope. Continue authorized local work; "
+            "full gate only at milestone/release; then checkpoint one ticket."
+        )
     if gate_message:
         try:
             from pala_debug_gate import inject_session_gate
 
-            message = inject_session_gate(message, gate_message, SESSION_CONTEXT_LIMIT)
+            message = inject_session_gate(message, gate_message, SESSION_CONTEXT_CHAR_LIMIT)
         except ImportError:
-            if len(message) + len(gate_message) + 1 <= SESSION_CONTEXT_LIMIT:
+            if len(message) + len(gate_message) + 1 <= SESSION_CONTEXT_CHAR_LIMIT:
                 message = f"{message} {gate_message}"
             else:
-                message = (message[: SESSION_CONTEXT_LIMIT - len(gate_message) - 4] + "... " + gate_message)
+                message = (
+                    message[: SESSION_CONTEXT_CHAR_LIMIT - len(gate_message) - 4]
+                    + "... "
+                    + gate_message
+                )
     if cmd_hint and "do not retry" not in message.casefold():
         extra = cmd_hint
-        if len(message) + len(extra) + 1 <= SESSION_CONTEXT_LIMIT:
+        if len(message) + len(extra) + 1 <= SESSION_CONTEXT_CHAR_LIMIT:
             message = f"{message} {extra}"
         else:
-            message = message[: SESSION_CONTEXT_LIMIT - len(extra) - 4] + "... " + extra
-    packet = (cold_packet_text or "").strip()
+            message = (
+                message[: SESSION_CONTEXT_CHAR_LIMIT - len(extra) - 4] + "... " + extra
+            )
     if packet:
-        # Prefer evidence-first cold packet; keep presence + health + ticket cues.
-        room = SESSION_CONTEXT_LIMIT - len(message) - 1
+        room = SESSION_CONTEXT_CHAR_LIMIT - len(message) - 1
         if room >= 80:
             if len(packet) > room:
                 packet = packet[: room - 3] + "..."
             message = f"{message}\n{packet}"
         else:
-            # Shrink legacy body so the cold packet still fits.
             keep_head = PRESENCE_LINE
-            body_budget = max(120, SESSION_CONTEXT_LIMIT - len(packet) - len(keep_head) - 8)
+            body_budget = max(
+                120, SESSION_CONTEXT_CHAR_LIMIT - len(packet) - len(keep_head) - 8
+            )
             legacy = message[len(PRESENCE_LINE) :].strip()
             if len(legacy) > body_budget:
                 legacy = legacy[: body_budget - 3] + "..."
             message = f"{keep_head} {legacy}\n{packet}"
-    elif len(message) > SESSION_CONTEXT_LIMIT:
-        message = message[: SESSION_CONTEXT_LIMIT - 3] + "..."
-    if len(message) > SESSION_CONTEXT_LIMIT:
-        message = message[: SESSION_CONTEXT_LIMIT - 3] + "..."
+    message = _fit_session_message(message)
     return {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
