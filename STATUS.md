@@ -42,7 +42,7 @@ onarmaz; pencere büyütmez. Ayrıntı: `docs/VIBE_FIRST_SESSION.md` § Codex un
 | TR docs + skill mid-turn honesty | `passed` | VIBE_FIRST_SESSION / CODEX_SCOPE / SKILL ≤480 |
 | Focused unittest (host_fit + PalaHookTests + plugin_experience) | `passed` | Ran 59 / OK |
 | Tam `verify.py` | `passed` | Ran 349 / OK (skipped=1); reproducible_zip SHA-256 `6E51FFFB8A5765EA92B05504885D69AD601E2D7E25987FD04F5F88090B548CFC` |
-| Final Desktop ZIP | `passed` | `pala-project-studio-0.8.1-final.zip`; SHA-256 `081F2D6A028EC7C24FC781DB2521BFD04182F6532C7D2DDEB727E53FE6CAE979`; 136 entries |
+| Final Desktop ZIP | `passed` | `pala-project-studio-0.8.1-final.zip`; SHA-256 `5C2DF2733EE54B82D12B34D93523A2EA4833B7E4C628CBE9D93C0188D5AE0E01`; 136 entries |
 | `/hooks` trust | `configured-not-verified` | owner |
 
 ## Hook clamp audit (post-SessionEnd=3) — 2026-08-09

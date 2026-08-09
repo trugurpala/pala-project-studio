@@ -71,7 +71,7 @@ M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
   reproducible_zip SHA-256
   `6E51FFFB8A5765EA92B05504885D69AD601E2D7E25987FD04F5F88090B548CFC`).
 - Final Desktop ZIP: `pala-project-studio-0.8.1-final.zip`
-  SHA-256 `081F2D6A028EC7C24FC781DB2521BFD04182F6532C7D2DDEB727E53FE6CAE979`
+  SHA-256 `5C2DF2733EE54B82D12B34D93523A2EA4833B7E4C628CBE9D93C0188D5AE0E01`
   (136 entries).
 - Hooks UI trust: `configured-not-verified`. Soft “A/B fixed”: yok.
 
