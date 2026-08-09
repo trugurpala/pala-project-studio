@@ -93,6 +93,78 @@ class QualityPlanTests(unittest.TestCase):
             plan = self.quality.build_quality_plan(root, tier="ticket")
             self.assertFalse(any(item["kind"] == "browser" for item in plan["checks"]))
 
+    def test_playwright_config_without_a_project_command_is_not_silently_skipped(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            (root / "package.json").write_text(
+                json.dumps({"dependencies": {"react": "1"}}), encoding="utf-8"
+            )
+            (root / "playwright.config.ts").write_text("export default {};\n", encoding="utf-8")
+            plan = self.quality.build_quality_plan(root, tier="ticket")
+            browser = next(item for item in plan["checks"] if item["kind"] == "browser")
+
+            self.assertEqual(browser["status"], "configured-not-verified")
+            self.assertIsNone(browser["command"])
+
+    def test_project_owned_contract_adds_a_shell_free_gate(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            contract = root / ".pala"
+            contract.mkdir()
+            (contract / "quality.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "checks": [
+                            {
+                                "id": "release-proof",
+                                "kind": "integration",
+                                "argv": ["py", "-3", "scripts/verify.py", "--mode", "source"],
+                                "tiers": ["ticket", "release"],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            plan = self.quality.build_quality_plan(root, tier="ticket")
+            proof = next(item for item in plan["checks"] if item["id"] == "integration:release-proof")
+
+            self.assertTrue(proof["required"])
+            self.assertEqual(proof["command"], "py -3 scripts/verify.py --mode source")
+
+    def test_invalid_contract_fails_closed_instead_of_executing_shell_text(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            contract = root / ".pala"
+            contract.mkdir()
+            (contract / "quality.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "checks": [
+                            {"id": "bad", "kind": "lint", "argv": ["npm", "run", "lint", "&&"]}
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            plan = self.quality.build_quality_plan(root)
+            blocked = next(item for item in plan["checks"] if item["id"] == "integration:quality-contract")
+
+            self.assertEqual(blocked["status"], "blocked")
+            self.assertIsNone(blocked["command"])
+
+    def test_vendor_and_runtime_trees_do_not_create_false_ui_or_python_gates(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            (root / "node_modules" / "fixture").mkdir(parents=True)
+            (root / "node_modules" / "fixture" / "test_fake.py").write_text("pass\n", encoding="utf-8")
+            (root / "node_modules" / "fixture" / "index.html").write_text("<main />", encoding="utf-8")
+            plan = self.quality.build_quality_plan(root)
+
+            self.assertFalse(any(item["kind"] in {"unit", "browser"} for item in plan["checks"]))
+
     def test_unavailable_optional_scanner_is_not_claimed_passed(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
             root = Path(temp)
@@ -104,6 +176,20 @@ class QualityPlanTests(unittest.TestCase):
 
             self.assertEqual(security["status"], "configured-not-verified")
             self.assertTrue(security["required"])
+
+    def test_osv_ci_mention_never_becomes_a_networked_pala_command(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            workflow = root / ".github" / "workflows"
+            workflow.mkdir(parents=True)
+            (workflow / "security.yml").write_text(
+                "- run: osv-scanner scan source --recursive .\n", encoding="utf-8"
+            )
+            plan = self.quality.build_quality_plan(root, which=lambda _: "C:/tools/osv-scanner")
+            dependency = next(item for item in plan["checks"] if item["id"] == "dependency:osv-scanner")
+
+            self.assertEqual(dependency["status"], "configured-not-verified")
+            self.assertIsNone(dependency["command"])
 
     def test_risk_marks_auth_and_migration_changes_high(self) -> None:
         plan = self.quality.build_quality_plan(
@@ -207,6 +293,29 @@ class QualityLedgerTests(unittest.TestCase):
             changed_surface = {**initial, "changed_files": ["src/new.py"]}
             self.quality.write_ledger(root, "Q4", changed_surface)
             self.assertEqual(self.quality.read_ledger(root, "Q4")["checks"][0]["status"], "not-run")
+
+    def test_same_path_content_change_invalidates_prior_evidence(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            source = root / "src"
+            source.mkdir()
+            tests = root / "tests"
+            tests.mkdir()
+            (tests / "test_sample.py").write_text("pass\n", encoding="utf-8")
+            changed = source / "feature.py"
+            changed.write_text("value = 1\n", encoding="utf-8")
+            first = self.quality.build_quality_plan(root, changed_files=["src/feature.py"])
+            self.quality.write_ledger(root, "Q9", first)
+            self.quality.record_result(
+                root, "Q9", "unit:unittest", status="passed",
+                command="py -3 -m unittest discover", exit_code=0,
+            )
+
+            changed.write_text("value = 2\n", encoding="utf-8")
+            second = self.quality.build_quality_plan(root, changed_files=["src/feature.py"])
+            self.quality.write_ledger(root, "Q9", second)
+
+            self.assertEqual(self.quality.read_ledger(root, "Q9")["checks"][0]["status"], "not-run")
 
     def test_empty_plan_never_becomes_a_vacuous_pass(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
