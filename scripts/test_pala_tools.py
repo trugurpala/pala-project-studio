@@ -105,6 +105,28 @@ class PalaStateTests(unittest.TestCase):
             self.assertIn("RTK_TELEMETRY_DISABLED", result["env"])
             for unsafe in ("git commit -m x", "rg x | sort", "grep password .", "npm install"):
                 self.assertIsNone(rtk.rewrite(unsafe, original, binary))
+
+    def test_rtk_rejects_newline_and_line_separator_injection(self) -> None:
+        rtk = load_module("pala_rtk_newline", "pala_rtk.py")
+        with tempfile.TemporaryDirectory() as temp:
+            binary = Path(temp) / "rtk.exe"
+            binary.write_text("", encoding="utf-8")
+            original = {"command": "git status", "timeout_ms": 10, "cwd": "C:/project"}
+            for unsafe in (
+                "git status\nrm -rf /",
+                "git status\r\necho pwned",
+                "rg foo\u2028echo pwned",
+                "rg foo\u2029Write-Host pwned",
+                "git\nstatus",
+            ):
+                self.assertIsNone(
+                    rtk.rewrite(unsafe, original, binary),
+                    msg=f"expected refuse for {unsafe!r}",
+                )
+            safe = rtk.rewrite("git status", original, binary)
+            self.assertIsNotNone(safe)
+            self.assertNotIn("\n", safe["command"])
+            self.assertNotIn("\r", safe["command"])
     def test_openspec_adapter_is_read_only_for_present_and_absent_projects(self) -> None:
         adapter = load_module("pala_openspec", "pala_openspec.py").OpenSpecAdapter()
         with tempfile.TemporaryDirectory() as temp:
@@ -1376,6 +1398,14 @@ class PalaViewA11yTests(unittest.TestCase):
             "debugging_brain": {"ok": True, "open": 2, "fixed": 1, "total": 3},
             "last_gate": {"label": "unittest: passed", "status": "passed"},
             "freshness_level": "fresh",
+            "quality": {
+                "status": "blocked",
+                "ticket": "T1",
+                "risk": {"level": "high", "reasons": ["authentication"]},
+                "coverage": {"passed": 0, "required": 1},
+                "last_problem": "unit:test=not-run",
+                "next_action": "run unit:test",
+            },
         }
         model.update(overrides)
         return pala_view.render(model, freshness_fn=lambda _ts: "fresh")
@@ -1401,11 +1431,12 @@ class PalaViewA11yTests(unittest.TestCase):
         html = self._sample_html()
         self.assertIn('class="decision-strip"', html)
         self.assertIn('aria-label="Karar sinyalleri"', html)
-        for key in ("Şimdi", "açık INC", "ticket uyumu", "son gate", "tazelik"):
+        for key in ("Aktif ticket", "Risk seviyesi", "Quality coverage", "Son eksik gate", "Tek sonraki eylem"):
             self.assertIn(key, html)
-        self.assertIn("2 açık", html)
-        self.assertIn("unittest: passed", html)
-        self.assertIn("taze", html)
+        self.assertIn("high", html)
+        self.assertIn("0/1 passed", html)
+        self.assertIn("unit:test=not-run", html)
+        self.assertIn("run unit:test", html)
         self.assertNotIn("speed", html.casefold())
         self.assertNotIn("%", html.split("Karar sinyalleri", 1)[-1][:800])
 

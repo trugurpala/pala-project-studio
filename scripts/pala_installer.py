@@ -583,31 +583,69 @@ def tree_fingerprint(root: Path) -> str:
     return digest.hexdigest().upper()
 
 
-def install_has_user_added_files(install_root: Path) -> bool:
-    """True when install root has unowned entries outside the allowlisted bundle.
+def bundle_file_hashes(root: Path) -> dict[str, str]:
+    """Return the exact copied-file manifest used for uninstall protection."""
+    root = root.resolve()
+    return {
+        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest().upper()
+        for path in bundle_files(root)
+    }
 
-    Fingerprint ignores extras (issue #13). Uninstall must still refuse to wipe
-    user-added content that sits beside the owned allowlist.
+
+def is_runtime_artifact(relative: Path) -> bool:
+    """Pala-owned runtime leftovers that may appear after installation."""
+    return (
+        any(part.casefold() == "__pycache__" for part in relative.parts)
+        or relative.suffix.casefold() in {".pyc", ".pyo"}
+    )
+
+
+def install_has_user_added_files(
+    install_root: Path, file_hashes: dict[str, object] | None = None
+) -> bool:
+    """True when an install tree has an unowned/changed non-runtime entry.
+
+    New installs persist an exact file manifest. That protects files inside
+    owned directories too (including `.env`), rather than trusting today's
+    mutable directory contents. Legacy installs retain the older fallback.
     """
     install_root = install_root.resolve()
     if not install_root.is_dir():
         return False
-    allowed = {
+    expected = {
+        str(path).replace("\\", "/").casefold(): str(digest).casefold()
+        for path, digest in (file_hashes or {}).items()
+        if isinstance(path, str) and isinstance(digest, str)
+    }
+    expected_dirs: set[str] = set()
+    for relative in expected:
+        for parent in Path(relative).parents:
+            value = parent.as_posix().casefold()
+            if value != ".":
+                expected_dirs.add(value)
+    legacy_allowed = {
         path.relative_to(install_root).as_posix().casefold()
         for path in bundle_files(install_root)
     }
     for path in install_root.rglob("*"):
-        # A symlink is never part of Pala's copied bundle.  Do not follow or
-        # delete it: it may point outside the install root or represent user
-        # data added after installation.
+        # Never follow a user link: it can point outside this install root.
         if path.is_symlink():
             return True
-        if path.is_dir():
-            continue
         relative = path.relative_to(install_root)
-        if not safe_source_file(relative):
+        if is_runtime_artifact(relative):
             continue
-        if relative.as_posix().casefold() not in allowed:
+        key = relative.as_posix().casefold()
+        if path.is_dir():
+            if expected and key not in expected_dirs:
+                return True
+            continue
+        if expected:
+            if key not in expected:
+                return True
+            if hashlib.sha256(path.read_bytes()).hexdigest().casefold() != expected[key]:
+                return True
+            continue
+        if not safe_source_file(relative) or key not in legacy_allowed:
             return True
     return False
 
@@ -1070,6 +1108,7 @@ def install_bundle(
             "install_root": str(install_root),
             "version": source_manifest["version"],
             "fingerprint": installed_fingerprint,
+            "file_hashes": bundle_file_hashes(install_root),
             "source": OFFICIAL_REPOSITORY,
             "license": "MIT",
             "plugin_id": PLUGIN_ID,
@@ -1220,8 +1259,9 @@ def uninstall_bundle(
     if state is None:
         return {"status": "external_conflict", "changed": False}
     actual = tree_fingerprint(install_root)
+    file_hashes = state.get("file_hashes") if isinstance(state.get("file_hashes"), dict) else None
     if state.get("fingerprint") != actual or install_has_user_added_files(
-        install_root
+        install_root, file_hashes
     ):
         return {"status": "modified", "changed": False}
     if dry_run:
@@ -1248,6 +1288,18 @@ def finalize_verified_uninstall(
     state = owned_state(install_root, state_root)
     if state is None:
         return {"status": "external_conflict", "changed": False}
+    # Re-validate after Codex remove. Missing Pala-owned files are expected,
+    # but a remaining user file, symlink, or changed owned file is never wiped.
+    if install_root.exists():
+        file_hashes = state.get("file_hashes") if isinstance(state.get("file_hashes"), dict) else None
+        if file_hashes is None:
+            # Legacy state cannot distinguish a Codex-removed file from an
+            # owned-file modification, so retain its conservative behavior.
+            modified = state.get("fingerprint") != tree_fingerprint(install_root)
+        else:
+            modified = install_has_user_added_files(install_root, file_hashes)
+        if modified:
+            return {"status": "modified", "changed": False}
     if install_root.exists():
         trash = install_root.parent / f".{OWNER}.uninstall-{uuid.uuid4().hex}"
         os.replace(install_root, trash)

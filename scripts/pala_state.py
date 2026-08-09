@@ -482,6 +482,12 @@ def _normalize_evidence_entries(entries: list[str]) -> list[dict[str, str]]:
                 "checkpoint refused: evidence must look like "
                 "'unittest=passed' or 'install=configured-not-verified'"
             )
+        name = match.group("name").strip()[:120]
+        if name.casefold() in SOFT_DONE_RE:
+            raise ValueError(
+                "checkpoint refused: soft done word is not an evidence name; "
+                "use a real gate like 'unittest=passed'"
+            )
         status = match.group("status").casefold().replace("_", "-")
         if status not in EVIDENCE_STATUSES:
             raise ValueError(f"unsupported evidence status: {status}")
@@ -489,7 +495,7 @@ def _normalize_evidence_entries(entries: list[str]) -> list[dict[str, str]]:
             raise ValueError("checkpoint refused: verification contains failed status")
         parsed.append(
             {
-                "name": match.group("name").strip()[:120],
+                "name": name,
                 "status": status,
                 "detail": match.group("rest").strip()[:200],
             }

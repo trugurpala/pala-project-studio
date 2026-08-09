@@ -1528,6 +1528,30 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertFalse(install_root.exists())
             self.assertFalse((state_root / "install-state.json").exists())
 
+    def test_finalize_verified_uninstall_refuses_user_added_after_dry_run(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root)
+            install_root = root / "local" / "Pala" / "marketplace"
+            state_root = root / "local" / "Pala"
+            self.installer.install_bundle(source, install_root, state_root)
+            preview = self.installer.uninstall_bundle(
+                install_root, state_root, dry_run=True
+            )
+            self.assertEqual(preview["status"], "would_uninstall")
+            marker = install_root / "user-added-after-preview.txt"
+            marker.write_text("preserve", encoding="utf-8")
+
+            report = self.installer.finalize_verified_uninstall(
+                install_root, state_root
+            )
+
+            self.assertEqual(report["status"], "modified")
+            self.assertFalse(report["changed"])
+            self.assertTrue(marker.is_file())
+            self.assertTrue(install_root.exists())
+            self.assertTrue((state_root / "install-state.json").exists())
+
     def test_uninstall_refuses_modified_managed_installation(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
             root = Path(temp)
@@ -1537,6 +1561,22 @@ class InstallerCoreTests(unittest.TestCase):
             self.installer.install_bundle(source, install_root, state_root)
             marker = install_root / "user-added.txt"
             marker.write_text("preserve", encoding="utf-8")
+
+            report = self.installer.uninstall_bundle(install_root, state_root)
+
+            self.assertEqual(report["status"], "modified")
+            self.assertTrue(marker.is_file())
+
+    def test_uninstall_refuses_unowned_env_file_inside_scripts(self) -> None:
+        """Exact manifests protect files that the bundle allowlist ignores."""
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root)
+            install_root = root / "home" / "plugins" / "pala-project-studio"
+            state_root = root / "local" / "Pala"
+            self.installer.install_bundle(source, install_root, state_root)
+            marker = install_root / "scripts" / ".env.local"
+            marker.write_text("do-not-delete", encoding="utf-8")
 
             report = self.installer.uninstall_bundle(install_root, state_root)
 

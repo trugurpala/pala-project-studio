@@ -73,14 +73,22 @@ def _fit_session_message(message: str) -> str:
 
 
 def git_root(cwd: Path) -> Path | None:
-    result = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode == 0 and result.stdout.strip():
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=2,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        result = None
+    if (
+        result is not None
+        and result.returncode == 0
+        and result.stdout.strip()
+    ):
         return Path(result.stdout.strip()).resolve()
     for candidate in (cwd.resolve(), *cwd.resolve().parents):
         if (candidate / MANIFEST).is_file():
