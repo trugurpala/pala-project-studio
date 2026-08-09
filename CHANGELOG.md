@@ -11,6 +11,13 @@ M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
 0.8.1 release ground (no GitHub tag yet).
 
 ### Added
+- Delivery Quality Engine: read-only project-native gate discovery,
+  ignored per-ticket evidence ledger, safe artefact references, truthful
+  `passed`/`blocked` decision, and five-signal Status HTML.
+- Source, portable-ZIP, and installed-package verification profiles;
+  `verify.py --mode portable` extracts and verifies an archive safely.
+- Internal 20-source pattern intake matrix in `docs/PALA_0_9_BENCHMARK.md`;
+  patterns are evaluated, not copied or installed.
 - Approx-token helper `scripts/pala_tokens.py` and host-fit contracts
   `scripts/test_pala_host_fit.py`.
 - Thin-skill companion `skills/pala-project-finisher/references/kontrol-et.md`.
@@ -38,6 +45,10 @@ M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
   checklist aligned; Plus-paste and ZIP-upload-as-primary stay myths.
 - Vibe honesty: unregistered cwd → SessionStart silent; Doctor
   `plugin_next_step` for `plugin=drifted` (Repair/Update/sync).
+- Context restore honesty: SessionStart matcher `startup|resume|clear|compact`;
+  resume/clear/compact prefixes; cold-packet path always surfaces `next=`;
+  Turkish “Codex unuttu → ne olur” in `VIBE_FIRST_SESSION` + `CODEX_SCOPE`;
+  skill mid-turn re-read line (no fake continuous memory).
 
 ### Fixed
 - Checkpoint / commit materialization no longer treats
@@ -46,30 +57,22 @@ M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
 - Uninstall again refuses user-added non-junk files beside the allowlist
   (`status=modified`) while `__pycache__` junk still does not block uninstall
   or mark drift (issue #13).
+- Uninstall also refuses user-added symlinks rather than following or deleting
+  them.
+- SessionStart owned-ticket merge no longer drops PreCompact `needs_reconcile`
+  (restore path after compact + dirty ticket).
 
 ### Evidence (local close — 2026-08-09)
 - Branch `feat/m30-vibe-codex-host-fit`; push/PR/tag **not run** (owner).
-- Focused unittest (checkpoint + host-fit + self_audit + tokens): Ran 16 / OK
-  (M30 tur).
-- Vibe-install focused unittest
-  (`test_plugin_experience` + `test_pala_host_fit` + `test_pala_self_audit`):
-  Ran 43 / OK (`passed`).
-- Gate0 p0-smoke 9/9; SHA-256
-  `6FE7A3EC63D850BE8DE145EB260A0E401170D08FAB4C85A1BC5C50DD69680AEB`.
-- Prior local portable ZIP (gitignored `*.zip`; digest only):
-  `artifacts/portable/pala-project-studio-0.8.1-m30-local.zip`
-  SHA-256 `6270BC34F20678AD3C3A25381DA727AEBB4C4D173292D021CE4E219242ABAE1E`
-  (130 entries).
-- Vibe-install portable ZIP (gitignored; Desktop smoke copy):
-  `artifacts/portable/pala-project-studio-0.8.1-vibe-install.zip`
-  SHA-256 `18DA984F548B54C450016D46135B6920CF382E62C1446F3E88BE0912C06ABA36`
-  (132 entries).
-- `verify.py --mode installed`: `passed` (prior M30 run).
-- Full source `verify.py`: `passed` (Ran 320 / OK;
+- Context-restore focused unittest
+  (`test_pala_host_fit` + `PalaHookTests` + `test_plugin_experience`):
+  Ran 59 / OK (`passed`).
+- Full source `verify.py`: `passed` (Ran 349 / OK, skipped=1;
   reproducible_zip SHA-256
-  `C5647286C63A889CC5B41C192F53E3A57FBEDD7810FFFDF464015C49B99E2A48`).
-- Doctor after `Install-Pala -Mode Repair`: çekirdek `plugin=ready` /
-  `healthy=True` (`passed`).
+  `6E51FFFB8A5765EA92B05504885D69AD601E2D7E25987FD04F5F88090B548CFC`).
+- Final Desktop ZIP: `pala-project-studio-0.8.1-final.zip`
+  SHA-256 `081F2D6A028EC7C24FC781DB2521BFD04182F6532C7D2DDEB727E53FE6CAE979`
+  (136 entries).
 - Hooks UI trust: `configured-not-verified`. Soft “A/B fixed”: yok.
 
 ## [0.8.1] - 2026-08-08

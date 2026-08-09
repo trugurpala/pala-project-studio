@@ -25,12 +25,26 @@ Kaynaklar: [Build skills](https://learn.chatgpt.com/docs/build-skills),
 [Plugin mimarisi](https://developers.openai.com/plugins/concepts/plugins),
 Codex host `additionalContext` rendering (~1000-token hard cap).
 
+## Codex unuttu → Pala ne zaman geri getirir?
+
+Host `SessionStart` kaynakları: `startup` | `resume` | `clear` | `compact`
+([Hooks](https://developers.openai.com/codex/hooks)). Pala matcher’ı bu dördünü
+de kapsar. `PreCompact` diskte `needs_reconcile` işaretler; compact sonrası
+SessionStart cold packet + aktif ticket + next action enjekte eder (char 1800 +
+approx-token ≤900; host ~1000 tavan).
+
+**Yapamaz:** Turn içinde, host event olmadan “unutunca kendini getir”. Mid-turn
+forget için kullanıcı `durumu oku` / yeni sohbet / cold packet ister. Soft
+restart bazı CLI sürümlerinde SessionStart atlayabilir (host boşluğu; Pala
+uydurmaz). Peer kalıp: dosya hafızası + compact sonrası yeniden enjekte — sürekli
+sohbet belleği değil.
+
 ## Pala'nın yapabildiği
 
 - Verilen dosya ve araç yetkileri içinde projeyi keşfetmek, plan/durum
   belgelerini uzlaştırmak ve yetkilendirilmiş yerel işi uygulamak.
-- Aktif işi dosyada saklayıp yeni oturum veya compaction sonrasında kısa bağlama
-  geri yüklemek.
+- Aktif işi dosyada saklayıp yeni oturum, resume/clear veya compaction sonrasında
+  kısa bağlama (cold packet) geri yüklemek.
 - Değişen belge ve Git çalışma ağacı içeriğini checkpoint ile karşılaştırmak;
   aynı snapshot'ın atomik commit edilmesini yeni işten ayırmak.
 - Dar, ticket, milestone ve release doğrulamasını doğru sınırda seçmek.
@@ -41,6 +55,7 @@ Codex host `additionalContext` rendering (~1000-token hard cap).
 
 - Modelin context window'unu, token kotasını, hızını veya reasoning kapasitesini
   büyütmek.
+- Host `SessionStart` / `PreCompact` olmadan mid-turn unutmayı otomatik onarmak.
 - Oturum ve araç çalışması dışında sürekli çalışan bağımsız bir ajan olmak.
 - Olmayan erişim, kimlik bilgisi, bütçe veya sağlayıcı yetkisi üretmek.
 - Kullanıcı kararı gerektiren ürün kapsamını güvenle tahmin edip kalıcılaştırmak.

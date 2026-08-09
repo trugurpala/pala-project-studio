@@ -106,6 +106,27 @@ py -3 scripts\pala_self_audit.py
 Yerel store: `%USERPROFILE%\Desktop\Codex\pala.sqlite`.
 Fork paketi: [FORK_PACK.md](FORK_PACK.md).
 
+## Codex unuttu → ne olur?
+
+Pala **sürekli bellek değildir**; Codex host event’lerinde kısa yön yeniden
+enjekte eder. Pencere/kota büyütmez.
+
+| Durum | Pala ne yapar? | Sen ne yaparsın? |
+| --- | --- | --- |
+| Yeni sohbet / `startup` | SessionStart → presence + cold packet + aktif ticket + next | Genelde otomatik; STATUS’a güven |
+| `resume` / `clear` | SessionStart yeniden enjekte (matcher: startup\|resume\|clear\|compact) | Aktif ticket’ı onayla; uydurma yok |
+| Sıkıştırma (`PreCompact` → `compact`) | PreCompact `needs_reconcile`; sonraki SessionStart cold packet + “Context was compacted…” | Edite geçmeden STATUS + aktif PLAN kartı |
+| Turn **içinde** unutma (host event yok) | **Yeniden enjekte yok** — mid-turn hook yok | Yaz: `durumu oku` / yeni sohbet; veya cold packet iste |
+| Soft restart (bazı CLI sürümleri SessionStart atlar) | Hook çalışmayabilir (host boşluğu) | Yeni sohbet veya açıkça STATUS/PLAN oku |
+| Kayıtsız cwd | SessionStart **sessiz** (bozuk değil) | Önce register |
+
+Kalıcı gerçek: dosyalar (`STATUS.md` / `PLAN.md` / workflow) + isteğe bağlı cold
+packet. Soft “hatırlıyorum” kanıt sayılmaz.
+
+Dağıtım sınırları: [PALA_EVERYWHERE.md](PALA_EVERYWHERE.md).
+Kapsam: [CODEX_SCOPE_AND_LIMITS.md](CODEX_SCOPE_AND_LIMITS.md).
+Release (owner): [RELEASE_0.8.1_CHECKLIST.md](RELEASE_0.8.1_CHECKLIST.md).
+
 ## Bilerek yok
 
 - ChatGPT Plus sohbete ZIP / metin yapıştırarak kurulum
@@ -113,6 +134,4 @@ Fork paketi: [FORK_PACK.md](FORK_PACK.md).
 - Ölçülmemiş “daha hızlı / daha az token” yüzdesi
 - Hook içinden commit, push, release veya deploy
 - Doctor yeşil = tam yetki / `/hooks` bitti iddiası
-
-Dağıtım sınırları: [PALA_EVERYWHERE.md](PALA_EVERYWHERE.md).
-Release (owner): [RELEASE_0.8.1_CHECKLIST.md](RELEASE_0.8.1_CHECKLIST.md).
+- Mid-turn “unutunca kendini getir” iddiası (host event olmadan)

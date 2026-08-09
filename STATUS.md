@@ -10,7 +10,7 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 | Alan | Değer |
 | --- | --- |
-| Güncelleme | 2026-08-09 — Hook clamp audit: başka clamp riski yok; final ZIP |
+| Güncelleme | 2026-08-09 — Context restore honesty (unutunca kendini getir) |
 | Branch | `feat/m30-vibe-codex-host-fit` (yerel; push/PR bu turda yok) |
 | Manifest | `0.8.1+codex.20260808124500` |
 | Son GitHub release | `v0.8.0` (`passed`) — https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0 |
@@ -24,6 +24,26 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 3. Hazırsan `docs/RELEASE_0.8.1_CHECKLIST.md` ile `v0.8.1` tag + release bas.  
 
 Soft full-product “A/B fixed”: **yok**.
+
+## Context restore honesty — 2026-08-09
+
+Dürüst ürün cevabı: Pala host `SessionStart` (`startup|resume|clear|compact`) +
+`PreCompact` ile yeniden yönlendirir; mid-turn unutmayı host event olmadan
+onarmaz; pencere büyütmez. Ayrıntı: `docs/VIBE_FIRST_SESSION.md` § Codex unuttu.
+
+| Kapı | Sonuç | Not |
+| --- | --- | --- |
+| Codex SessionStart sources (docs) | `passed` | startup/resume/clear/compact; compact sonrası additionalContext |
+| Mid-turn re-inject (host event yok) | `passed` (sınır) | Yapamaz; kullanıcı `durumu oku` / yeni sohbet |
+| Soft restart SessionStart skip | `configured-not-verified` | Host boşluğu (openai/codex#24228); Pala uydurmaz |
+| Matcher `startup\|resume\|clear\|compact` | `passed` | `hooks/hooks.json` |
+| PreCompact → needs_reconcile → SessionStart | `passed` | owned-ticket merge `needs_reconcile` düşürmez |
+| Cold packet + active + next (resume/compact) | `passed` | SessionStart header’da `next=` her zaman |
+| TR docs + skill mid-turn honesty | `passed` | VIBE_FIRST_SESSION / CODEX_SCOPE / SKILL ≤480 |
+| Focused unittest (host_fit + PalaHookTests + plugin_experience) | `passed` | Ran 59 / OK |
+| Tam `verify.py` | `passed` | Ran 349 / OK (skipped=1); reproducible_zip SHA-256 `6E51FFFB8A5765EA92B05504885D69AD601E2D7E25987FD04F5F88090B548CFC` |
+| Final Desktop ZIP | `passed` | `pala-project-studio-0.8.1-final.zip`; SHA-256 `081F2D6A028EC7C24FC781DB2521BFD04182F6532C7D2DDEB727E53FE6CAE979`; 136 entries |
+| `/hooks` trust | `configured-not-verified` | owner |
 
 ## Hook clamp audit (post-SessionEnd=3) — 2026-08-09
 

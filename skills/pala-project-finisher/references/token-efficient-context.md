@@ -13,10 +13,12 @@ prompt and preserving durable facts in files.
 4. Inspect source and tests nearest to the change; avoid generated trees.
 5. Summarize command evidence in status instead of copying long logs into chat.
 
-Keep one chat focused on one coherent outcome. After compaction, reload the
-short status and active ticket rather than replaying the full plan. Start a new
-chat when the outcome changes, while retaining project files as the durable
-handoff.
+Keep one chat focused on one coherent outcome. After compaction, Codex may fire
+`SessionStart` with `source: compact`; Pala re-injects presence + cold packet +
+active ticket + next action. Mid-turn forgetfulness without a host event has no
+automatic re-inject — re-read STATUS/PLAN, ask for a cold packet, or start a
+new chat. Do not pretend continuous chat memory. Start a new chat when the
+outcome changes, while retaining project files as the durable handoff.
 
 Codex currently applies progressive disclosure to skills, a configurable
 combined project-instruction byte limit, and bounded model-visible hook output.

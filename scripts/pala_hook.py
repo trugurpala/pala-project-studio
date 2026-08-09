@@ -159,6 +159,17 @@ def local_health(root: Path) -> dict[str, str]:
     }
 
 
+def _session_restore_prefix(source: str | None, compacted: bool) -> str:
+    """Orient after host SessionStart sources; never claim mid-turn memory."""
+    if compacted or source == "compact":
+        return "Context was compacted; reconcile before edits. "
+    if source == "resume":
+        return "Session resumed; re-read STATUS + active ticket before edits. "
+    if source == "clear":
+        return "Session cleared; reload STATUS + active ticket before edits. "
+    return ""
+
+
 def session_context(
     documents: dict[str, object],
     workflow: dict[str, object] | None,
@@ -170,17 +181,21 @@ def session_context(
     memory: dict[str, object] | None = None,
     tools_summary: str | None = None,
     cold_packet_text: str | None = None,
+    source: str | None = None,
 ) -> dict[str, object]:
     status = documents.get("status")
     plan = documents.get("plan")
     project = documents.get("project")
-    prefix = "Context was compacted; reconcile before edits. " if compacted else ""
+    prefix = _session_restore_prefix(source, compacted)
     active = workflow.get("active_ticket") if workflow else None
     next_action = workflow.get("next_action") if workflow else None
     dirty = bool(workflow and workflow.get("dirty"))
     blockers = workflow.get("blockers", []) if workflow else []
     blocker_count = len(blockers) if isinstance(blockers, list) else 0
-    needs_reconcile = bool(reconciliation and reconciliation.get("needed"))
+    needs_reconcile = bool(
+        (reconciliation and reconciliation.get("needed"))
+        or (workflow and workflow.get("needs_reconcile"))
+    )
     reason_count = len(reconciliation.get("reasons", [])) if reconciliation else 0
     kind = project_kind if isinstance(project_kind, str) else "unknown"
     health = health or {}
@@ -210,10 +225,11 @@ def session_context(
             cmd_hint = str(cmd_memory.get("hint") or "").strip() or None
     tools = tools_summary or "tools=n/a"
     packet = (cold_packet_text or "").strip()
+    next_text = next_action or "reconcile first"
     if packet:
         message = (
             f"{PRESENCE_LINE} {prefix}{health_text}"
-            f"kind={kind}; active={active or 'none'}; "
+            f"kind={kind}; active={active or 'none'}; next={next_text}; "
             f"status={status or project}; plan={plan}. "
             f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
             f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
@@ -226,7 +242,7 @@ def session_context(
             f"Memory read_order=AGENTS>CURRENT_STATUS>PROGRESS>plan>TOOLING>DEBUG>git. "
             f"Read status first: status={status or project}; "
             f"active ticket only in plan={plan}. "
-            f"active={active or 'none'}; next={next_action or 'reconcile first'}; "
+            f"active={active or 'none'}; next={next_text}; "
             f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
             f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
             f"ticket_mismatch={str(mismatch).lower()}; debug_open={debug_open}; {tools}. "
@@ -295,7 +311,11 @@ def main() -> int:
 
     if event_name == "PreCompact":
         workflow = load_workflow(root)
-        if workflow and workflow.get("active_ticket"):
+        if workflow and (
+            workflow.get("active_ticket")
+            or workflow.get("dirty")
+            or workflow.get("next_action")
+        ):
             workflow["needs_reconcile"] = True
             save_workflow(root, workflow)
         session_id = event.get("session_id")
@@ -307,18 +327,28 @@ def main() -> int:
     if event_name == "SessionStart":
         workflow = load_workflow(root)
         session_id = event.get("session_id")
+        source = event.get("source") if isinstance(event.get("source"), str) else None
         if isinstance(session_id, str) and session_id.strip():
             WorkflowStore(root).heartbeat(session_id, "session_start")
             owned_ticket = WorkflowStore(root).active_for_session(session_id)
             if owned_ticket is not None:
-                workflow = {
-                    "active_ticket": owned_ticket.get("ticket"),
-                    "next_action": owned_ticket.get("next_action"),
-                    "dirty": owned_ticket.get("dirty"),
+                # Merge into disk workflow — never drop needs_reconcile from PreCompact.
+                merged = dict(workflow) if isinstance(workflow, dict) else {
+                    "schema_version": 2,
                     "blockers": [],
                 }
+                merged["active_ticket"] = owned_ticket.get("ticket")
+                owned_next = owned_ticket.get("next_action")
+                if isinstance(owned_next, str) and owned_next.strip():
+                    merged["next_action"] = owned_next
+                elif not merged.get("next_action"):
+                    merged["next_action"] = "reconcile first"
+                merged["dirty"] = owned_ticket.get("dirty")
+                if not isinstance(merged.get("blockers"), list):
+                    merged["blockers"] = []
+                workflow = merged
         reconciliation = reconciliation_report(root, payload, workflow)
-        compacted = event.get("source") == "compact" or bool(
+        compacted = source == "compact" or bool(
             workflow and workflow.get("needs_reconcile")
         )
         memory = None
@@ -402,6 +432,7 @@ def main() -> int:
                 memory,
                 tools_summary,
                 cold_packet_text=cold_text,
+                source=source,
             )
         )
         return 0
