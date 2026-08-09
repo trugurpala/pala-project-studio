@@ -1,7 +1,7 @@
 # Pala Project Studio
 
 ![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
-[![Release v0.8.0](https://img.shields.io/badge/release-v0.8.0-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0)
+[![Release v0.8.1](https://img.shields.io/badge/release-v0.8.1-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-index-0A66C2)](docs/README.md)
 
@@ -19,10 +19,8 @@ eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bul
 aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
 göre katmanlandırır.
 
-- Son yayımlanmış GitHub sürüm **0.8.0** (M21–M24). Release:
-  [v0.8.0](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0).
-- Kaynak ağaç **0.8.1** hazırlığı (M25/M10 + issue #13 install artifact): GitHub
-  `v0.8.1` henüz `not-run` (yayın ayrı yetki).
+- Son yayımlanmış GitHub sürüm **0.8.1**. Release:
+  [v0.8.1](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.1).
 - Değişiklik günlüğü: [CHANGELOG.md](CHANGELOG.md) · Destek: [SUPPORT.md](SUPPORT.md)
   · Doküman dizini: [docs/README.md](docs/README.md)
 - Fork paketi: [docs/FORK_PACK.md](docs/FORK_PACK.md)
@@ -54,10 +52,9 @@ Kayıtlı projede SessionStart: `Pala burada — bu oturumda yanındayım.`
 
 ### İkincil — ZIP / tam toolkit (çevrimdışı)
 
-Son yayımlanmış taşınabilir sürüm (şu an GitHub indirmesi **0.8.0**; kaynak
-ağaç **0.8.1** hazırlığı — tag owner işi):
+Son yayımlanmış taşınabilir sürüm (GitHub indirmesi **0.8.1**):
 
-[Pala Project Studio 0.8.0'ı indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.8.0.zip)
+[Pala Project Studio 0.8.1'i indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.8.1-final.zip)
 
 ZIP’i **çıkar** (Plugins’e yükleme). Kökte `Kur.cmd` çift tık veya:
 

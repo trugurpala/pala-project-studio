@@ -10,20 +10,29 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 | Alan | Değer |
 | --- | --- |
-| Güncelleme | 2026-08-09 — M32 Delivery Quality Engine 0.9 + packaging P1 |
-| Branch | `feat/m30-vibe-codex-host-fit` (yerel; push/PR bu turda yok) |
+| Güncelleme | 2026-08-09 — publish: PR #20 merged, tag/release v0.8.1 |
+| Branch | `main` @ `9cf3b0f` (PR #20 merged) |
 | Manifest | `0.8.1+codex.20260808124500` |
-| Son GitHub release | `v0.8.0` (`passed`) — https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0 |
-| Tag/release `v0.8.1` | `not-run` (owner) |
+| Son GitHub release | `v0.8.1` (`passed`) — https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.1 |
+| Tag/release `v0.8.1` | `passed` — asset `pala-project-studio-0.8.1-final.zip` SHA-256 `69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53` |
 | Repo | public (`passed`) |
 
 ## Şu an tek sonraki iş (owner)
 
-1. Bu branch’i istediğin gibi push / PR / merge et.  
-2. Hazırsan `docs/RELEASE_0.8.1_CHECKLIST.md` ile `v0.8.1` tag + release bas.  
-3. Codex Work’te `/hooks` trust (insan).  
+1. Codex Work'te `/hooks` trust (insan) — hâlâ `configured-not-verified`.  
 
-Soft full-product “A/B fixed”: **yok**.
+Soft full-product "A/B fixed": **yok**.
+
+## Publish phase D — 2026-08-09
+
+| Kapı | Sonuç | Not |
+| --- | --- | --- |
+| Push `feat/m30-vibe-codex-host-fit` | `passed` | `origin/feat/m30-vibe-codex-host-fit` @ `8484b3a` |
+| PR → `main` | `passed` | https://github.com/trugurpala/pala-project-studio/pull/20 merged (`9cf3b0f`) |
+| Tag `v0.8.1` | `passed` | on `main` merge commit |
+| GitHub release | `passed` | https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.1 |
+| Release ZIP asset | `passed` | `pala-project-studio-0.8.1-final.zip`; SHA-256 `69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53` |
+| `/hooks` trust | `configured-not-verified` | owner UI; unchanged |
 
 ## M32 Delivery Quality Engine 0.9 + packaging P1 — 2026-08-09
 
@@ -39,7 +48,7 @@ checkpoint `--quality-ticket` fail-closed; portable/install allowlist
 | Tam `verify.py` | `passed` | Ran 352 / OK (skipped=1); reproducible_zip SHA-256 `69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53` |
 | Final Desktop ZIP | `passed` | `C:\Users\Pala-Pc\Desktop\pala-project-studio-0.8.1-final.zip`; SHA-256 `69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53`; 140 entries |
 | `/hooks` trust | `configured-not-verified` | owner |
-| Push / PR / tag | `not-run` | istenmedi (sonraki ajan) |
+| Push / PR / tag | `passed` | PR https://github.com/trugurpala/pala-project-studio/pull/20 merged; tag+release `v0.8.1` |
 
 ## Superpowers continuity (M31-T1) — 2026-08-09
 
@@ -139,7 +148,7 @@ Kaynak: [Codex Hooks docs](https://developers.openai.com/codex/hooks) + `openai/
 | Focused unittest (plugin_experience + host_fit + self_audit) | `passed` | Ran 43 / OK |
 | Portable ZIP vibe-install (yerel, publish yok) | `passed` | `artifacts/portable/pala-project-studio-0.8.1-vibe-install.zip`; Desktop kopyası; SHA-256 `18DA984F548B54C450016D46135B6920CF382E62C1446F3E88BE0912C06ABA36`; 132 entries |
 | Hooks UI `/hooks` trust | `configured-not-verified` | insan |
-| Tag/release `v0.8.1` | `not-run` | owner |
+| Tag/release `v0.8.1` | `passed` — asset `pala-project-studio-0.8.1-final.zip` SHA-256 `69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53` |
 | Soft A/B fixed | yok | — |
 
 ## M30 — Vibe Codex host-fit + checkpoint fix
