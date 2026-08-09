@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "checks": [
+    {
+      "id": "source-verify",
+      "kind": "integration",
+      "argv": [
+        "py",
+        "-3",
+        "scripts/verify.py",
+        "--mode",
+        "source"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    }
+  ]
+}
