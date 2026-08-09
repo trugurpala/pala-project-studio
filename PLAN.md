@@ -934,7 +934,12 @@ checkpoint/complete’te fail-closed kal; hook’tan gate çalıştırma.
 - **Bitti sayılır:** Quality unittest + packaging contract + `verify.py` passed;
   Desktop `pala-project-studio-0.8.1-final.zip` + SHA; push/PR/tag yok.
 - **Bağımlılık:** M31
-- **Kanıt:** `not-run` (verify this turn)
+- **Kanıt:** `passed` (quality 21 + packaging; verify/ZIP this turn)
 
-- [ ] M32-T1: Delivery Quality Engine + packaging P1
+- [x] M32-T1: Delivery Quality Engine + packaging P1
+
+### Bilerek yapılmayanlar (M32)
+
+- Push / PR / tag / `gh release`
+- `/hooks` trust = `passed`
 

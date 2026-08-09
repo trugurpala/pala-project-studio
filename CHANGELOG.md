@@ -68,15 +68,15 @@ M30 vibe/Codex host-fit close + vibe-install UX (Codex-native first) + local
 
 ### Evidence (local close — 2026-08-09)
 - Branch `feat/m30-vibe-codex-host-fit`; push/PR/tag **not run** (owner).
+- M32 Delivery Quality Engine + packaging P1: quality unittest Ran 21 / OK;
+  full source `verify.py` Ran 352 / OK (skipped=1); reproducible_zip SHA-256
+  `69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53`.
+- Final Desktop ZIP: `pala-project-studio-0.8.1-final.zip`
+  SHA-256 `69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53`
+  (140 entries).
 - Context-restore focused unittest
   (`test_pala_host_fit` + `PalaHookTests` + `test_plugin_experience`):
   Ran 59 / OK (`passed`).
-- Full source `verify.py`: `passed` (Ran 349 / OK, skipped=1;
-  reproducible_zip SHA-256
-  `6E51FFFB8A5765EA92B05504885D69AD601E2D7E25987FD04F5F88090B548CFC`).
-- Final Desktop ZIP: `pala-project-studio-0.8.1-final.zip`
-  SHA-256 `5C2DF2733EE54B82D12B34D93523A2EA4833B7E4C628CBE9D93C0188D5AE0E01`
-  (136 entries).
 - Hooks UI trust: `configured-not-verified`. Soft “A/B fixed”: yok.
 
 ## [0.8.1] - 2026-08-08

@@ -10,7 +10,7 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 | Alan | Değer |
 | --- | --- |
-| Güncelleme | 2026-08-09 — Superpowers continuity refs (M31-T1) |
+| Güncelleme | 2026-08-09 — M32 Delivery Quality Engine 0.9 + packaging P1 |
 | Branch | `feat/m30-vibe-codex-host-fit` (yerel; push/PR bu turda yok) |
 | Manifest | `0.8.1+codex.20260808124500` |
 | Son GitHub release | `v0.8.0` (`passed`) — https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0 |
@@ -19,11 +19,27 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 ## Şu an tek sonraki iş (owner)
 
-1. Desktop `pala-project-studio-0.8.1-final.zip` smoke + Codex Work’te `/hooks` trust (insan).  
-2. Bu branch’i istediğin gibi push / PR / merge et.  
-3. Hazırsan `docs/RELEASE_0.8.1_CHECKLIST.md` ile `v0.8.1` tag + release bas.  
+1. Bu branch’i istediğin gibi push / PR / merge et.  
+2. Hazırsan `docs/RELEASE_0.8.1_CHECKLIST.md` ile `v0.8.1` tag + release bas.  
+3. Codex Work’te `/hooks` trust (insan).  
 
 Soft full-product “A/B fixed”: **yok**.
+
+## M32 Delivery Quality Engine 0.9 + packaging P1 — 2026-08-09
+
+Evidence-first `pala_quality` (plan/init/record/status), Status HTML beş sinyal,
+checkpoint `--quality-ticket` fail-closed; portable/install allowlist
+`credentials.json` / `id_rsa` / secret-shaped / `*.sqlite` yasak. Push yok;
+`/hooks` trust owner.
+
+| Kapı | Sonuç | Not |
+| --- | --- | --- |
+| `pala_quality` contract tests | `passed` | Ran 21 / OK |
+| Packaging secret forbid tests | `passed` | packager + installer |
+| Tam `verify.py` | `passed` | Ran 352 / OK (skipped=1); reproducible_zip SHA-256 `69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53` |
+| Final Desktop ZIP | `passed` | `C:\Users\Pala-Pc\Desktop\pala-project-studio-0.8.1-final.zip`; SHA-256 `69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53`; 140 entries |
+| `/hooks` trust | `configured-not-verified` | owner |
+| Push / PR / tag | `not-run` | istenmedi (sonraki ajan) |
 
 ## Superpowers continuity (M31-T1) — 2026-08-09
 
