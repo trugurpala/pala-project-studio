@@ -146,13 +146,44 @@ def _workflow_text(root: Path) -> str:
     return "\n".join(texts).casefold()
 
 
-def _changed_files(root: Path) -> list[str]:
+def _workflow_commands(root: Path) -> list[str]:
+    """Return only simple, explicit one-line CI run commands.
+
+    This is discovery, not a YAML interpreter.  Multiline shell blocks are
+    intentionally not reconstructed: a project owner can place those behind a
+    quality contract instead of asking Pala to guess their execution semantics.
+    """
+    directory = root / ".github" / "workflows"
+    if not directory.is_dir():
+        return []
+    commands: list[str] = []
+    pattern = re.compile(r"(?m)^\s*(?:-\s*)?run\s*:\s*([^#\r\n]+)")
+    for path in sorted(directory.glob("*.y*ml")):
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for match in pattern.finditer(text):
+            command = match.group(1).strip()
+            if command and command not in ("|", ">", ">-", "|-"):
+                commands.append(command[:500])
+    return commands
+
+
+def _ignored_changed_path(path: str) -> bool:
+    normalized = str(path).replace("\\", "/").lstrip("./").casefold()
+    return any(normalized.startswith(prefix) for prefix in IGNORED_CHANGE_PREFIXES)
+
+
+def _changed_paths(root: Path) -> tuple[list[str], list[str]]:
+    """Return changed source paths and transparently ignored runtime outputs."""
     commands = (
         ("diff", "--name-only", "-z"),
         ("diff", "--cached", "--name-only", "-z"),
         ("ls-files", "--others", "--exclude-standard", "-z"),
     )
     paths: set[str] = set()
+    ignored: set[str] = set()
     for command in commands:
         try:
             result = subprocess.run(
@@ -164,8 +195,50 @@ def _changed_files(root: Path) -> list[str]:
             continue
         for part in result.stdout.split(b"\0"):
             if part:
-                paths.add(part.decode("utf-8", errors="surrogateescape"))
-    return sorted(paths, key=str.casefold)
+                value = part.decode("utf-8", errors="surrogateescape")
+                if _ignored_changed_path(value):
+                    ignored.add(value)
+                else:
+                    paths.add(value)
+    return sorted(paths, key=str.casefold), sorted(ignored, key=str.casefold)
+
+
+def _changed_files(root: Path) -> list[str]:
+    """Compatibility helper for callers that need only the source surface."""
+    return _changed_paths(root)[0]
+
+
+def _surface_digest(root: Path, changed_files: list[str]) -> str:
+    """Hash paths plus current worktree content without persisting source text."""
+    digest = hashlib.sha256(b"pala-quality-surface-v1\0")
+    resolved_root = Path(root).resolve()
+    for raw_path in sorted({str(item) for item in changed_files}, key=str.casefold):
+        relative = raw_path.replace("\\", "/").lstrip("./")
+        digest.update(relative.encode("utf-8", errors="surrogateescape"))
+        digest.update(b"\0")
+        candidate = resolved_root / relative
+        try:
+            candidate.relative_to(resolved_root)
+        except ValueError:
+            digest.update(b"outside-root\0")
+            continue
+        try:
+            if candidate.is_symlink():
+                digest.update(b"symlink\0")
+                digest.update(os.readlink(candidate).encode("utf-8", errors="surrogateescape"))
+            elif candidate.is_file():
+                digest.update(b"file\0")
+                with candidate.open("rb") as handle:
+                    for chunk in iter(lambda: handle.read(64 * 1024), b""):
+                        digest.update(chunk)
+            elif candidate.exists():
+                digest.update(b"non-file\0")
+            else:
+                digest.update(b"missing\0")
+        except OSError:
+            digest.update(b"unreadable\0")
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 def _git_summary(root: Path, changed_files: list[str]) -> dict[str, object]:
@@ -249,8 +322,23 @@ def _add_check(
     )
 
 
+def _iter_project_files(root: Path):
+    """Bounded project walk that never lets generated/vendor trees decide gates."""
+    seen = 0
+    for current, directories, files in os.walk(root):
+        directories[:] = sorted(
+            (entry for entry in directories if entry.casefold() not in DISCOVERY_SKIP_DIRS),
+            key=str.casefold,
+        )
+        for name in sorted(files, key=str.casefold):
+            seen += 1
+            if seen > MAX_DISCOVERY_FILES:
+                return
+            yield Path(current) / name
+
+
 def _has_python_tests(root: Path) -> bool:
-    return any(root.rglob("test_*.py"))
+    return any(path.name.startswith("test_") and path.suffix == ".py" for path in _iter_project_files(root))
 
 
 def _has_ui(package: dict[str, object], root: Path) -> bool:
@@ -262,9 +350,77 @@ def _has_ui(package: dict[str, object], root: Path) -> bool:
     if any(name in {"react", "vue", "@angular/core", "svelte", "next", "nuxt"} for name in dependencies):
         return True
     return any(
-        any(root.rglob(suffix))
-        for suffix in ("*.tsx", "*.jsx", "*.vue", "*.svelte", "*.html")
+        path.suffix.casefold() in {".tsx", ".jsx", ".vue", ".svelte", ".html"}
+        for path in _iter_project_files(root)
     )
+
+
+def _contract_command(argv: object) -> str:
+    """Validate a shell-free command contract and return its display form."""
+    if not isinstance(argv, list) or not argv or len(argv) > 32:
+        raise ValueError("argv must be a non-empty list with at most 32 arguments")
+    values: list[str] = []
+    for raw in argv:
+        if not isinstance(raw, str) or not raw.strip() or len(raw) > 240:
+            raise ValueError("each argv item must be a short non-empty string")
+        value = raw.strip()
+        if any(character in value for character in ("\n", "\r", "\0")):
+            raise ValueError("argv items may not contain control characters")
+        if value in {";", "|", "||", "&&", "&"}:
+            raise ValueError("argv may not contain shell operators")
+        values.append(value)
+    command = subprocess.list2cmdline(values)
+    if DANGEROUS_SCRIPT.search(command):
+        raise ValueError("argv resolves to a command requiring manual safety review")
+    _safe_text(command, field="contract command")
+    return command
+
+
+def _quality_contract_checks(root: Path, tier: str) -> tuple[list[dict[str, object]], str]:
+    """Load an optional project-owned contract; invalid input fails closed."""
+    path = root / QUALITY_CONTRACT_PATH
+    if not path.is_file():
+        return [], ""
+    try:
+        payload = _read_json(path)
+        if payload.get("schema_version") != 1:
+            raise ValueError("schema_version must be 1")
+        raw_checks = payload.get("checks")
+        if not isinstance(raw_checks, list) or not raw_checks:
+            raise ValueError("checks must be a non-empty list")
+        checks: list[dict[str, object]] = []
+        seen: set[str] = set()
+        for raw in raw_checks:
+            if not isinstance(raw, dict):
+                raise ValueError("each check must be an object")
+            name = str(raw.get("id") or "").strip()
+            kind = str(raw.get("kind") or "").strip()
+            if not CHECK_NAME.fullmatch(name):
+                raise ValueError("check id must use safe letters, digits, dots, underscores, or hyphens")
+            if kind not in CHECK_KINDS:
+                raise ValueError(f"unsupported contract check kind: {kind}")
+            check_id = f"{kind}:{name}"
+            if check_id in seen:
+                raise ValueError(f"duplicate contract check: {check_id}")
+            seen.add(check_id)
+            tiers = raw.get("tiers", list(TIERS))
+            if not isinstance(tiers, list) or not tiers or any(item not in TIERS for item in tiers):
+                raise ValueError("tiers must be a non-empty list of supported tiers")
+            command = _contract_command(raw.get("argv"))
+            checks.append(
+                {
+                    "id": check_id,
+                    "kind": kind,
+                    "required": tier in tiers and _required_for_tier(kind, tier),
+                    "command": command,
+                    "source": "pala-quality-contract",
+                    "status": "not-run",
+                    "reason": "",
+                }
+            )
+        return checks, ""
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return [], f"invalid {QUALITY_CONTRACT_PATH.as_posix()}: {exc}"[:240]
 
 
 def _add_script_check(
@@ -313,6 +469,19 @@ def build_quality_plan(
     package = _package(root)
     scripts = _scripts(package)
     checks: list[dict[str, object]] = []
+    contract_checks, contract_error = _quality_contract_checks(root, tier)
+    checks.extend(contract_checks)
+    if contract_error:
+        _add_check(
+            checks,
+            kind="integration",
+            name="quality-contract",
+            command=None,
+            source="pala-quality-contract",
+            tier=tier,
+            status="blocked",
+            reason=contract_error,
+        )
 
     for name in ("test:unit", "test"):
         if name in scripts:
@@ -352,30 +521,83 @@ def build_quality_plan(
         ):
             _add_script_check(checks, kind="browser", name=name, scripts=scripts, tier=tier)
             break
+    if ui and playwright_config and not any(item["kind"] == "browser" for item in checks):
+        _add_check(
+            checks,
+            kind="browser",
+            name="playwright-config",
+            command=None,
+            source="playwright-config",
+            tier=tier,
+            status="configured-not-verified",
+            reason="Playwright config exists but no explicit project-owned browser command was found",
+        )
 
     workflow = _workflow_text(root)
+    workflow_commands = _workflow_commands(root)
     scanner_specs = (
-        ("gitleaks", "security", "gitleaks detect --no-git"),
-        ("zizmor", "security", "zizmor .github/workflows"),
-        ("osv-scanner", "dependency", "osv-scanner scan source --recursive ."),
+        ("gitleaks", "security"),
+        ("zizmor", "security"),
+        ("osv-scanner", "dependency"),
     )
-    for scanner, kind, command in scanner_specs:
+    for scanner, kind in scanner_specs:
         if scanner in workflow:
-            available = bool(which(scanner))
-            _add_check(
-                checks,
-                kind=kind,
-                name=scanner,
-                command=command if available else None,
-                source="existing-ci",
-                tier=tier,
-                status="not-run" if available else "configured-not-verified",
-                reason="installed scanner required" if not available else "",
+            script_name = next(
+                (name for name, command in scripts.items() if scanner in command.casefold()),
+                None,
             )
+            workflow_command = next(
+                (
+                    command
+                    for command in workflow_commands
+                    if scanner in command.casefold() and not DANGEROUS_SCRIPT.search(command)
+                ),
+                None,
+            )
+            if scanner == "osv-scanner":
+                # OSV's normal scan can query remote advisory services.  A CI
+                # mention is evidence of configuration, not permission for Pala
+                # to repeat a potentially networked scan.
+                _add_check(
+                    checks,
+                    kind=kind,
+                    name=scanner,
+                    command=None,
+                    source="existing-ci",
+                    tier=tier,
+                    status="configured-not-verified",
+                    reason="OSV scanner may use the network; use an explicit project-owned offline contract command",
+                )
+            elif script_name is not None:
+                _add_script_check(checks, kind=kind, name=script_name, scripts=scripts, tier=tier)
+            elif workflow_command and which(scanner):
+                _add_check(
+                    checks,
+                    kind=kind,
+                    name=scanner,
+                    command=workflow_command,
+                    source="existing-ci",
+                    tier=tier,
+                )
+            else:
+                _add_check(
+                    checks,
+                    kind=kind,
+                    name=scanner,
+                    command=None,
+                    source="existing-ci",
+                    tier=tier,
+                    status="configured-not-verified",
+                    reason="explicit installed project scanner command required",
+                )
     if "audit" in scripts:
         _add_script_check(checks, kind="dependency", name="audit", scripts=scripts, tier=tier)
 
-    files = list(changed_files) if changed_files is not None else _changed_files(root)
+    ignored_files: list[str] = []
+    if changed_files is None:
+        files, ignored_files = _changed_paths(root)
+    else:
+        files = sorted({str(item) for item in changed_files}, key=str.casefold)
     risk = risk_assessment(files, has_project_code=bool(package) or _has_python_tests(root))
     reasons = set(risk.get("reasons") or [])
     if "migration" in reasons and not any(item["kind"] == "migration" for item in checks):
@@ -407,6 +629,8 @@ def build_quality_plan(
         "root": root.name,
         "tier": tier,
         "changed_files": [str(item)[:240] for item in files[:80]],
+        "ignored_changed_paths": [str(item)[:240] for item in ignored_files[:40]],
+        "surface_digest": _surface_digest(root, files),
         "risk": risk,
         "git": _git_summary(root, files),
         "checks": checks,
@@ -460,9 +684,13 @@ def write_ledger(root: Path, ticket: str, plan: dict[str, object]) -> Path:
         previous = read_ledger(root, ticket)
     previous_files = [str(item) for item in list(previous.get("changed_files") or [])]
     current_files = [str(item) for item in list(plan.get("changed_files") or [])[:80]]
+    previous_git = previous.get("git") if isinstance(previous.get("git"), dict) else {}
+    current_git = plan.get("git") if isinstance(plan.get("git"), dict) else {}
     retain_evidence = (
         str(previous.get("tier") or "ticket") == str(plan.get("tier") or "ticket")
         and previous_files == current_files
+        and str(previous.get("surface_digest") or "") == str(plan.get("surface_digest") or "")
+        and str(previous_git.get("head") or "unknown") == str(current_git.get("head") or "unknown")
     )
     previous_checks = {
         str(item.get("id")): item
@@ -483,6 +711,10 @@ def write_ledger(root: Path, ticket: str, plan: dict[str, object]) -> Path:
         "risk": copy.deepcopy(plan.get("risk") if isinstance(plan.get("risk"), dict) else {}),
         "tier": str(plan.get("tier") or "ticket"),
         "changed_files": current_files,
+        "ignored_changed_paths": [
+            str(item) for item in list(plan.get("ignored_changed_paths") or [])[:40]
+        ],
+        "surface_digest": str(plan.get("surface_digest") or ""),
         "git": copy.deepcopy(plan.get("git") if isinstance(plan.get("git"), dict) else {}),
         "checks": checks,
         "created_at": previous.get("created_at") or _stamp(),
@@ -572,6 +804,20 @@ def quality_gate(root: Path, ticket: str) -> dict[str, object]:
     checks = [item for item in payload.get("checks", []) if isinstance(item, dict)]
     required = [item for item in checks if bool(item.get("required"))]
     passed_count = sum(1 for item in required if item.get("status") == "passed")
+    recorded_files = [str(item) for item in list(payload.get("changed_files") or [])]
+    recorded_digest = str(payload.get("surface_digest") or "")
+    current_files, _ignored_files = _changed_paths(Path(root).resolve())
+    current_digest = _surface_digest(Path(root).resolve(), current_files)
+    if recorded_digest and (recorded_files != current_files or recorded_digest != current_digest):
+        return {
+            "status": "blocked",
+            "ticket": payload.get("ticket"),
+            "risk": payload.get("risk") if isinstance(payload.get("risk"), dict) else {},
+            "coverage": {"passed": passed_count, "required": len(required)},
+            "last_problem": "changed-surface=drifted",
+            "next_action": "refresh quality plan and rerun required gates",
+            "checks": checks,
+        }
     if not checks:
         return {
             "status": "blocked",
