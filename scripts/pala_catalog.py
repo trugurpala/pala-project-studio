@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pala_db
+from pala_redaction import redact_remote_url
 
 SCHEMA_VERSION = 1
 CATALOG_NAME = "pala-catalog.json"
@@ -67,7 +68,7 @@ def _detect_github(root: Path) -> str | None:
     url = match.group(1).strip()
     if "github.com" not in url.casefold():
         return None
-    return url[:300]
+    return redact_remote_url(url)[:300] or None
 
 
 def _tech_tags(root: Path) -> list[str]:

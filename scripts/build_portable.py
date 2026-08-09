@@ -113,6 +113,7 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "docs" / "PALA_0_7_LOCAL_STORE.md",
         plugin_root / "docs" / "PALA_0_9_QUALITY_ENGINE.md",
         plugin_root / "docs" / "PALA_0_9_BENCHMARK.md",
+        plugin_root / "docs" / "PALA_0_9_1_HARDENING.md",
         plugin_root / "docs" / "PALA_EVERYWHERE.md",
         plugin_root / "docs" / "PALA_INTERNAL_PROVISION.md",
         plugin_root / "docs" / "VIBE_FIRST_SESSION.md",

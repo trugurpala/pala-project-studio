@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Callable
 from urllib.parse import urlparse
 
+from pala_redaction import redact_remote_url, redact_text
+
 SCHEMA_VERSION = 1
 REGISTRY_NAME = "provision-registry.json"
 SHELL_META = re.compile(r"[;|&`$()<>\\\"'\n\r\t]")
@@ -59,9 +61,13 @@ def validate_git_https_url(url: str) -> str:
     parsed = urlparse(raw)
     if parsed.scheme.casefold() != "https":
         raise ValueError("only https:// git URLs are allowed")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("URL credentials are not allowed; use your Git credential manager")
+    if parsed.query or parsed.fragment:
+        raise ValueError("URL query strings and fragments are not allowed")
     if not parsed.netloc or not parsed.path or parsed.path in ("/", ""):
         raise ValueError("url must include host and repository path")
-    host = parsed.netloc.casefold()
+    host = (parsed.hostname or "").casefold()
     path = parsed.path
     looks_git = (
         path.casefold().endswith(".git")
@@ -70,7 +76,7 @@ def validate_git_https_url(url: str) -> str:
     )
     if not looks_git:
         raise ValueError("url does not look like a git repository HTTPS URL")
-    return raw.rstrip("/")
+    return redact_remote_url(raw)
 
 
 def folder_name_from_url(url: str, override: str | None = None) -> str:
@@ -175,13 +181,13 @@ def clone_or_fetch(
             }
         result = run_git(["fetch", "--prune"], cwd=dest, runner=runner)
         if result.returncode != 0:
-            detail = (result.stderr or result.stdout or "git fetch failed").strip()[:300]
+            detail = redact_text(result.stderr or result.stdout or "git fetch failed").strip()[:300]
             return {"action": "fetch", "path": str(dest), "ok": False, "detail": detail}
         return {"action": "fetch", "path": str(dest), "ok": True, "detail": "fetched"}
     dest.parent.mkdir(parents=True, exist_ok=True)
     result = run_git(["clone", url, str(dest)], runner=runner)
     if result.returncode != 0:
-        detail = (result.stderr or result.stdout or "git clone failed").strip()[:300]
+        detail = redact_text(result.stderr or result.stdout or "git clone failed").strip()[:300]
         return {"action": "clone", "path": str(dest), "ok": False, "detail": detail}
     return {"action": "clone", "path": str(dest), "ok": True, "detail": "cloned"}
 

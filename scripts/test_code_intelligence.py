@@ -34,7 +34,7 @@ class CodeIntelligenceTests(unittest.TestCase):
         self.assertEqual(github.GitHubRouter(gh_path="gh").inspect(ROOT)["route"], "gh")
         self.assertEqual(
             github.GitHubRouter._redact("https://token@example.com/owner/repo.git"),
-            "https://[redacted]@example.com/owner/repo.git",
+            "https://example.com/owner/repo.git",
         )
     def test_graph_thresholds_only_enable_large_or_cross_module_work(self) -> None:
         self.assertFalse(code_intel.graph_eligible(999, 49, 3))

@@ -6,6 +6,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from pala_redaction import redact_remote_url
+
 
 class GitHubRouter:
     def __init__(self, connector_available: bool = False, gh_path: str | None = None) -> None:
@@ -29,9 +31,4 @@ class GitHubRouter:
 
     @staticmethod
     def _redact(remote: str | None) -> str | None:
-        if remote is None:
-            return None
-        if "@" in remote and "://" in remote:
-            prefix, suffix = remote.split("@", 1)
-            return prefix.split("://", 1)[0] + "://[redacted]@" + suffix
-        return remote
+        return redact_remote_url(remote) or None

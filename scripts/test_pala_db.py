@@ -181,6 +181,50 @@ class EventTests(unittest.TestCase):
             self.assertEqual(len(event["detail"]), pala_db.DETAIL_LIMIT)
             self.assertEqual(len(event["evidence"]), pala_db.EVIDENCE_LIMIT)
 
+    def test_remote_userinfo_is_scrubbed_from_projects_provisions_and_events(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            db = Path(temp) / "pala.sqlite"
+            secret_url = "https://token:secret@github.com/example/demo.git"
+            pala_db.upsert_project(project_entry("private", github=secret_url), path=db)
+            pala_db.upsert_provision(
+                source_url=secret_url,
+                install_path="C:/tmp/private",
+                path=db,
+            )
+            pala_db.add_event(
+                "provision",
+                detail=f"clone {secret_url}",
+                evidence=secret_url,
+                path=db,
+            )
+
+            # Simulate a pre-0.9.1 local store written before the redaction
+            # boundary existed. The next read must repair persisted rows too.
+            with pala_db.connect(db) as conn:
+                conn.execute("UPDATE projects SET github = ?", (secret_url,))
+                conn.execute("UPDATE provisions SET source_url = ?", (secret_url,))
+                conn.execute(
+                    "UPDATE events SET detail = ?, evidence = ?",
+                    (f"clone {secret_url}", secret_url),
+                )
+
+            project = pala_db.list_projects(db)[0]
+            provision = pala_db.recent_provisions(path=db)[0]
+            event = pala_db.recent_events(limit=1, path=db)[0]
+            self.assertEqual(project["github"], "https://github.com/example/demo.git")
+            self.assertEqual(provision["source_url"], "https://github.com/example/demo.git")
+            self.assertNotIn("token", event["detail"])
+            self.assertNotIn("secret", event["evidence"])
+            with pala_db.connect(db) as conn:
+                serialized = "\n".join(
+                    str(row[0])
+                    for row in conn.execute(
+                        "SELECT github FROM projects UNION ALL SELECT source_url FROM provisions"
+                    ).fetchall()
+                )
+            self.assertNotIn("token", serialized)
+            self.assertNotIn("secret", serialized)
+
     def test_prune_keeps_newest_events(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             db = Path(temp) / "pala.sqlite"

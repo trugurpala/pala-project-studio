@@ -103,6 +103,14 @@ class PalaProvisionTests(unittest.TestCase):
             )
         with self.assertRaises(ValueError):
             pala_provision.validate_git_https_url("http://github.com/org/repo.git")
+        with self.assertRaises(ValueError):
+            pala_provision.validate_git_https_url(
+                "https://token:secret@github.com/org/repo.git"
+            )
+        with self.assertRaises(ValueError):
+            pala_provision.validate_git_https_url(
+                "https://github.com/org/repo.git?access_token=secret"
+            )
 
     def test_accepts_https_github(self) -> None:
         url = pala_provision.validate_git_https_url(
@@ -112,6 +120,22 @@ class PalaProvisionTests(unittest.TestCase):
         self.assertEqual(
             pala_provision.folder_name_from_url(url), "pala-project-studio"
         )
+
+    def test_git_failure_output_does_not_echo_url_credentials(self) -> None:
+        secret_url = "https://token:secret@github.com/example/demo.git"
+
+        def failing_runner(command, **_kwargs):
+            return subprocess.CompletedProcess(command, 1, stdout="", stderr=f"failed {secret_url}")
+
+        with tempfile.TemporaryDirectory() as temp:
+            result = pala_provision.clone_or_fetch(
+                "https://github.com/example/demo.git",
+                Path(temp) / "demo",
+                runner=failing_runner,
+            )
+        self.assertNotIn("token", str(result))
+        self.assertNotIn("secret", str(result))
+        self.assertIn("https://github.com/example/demo.git", str(result))
 
     def test_dry_run_does_not_call_git_or_write_registry(self) -> None:
         runner = FakeRunner()

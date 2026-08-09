@@ -39,7 +39,36 @@ ignored by Git. It records the risk surface, selected checks, exact approved
 command, exit code, timestamp, and an optional artefact path inside the project.
 It does not accept a secret-shaped command or detail, an artefact outside the
 project, or `passed` without exit code `0`. Reopening a ticket retains evidence
-only for an unchanged, identical gate.
+only for an unchanged, identical gate and the same changed-surface digest. A
+content change at the same file path invalidates an earlier pass.
+
+## Project-owned quality contract
+
+Discovery is deliberately conservative. A repository can declare its own safe,
+shell-free gates in `.pala/quality.json`; each command is an `argv` array rather
+than a shell string. This lets a project expose its real source verification,
+migration check, or offline scanner without Pala guessing a command from a
+framework name or CI text.
+
+```json
+{
+  "schema_version": 1,
+  "checks": [
+    {
+      "id": "source-verify",
+      "kind": "integration",
+      "argv": ["py", "-3", "scripts/verify.py", "--mode", "source"],
+      "tiers": ["ticket", "milestone", "release"]
+    }
+  ]
+}
+```
+
+Generated/vendor/runtime trees are skipped during discovery and listed as
+ignored paths when relevant, so they do not make an unrelated project look like
+a Python/UI change or inflate the risk surface. A detected Playwright config
+without an explicit project-owned browser command is shown as
+`configured-not-verified`, never silently omitted.
 
 ## Delivery boundary
 
@@ -65,11 +94,19 @@ existing Playwright configuration/command. Pala does not add Playwright. The
 recommended project-owned CI settings are Chromium, retries in CI,
 `trace: 'on-first-retry'`, video/screenshot on failure, and an HTML report.
 
-Security and dependency checks are discovered only from an existing project
-script or CI mention of an already-installed `gitleaks`, `osv-scanner`, or
-`zizmor`. An unavailable scanner is `configured-not-verified`, never a pass.
-Configured scripts that look destructive are blocked for manual review rather
-than selected as a Pala gate.
+Security and dependency checks use an existing project-owned script or a simple
+existing CI command only when its named scanner is already installed. An
+unavailable scanner is `configured-not-verified`, never a pass. `osv-scanner`
+is more restrictive: a CI mention is configuration evidence only because its
+normal scan may use the network; Pala requires an explicit project-owned,
+offline contract command before it can become a runnable gate. Configured
+scripts that look destructive are blocked for manual review rather than
+selected as a Pala gate.
+
+Pala also strips remote-URL userinfo, query strings, and fragments before a
+remote reaches the local catalog, SQLite provision history, event timeline, or
+Status HTML. Clone input containing URL credentials is rejected; use the Git
+credential manager instead.
 
 ## Measurement contract
 

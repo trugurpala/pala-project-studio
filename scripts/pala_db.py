@@ -17,6 +17,8 @@ from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pala_redaction import redact_remote_url, redact_text
+
 SCHEMA_VERSION = 1
 DB_NAME = "pala.sqlite"
 BUSY_TIMEOUT_MS = 5000
@@ -157,6 +159,33 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
 
 
+def _scrub_remote_values(conn: sqlite3.Connection) -> None:
+    """Repair pre-redaction local rows without retaining URL credentials."""
+    for table, key, columns in (
+        ("projects", "id", ("github",)),
+        ("provisions", "id", ("source_url",)),
+        ("events", "id", ("detail", "evidence")),
+    ):
+        selected = ", ".join((key, *columns))
+        rows = conn.execute(f"SELECT {selected} FROM {table}").fetchall()
+        for row in rows:
+            safe = {
+                column: (
+                    redact_remote_url(row[column])
+                    if column in ("github", "source_url")
+                    else redact_text(row[column])
+                )
+                for column in columns
+            }
+            if all(safe[column] == row[column] for column in columns):
+                continue
+            assignments = ", ".join(f"{column} = ?" for column in columns)
+            conn.execute(
+                f"UPDATE {table} SET {assignments} WHERE {key} = ?",
+                (*(safe[column] for column in columns), row[key]),
+            )
+
+
 @contextmanager
 def connect(path: Path | None = None) -> Iterator[sqlite3.Connection]:
     """Open the store with concurrency-safe pragmas and a ready schema."""
@@ -172,6 +201,7 @@ def connect(path: Path | None = None) -> Iterator[sqlite3.Connection]:
             # Network shares and some filesystems refuse WAL; rollback journal is fine.
             pass
         ensure_schema(conn)
+        _scrub_remote_values(conn)
         yield conn
     finally:
         conn.close()
@@ -206,7 +236,7 @@ def _row_to_project(row: sqlite3.Row) -> dict[str, object]:
         "id": row["id"],
         "name": row["name"],
         "path": row["path"],
-        "github": row["github"],
+        "github": redact_remote_url(row["github"]) or None,
         "tech": _load_list(row["tech_json"]),
         "phase": row["phase"],
         "quality_result": row["quality_result"],
@@ -221,7 +251,7 @@ def _project_values(entry: dict[str, object]) -> dict[str, object]:
     return {
         "name": _text(entry.get("name"), 160),
         "path": _text(entry.get("path"), 400),
-        "github": _text(entry.get("github"), 300) or None,
+        "github": redact_remote_url(_text(entry.get("github"), 300)) or None,
         "tech_json": _json_list(entry.get("tech"), item_limit=40, count_limit=12),
         "phase": _text(entry.get("phase"), 120),
         "quality_result": _text(entry.get("quality_result"), 120),
@@ -333,8 +363,8 @@ def add_event(
                 _text(project_id, 160),
                 _text(project_name, 160),
                 kind,
-                _text(detail, DETAIL_LIMIT),
-                _text(evidence, EVIDENCE_LIMIT),
+                _text(redact_text(detail), DETAIL_LIMIT),
+                _text(redact_text(evidence), EVIDENCE_LIMIT),
                 _now(),
             ),
         )
@@ -355,8 +385,8 @@ def recent_events(limit: int = 15, path: Path | None = None) -> list[dict[str, o
                 "project_id": row["project_id"],
                 "project_name": row["project_name"],
                 "kind": row["kind"],
-                "detail": row["detail"],
-                "evidence": row["evidence"],
+                "detail": redact_text(row["detail"]),
+                "evidence": redact_text(row["evidence"]),
                 "created_at": row["created_at"],
             }
             for row in rows
@@ -377,12 +407,13 @@ def upsert_provision(
     target = _text(install_path, 400)
     if not target:
         raise ValueError("install path is required")
+    safe_source_url = redact_remote_url(_text(source_url, 400))
     stamp = _text(created_at, 40) or _now()
     with connect(path) as conn:
         existing = conn.execute(
             "SELECT * FROM provisions WHERE install_path = ? OR "
             "(source_url = ? AND source_url <> '') ORDER BY id LIMIT 1",
-            (target, _text(source_url, 400)),
+            (target, safe_source_url),
         ).fetchone()
         if existing is None:
             conn.execute(
@@ -390,7 +421,7 @@ def upsert_provision(
                 "(source_url, install_path, pala_version, status, registered, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
                 (
-                    _text(source_url, 400),
+                    safe_source_url,
                     target,
                     _text(pala_version, 80),
                     _text(status, 80),
@@ -404,7 +435,7 @@ def upsert_provision(
                 "pala_version = ?, status = ?, registered = ?, created_at = ? "
                 "WHERE id = ?",
                 (
-                    _text(source_url, 400) or existing["source_url"],
+                    safe_source_url or existing["source_url"],
                     target,
                     _text(pala_version, 80) or existing["pala_version"],
                     _text(status, 80) or existing["status"],
@@ -422,7 +453,7 @@ def upsert_provision(
 def _row_to_provision(row: sqlite3.Row) -> dict[str, object]:
     return {
         "id": row["id"],
-        "source_url": row["source_url"],
+        "source_url": redact_remote_url(row["source_url"]),
         "install_path": row["install_path"],
         "pala_version": row["pala_version"],
         "status": row["status"],
