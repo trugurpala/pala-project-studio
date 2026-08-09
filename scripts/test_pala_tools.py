@@ -1321,9 +1321,18 @@ class PluginContractTests(unittest.TestCase):
         skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
         normalized = " ".join(skill.split())
         self.assertIn("Read status first", normalized)
-        self.assertIn("only the active ticket section", normalized)
+        # M30 thin skill keeps "only the active ticket"; fuller "…section"
+        # wording lives in references (token-efficient-context / memory-contract).
+        self.assertIn("only the active ticket", normalized)
+        contract = (REFERENCE_DIR / "project-memory-contract.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "only the active ticket section",
+            " ".join(contract.split()),
+        )
         self.assertIn("Do not re-plan completed scope", normalized)
-        self.assertIn("continue safe in-scope local work", normalized)
+        self.assertIn("Continue safe in-scope local work", normalized)
 
 
 class PalaViewA11yTests(unittest.TestCase):

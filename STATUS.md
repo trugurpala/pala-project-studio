@@ -64,8 +64,10 @@ Soft full-product “A/B fixed”: **yok**.
 | `verify.py --mode installed` | `passed` | önceki M30 turunda exit 0 |
 | Gate0 p0-smoke | `passed` | 9/9; SHA-256 `6FE7A3EC63D850BE8DE145EB260A0E401170D08FAB4C85A1BC5C50DD69680AEB` |
 | Portable ZIP m30-local (önceki) | `passed` | `artifacts/portable/pala-project-studio-0.8.1-m30-local.zip`; SHA-256 `6270BC34F20678AD3C3A25381DA727AEBB4C4D173292D021CE4E219242ABAE1E`; 130 entries |
+| Honesty contract (thin skill ticket wording) | `passed` | Test accepts SKILL `only the active ticket`; `…section` stays in memory-contract ref; `scripts.test_pala_tools` 68/OK |
 | Tam source verify | `not-run` | — |
 | Soft A/B fixed | yok | — |
+| Doctor install fingerprint after local edits | `configured-not-verified` | source≠install drift beklenir; repair: re-run Install-Pala / marketplace sync — sağlıklı sayma |
 
 Plan/spec: `docs/superpowers/plans/2026-08-09-vibe-codex-host-fit.md`,
 `docs/superpowers/specs/2026-08-09-m30-close-081-local-release-design.md`.
@@ -86,7 +88,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Doctor
 ```
 
-- Doctor çekirdek: `plugin_ready` / `healthy` beklenir.  
+- Doctor çekirdek: `plugin_ready` / `healthy` beklenir; yerel edit sonrası `plugin=drifted` (source≠install) → Install-Pala / marketplace sync, sağlıklı iddia etme.  
 - `hook_safety=passed` ≠ `/hooks` trust.  
 - Kaynak ağaçta: `py -3 scripts/verify.py --mode installed` (marketplace varken).  
 - Vibe kurulum: `docs/VIBE_INSTALL.md`; ilk oturum: `docs/VIBE_FIRST_SESSION.md`.  
