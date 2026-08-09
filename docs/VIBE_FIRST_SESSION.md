@@ -67,3 +67,4 @@ Fork paketi: [FORK_PACK.md](FORK_PACK.md).
 - Doctor yeşil = tam yetki iddiası
 
 Dağıtım sınırları: [PALA_EVERYWHERE.md](PALA_EVERYWHERE.md).
+Release (owner): [RELEASE_0.8.1_CHECKLIST.md](RELEASE_0.8.1_CHECKLIST.md).

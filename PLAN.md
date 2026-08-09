@@ -873,26 +873,17 @@ disclosure altında vibe first-session’ı truncation-safe ve ince skill ile
 kilitlemek. Plan:
 `docs/superpowers/plans/2026-08-09-vibe-codex-host-fit.md`.
 
-### Görev kartları
+Kaynak uygulama (branch `feat/m30-vibe-codex-host-fit`): limits doc, shared
+`pala_tokens`, SessionStart çift bütçe, thin skill + `references/kontrol-et.md`,
+host-fit contract tests, evidence bind. Checkpoint ayrıca
+`.codex/plugin-data/` yollarını workflow gibi hariç tutar (v3 ticket gürültüsü).
 
-#### M30-T1 — Limits doc refresh
-- **Kanıt:** `passed` (`docs/CODEX_SCOPE_AND_LIMITS.md` 2026-08-09)
-
-#### M30-T2 — Shared approx tokens
-- **Kanıt:** `passed` (`pala_tokens` + cold_packet wire)
-
-#### M30-T3 — SessionStart dual budget
-- **Kanıt:** `passed` (char 1800 + token ≤900; host-fit tests)
-
-#### M30-T4 — Thin skill + kontrol-et reference
-- **Kanıt:** `passed` (SKILL ≤480 words)
-
-#### M30-T5 — Vibe contract tests
-- **Kanıt:** `passed`
-
-#### M30-T6 — Gates + evidence
-- **Kanıt:** focused 68 OK `passed`; installed verify `passed`; Gate0 9/9 `passed`;
-  full source verify `not-run`; hooks UI `configured-not-verified`
+| Paket | Kanıt |
+| --- | --- |
+| Limits + tokens + dual budget + thin skill | `passed` |
+| Focused unittest / installed verify / Gate0 9/9 | `passed` |
+| Tam source verify | `not-run` |
+| Hooks UI trust | `configured-not-verified` |
 
 ### Bilerek yapılmayanlar (M30)
 

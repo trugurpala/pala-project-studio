@@ -688,15 +688,17 @@ def git_checkpoint(root: Path) -> dict[str, object]:
         }
     filtered = []
     workflow_name = WORKFLOW.as_posix().casefold()
+    plugin_data_prefix = ".codex/plugin-data/".casefold()
     for line in status.splitlines():
         candidate = line[3:].strip().strip('"').replace("\\", "/").casefold()
-        if candidate == workflow_name:
+        if candidate == workflow_name or candidate.startswith(plugin_data_prefix):
             continue
         filtered.append(line)
     changed_paths = [
         value
         for value in changed_git_paths(root)
         if value.replace("\\", "/").casefold() != workflow_name
+        and not value.replace("\\", "/").casefold().startswith(plugin_data_prefix)
     ]
     changed_snapshot = git_paths_snapshot(root, changed_paths)
     fingerprint = hashlib.sha256()
@@ -730,13 +732,16 @@ def git_diff_paths(root: Path, before: str, after: str) -> list[str] | None:
     if output is None:
         return None
     workflow_name = WORKFLOW.as_posix().casefold()
+    plugin_data_prefix = ".codex/plugin-data/".casefold()
     paths = []
     for value in output.split(b"\0"):
         if not value:
             continue
         decoded = value.decode("utf-8", errors="surrogateescape")
-        if decoded.replace("\\", "/").casefold() != workflow_name:
-            paths.append(decoded)
+        normalized = decoded.replace("\\", "/").casefold()
+        if normalized == workflow_name or normalized.startswith(plugin_data_prefix):
+            continue
+        paths.append(decoded)
     return paths
 
 

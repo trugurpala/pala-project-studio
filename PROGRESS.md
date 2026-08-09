@@ -333,3 +333,13 @@ Phase 0 + Phase 1 uygulandı; yayın yok.
 - Hooks UI: `configured-not-verified`.
 - Branch: `feat/m30-vibe-codex-host-fit` (merge/PR owner).
 
+## M30 close + 0.8.1 local release ground (2026-08-09)
+
+- Design: `docs/superpowers/specs/2026-08-09-m30-close-081-local-release-design.md`.
+- Checkpoint excludes `.codex/plugin-data/`: `passed` (focused checkpoint test).
+- STATUS rewrite + CHANGELOG rewrite + `docs/RELEASE_0.8.1_CHECKLIST.md`: landed.
+- Local portable ZIP digest recorded (file gitignored `*.zip`): SHA-256
+  `6270BC34F20678AD3C3A25381DA727AEBB4C4D173292D021CE4E219242ABAE1E`.
+- Push/PR/tag/release: **not run** (owner).
+- Hooks UI: `configured-not-verified`. Soft A/B fixed: yok.
+
