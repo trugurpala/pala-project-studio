@@ -10,7 +10,7 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 | Alan | Değer |
 | --- | --- |
-| Güncelleme | 2026-08-09 — SessionEnd timeout ≤3s (Codex clamp uyarısı giderildi) |
+| Güncelleme | 2026-08-09 — Codex cache fingerprint refresh (SessionEnd=3 doğrulandı) |
 | Branch | `feat/m30-vibe-codex-host-fit` (yerel; push/PR bu turda yok) |
 | Manifest | `0.8.1+codex.20260808124500` |
 | Son GitHub release | `v0.8.0` (`passed`) — https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.0 |
@@ -19,10 +19,9 @@ kanıt etiketleriyle vibe coder akışını sürdürür.
 
 ## Şu an tek sonraki iş (owner)
 
-1. Bu düzeltmeli ZIP / Repair / marketplace sync ile Codex cache’deki `hooks.json`’ı yenile; `/hooks` clamp uyarısının kalktığını doğrula.  
-2. Desktop’teki vibe-install veya hooks-timeout-fix ZIP smoke + Codex Work’te native CLI / `Kur.cmd`.  
-3. Bu branch’i istediğin gibi push / PR / merge et.  
-4. Hazırsan `docs/RELEASE_0.8.1_CHECKLIST.md` ile `v0.8.1` tag + release bas.  
+1. Desktop’teki vibe-install veya hooks-timeout-fix ZIP smoke + Codex Work’te native CLI / `Kur.cmd`.  
+2. Bu branch’i istediğin gibi push / PR / merge et.  
+3. Hazırsan `docs/RELEASE_0.8.1_CHECKLIST.md` ile `v0.8.1` tag + release bas.  
 
 Soft full-product “A/B fixed”: **yok**.
 
@@ -35,7 +34,8 @@ Soft full-product “A/B fixed”: **yok**.
 | Focused unittest (host_fit + self_audit + plugin_experience + SessionEnd) | `passed` | — |
 | Tam `verify.py` | `passed` | Ran 321 / OK; reproducible_zip SHA-256 `77A02501DC47B2F206FB3F5E651625182B2B0D1DDB7F739BBA13CE4C7CBEE7D4` |
 | Portable ZIP hooks-timeout-fix | `passed` | `artifacts/portable/pala-project-studio-0.8.1-hooks-timeout-fix.zip`; Desktop kopyası; SHA-256 `77A02501DC47B2F206FB3F5E651625182B2B0D1DDB7F739BBA13CE4C7CBEE7D4`; 132 entries |
-| Cache / `/hooks` UI after Repair | `configured-not-verified` | insan: Repair/reinstall veya marketplace sync |
+| Cache / `/hooks` UI after Repair | `passed` (cache) / `configured-not-verified` (UI trust) | `codex plugin remove`+`add` → cache SessionEnd `timeout: 3`; `/hooks` trust hâlâ insan |
+| `ensure_codex_install` cache fingerprint refresh | `passed` | aynı version’da marketplace≠cache → remove+add; unittest OK |
 
 ## Owner sınırları (bilerek)
 

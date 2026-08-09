@@ -254,6 +254,44 @@ def trusted_legacy_pala(entry: dict[str, object]) -> bool:
     )
 
 
+def resolve_codex_home() -> Path:
+    configured = os.environ.get("CODEX_HOME", "").strip()
+    if configured:
+        return Path(configured)
+    return Path.home() / ".codex"
+
+
+def codex_runtime_cache_dir(
+    version: str, *, codex_home: Path | None = None
+) -> Path:
+    """Versioned Codex plugin cache path for Pala.
+
+    Codex copies marketplace files into
+    ``$CODEX_HOME/plugins/cache/<marketplace>/<plugin>/<version>/``.
+    Same version string does not imply the cache mirrors the marketplace tree.
+    """
+    home = codex_home if codex_home is not None else resolve_codex_home()
+    return home / "plugins" / "cache" / OWNER / OWNER / version
+
+
+def codex_runtime_cache_matches(
+    install_root: Path,
+    version: str,
+    *,
+    codex_home: Path | None = None,
+) -> bool:
+    """True when Codex cache is absent or fingerprints marketplace install_root.
+
+    Absent cache is treated as a match so version-only inventory stays valid in
+    tests and before the first materialization. When the cache directory exists,
+    allowlisted tree fingerprints must match or Repair must refresh.
+    """
+    cache_dir = codex_runtime_cache_dir(version, codex_home=codex_home)
+    if not cache_dir.is_dir():
+        return True
+    return tree_fingerprint(cache_dir) == tree_fingerprint(install_root.resolve())
+
+
 def codex_status(
     install_root: Path,
     expected_version: str,
@@ -322,18 +360,28 @@ def codex_status(
             "conflicting_plugins": untrusted_duplicates,
         }
     legacy_plugins = [str(entry.get("pluginId")) for entry in duplicate_entries]
-    target_ready = bool(
+    cache_stale = False
+    version_ready = bool(
         target
         and target.get("version") == expected_version
         and target.get("enabled")
     )
+    if version_ready and not codex_runtime_cache_matches(
+        install_root, expected_version
+    ):
+        cache_stale = True
+    target_ready = bool(version_ready and not cache_stale)
     if legacy_plugins:
         status = "legacy_pala"
     elif marketplace is None:
         status = "missing"
     elif target is None:
         status = "missing"
-    elif target.get("version") != expected_version or not target.get("enabled"):
+    elif (
+        target.get("version") != expected_version
+        or not target.get("enabled")
+        or cache_stale
+    ):
         status = "outdated"
     else:
         status = "ready"
@@ -347,6 +395,7 @@ def codex_status(
         "expected_version": expected_version,
         "enabled": bool(target and target.get("enabled")),
         "target_ready": target_ready,
+        "cache_stale": cache_stale,
         "legacy_plugins": legacy_plugins,
     }
 
@@ -371,6 +420,7 @@ def ensure_codex_install(
 
     marketplace_added = False
     target_was_present = bool(before.get("plugin_id") == PLUGIN_ID)
+    removed_for_cache_refresh = False
     removed_legacy: list[str] = []
     try:
         if not before.get("marketplace_registered"):
@@ -384,6 +434,11 @@ def ensure_codex_install(
                 ]
             )
             marketplace_added = True
+        # Same version string can leave a stale Codex cache after Repair. Force
+        # remove+add so Codex recopies marketplace files into the versioned cache.
+        if target_was_present and before.get("cache_stale"):
+            invoke(["plugin", "remove", PLUGIN_ID, "--json"])
+            removed_for_cache_refresh = True
         invoke(["plugin", "add", PLUGIN_ID, "--json"])
         after_add = codex_status(install_root, expected_version, invoke=invoke)
         if not after_add.get("target_ready"):
@@ -402,7 +457,12 @@ def ensure_codex_install(
                 invoke(["plugin", "add", legacy_plugin, "--json"])
             except Exception:
                 pass
-        if not target_was_present:
+        if removed_for_cache_refresh:
+            try:
+                invoke(["plugin", "add", PLUGIN_ID, "--json"])
+            except Exception:
+                pass
+        elif not target_was_present:
             try:
                 invoke(["plugin", "remove", PLUGIN_ID, "--json"])
             except Exception:
@@ -524,7 +584,7 @@ def tree_fingerprint(root: Path) -> str:
 
 
 def install_has_user_added_files(install_root: Path) -> bool:
-    """True when install root has non-junk files outside the allowlisted bundle.
+    """True when install root has unowned entries outside the allowlisted bundle.
 
     Fingerprint ignores extras (issue #13). Uninstall must still refuse to wipe
     user-added content that sits beside the owned allowlist.
@@ -537,7 +597,12 @@ def install_has_user_added_files(install_root: Path) -> bool:
         for path in bundle_files(install_root)
     }
     for path in install_root.rglob("*"):
-        if not path.is_file() or path.is_symlink():
+        # A symlink is never part of Pala's copied bundle.  Do not follow or
+        # delete it: it may point outside the install root or represent user
+        # data added after installation.
+        if path.is_symlink():
+            return True
+        if path.is_dir():
             continue
         relative = path.relative_to(install_root)
         if not safe_source_file(relative):

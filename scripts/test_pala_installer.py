@@ -131,6 +131,19 @@ class InstallerCoreTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.installer = load_installer()
 
+    def setUp(self) -> None:
+        # Isolate Codex runtime cache checks from the developer's real ~/.codex
+        # cache (same version string would otherwise look "stale").
+        self._codex_home_dir = tempfile.TemporaryDirectory(prefix="pala-codex-home-")
+        self._codex_home_patcher = patch.dict(
+            os.environ, {"CODEX_HOME": self._codex_home_dir.name}
+        )
+        self._codex_home_patcher.start()
+
+    def tearDown(self) -> None:
+        self._codex_home_patcher.stop()
+        self._codex_home_dir.cleanup()
+
     def test_installed_fingerprint_stable_after_pycache(self) -> None:
         """Issue #13: runtime __pycache__ must not mark a healthy install drifted."""
         with tempfile.TemporaryDirectory(prefix="pala-fp-pycache-") as temp:
@@ -1055,6 +1068,139 @@ class InstallerCoreTests(unittest.TestCase):
                 calls,
             )
 
+    def test_ensure_codex_refreshes_when_cache_fingerprint_differs(self) -> None:
+        """Same version must still refresh when Codex cache content drifted."""
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            codex_home = root / "codex-home"
+            version = "0.4.0+codex.cache-stale"
+            install_root = make_bundle(root, version)
+            (install_root / "hooks" / "hooks.json").write_text(
+                json.dumps(
+                    {
+                        "hooks": {
+                            "SessionEnd": [
+                                {"hooks": [{"timeout": 3}]}
+                            ]
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            cache_dir = (
+                codex_home
+                / "plugins"
+                / "cache"
+                / "pala-project-studio"
+                / "pala-project-studio"
+                / version
+            )
+            shutil.copytree(install_root, cache_dir)
+            (cache_dir / "hooks" / "hooks.json").write_text(
+                json.dumps(
+                    {
+                        "hooks": {
+                            "SessionEnd": [
+                                {"hooks": [{"timeout": 10}]}
+                            ]
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertNotEqual(
+                self.installer.tree_fingerprint(install_root),
+                self.installer.tree_fingerprint(cache_dir),
+            )
+
+            marketplaces = [
+                {"name": "pala-project-studio", "root": str(install_root)}
+            ]
+            installed: list[dict[str, object]] = [
+                {
+                    "pluginId": self.installer.PLUGIN_ID,
+                    "name": "pala-project-studio",
+                    "marketplaceName": "pala-project-studio",
+                    "version": version,
+                    "installed": True,
+                    "enabled": True,
+                }
+            ]
+            calls: list[tuple[str, ...]] = []
+
+            def invoke(arguments: list[str]) -> dict[str, object]:
+                command = tuple(arguments)
+                calls.append(command)
+                if command == ("plugin", "marketplace", "list", "--json"):
+                    return {"marketplaces": list(marketplaces)}
+                if command == ("plugin", "list", "--json"):
+                    return {"installed": list(installed), "available": []}
+                if command == ("plugin", "remove", self.installer.PLUGIN_ID, "--json"):
+                    installed.clear()
+                    if cache_dir.exists():
+                        shutil.rmtree(cache_dir)
+                    return {"pluginId": self.installer.PLUGIN_ID}
+                if command == ("plugin", "add", self.installer.PLUGIN_ID, "--json"):
+                    if cache_dir.exists():
+                        shutil.rmtree(cache_dir)
+                    shutil.copytree(install_root, cache_dir)
+                    installed[:] = [
+                        {
+                            "pluginId": self.installer.PLUGIN_ID,
+                            "name": "pala-project-studio",
+                            "marketplaceName": "pala-project-studio",
+                            "version": version,
+                            "installed": True,
+                            "enabled": True,
+                        }
+                    ]
+                    return {
+                        "pluginId": self.installer.PLUGIN_ID,
+                        "installedPath": str(cache_dir),
+                    }
+                raise AssertionError(f"unexpected Codex command: {command}")
+
+            with patch.dict(os.environ, {"CODEX_HOME": str(codex_home)}):
+                before = self.installer.codex_status(
+                    install_root, version, invoke=invoke
+                )
+                self.assertEqual(before["status"], "outdated")
+                self.assertTrue(before["cache_stale"])
+                self.assertFalse(before["target_ready"])
+
+                report = self.installer.ensure_codex_install(
+                    install_root, version, invoke=invoke
+                )
+
+                self.assertEqual(report["status"], "updated")
+                self.assertTrue(report["changed"])
+                self.assertFalse(report.get("cache_stale"))
+                self.assertEqual(
+                    self.installer.tree_fingerprint(install_root),
+                    self.installer.tree_fingerprint(cache_dir),
+                )
+                self.assertEqual(
+                    json.loads((cache_dir / "hooks" / "hooks.json").read_text(
+                        encoding="utf-8"
+                    ))["hooks"]["SessionEnd"][0]["hooks"][0]["timeout"],
+                    3,
+                )
+                self.assertIn(
+                    ("plugin", "remove", self.installer.PLUGIN_ID, "--json"),
+                    calls,
+                )
+                self.assertIn(
+                    ("plugin", "add", self.installer.PLUGIN_ID, "--json"),
+                    calls,
+                )
+                remove_at = calls.index(
+                    ("plugin", "remove", self.installer.PLUGIN_ID, "--json")
+                )
+                add_at = calls.index(
+                    ("plugin", "add", self.installer.PLUGIN_ID, "--json")
+                )
+                self.assertLess(remove_at, add_at)
+
     def test_codex_marketplace_name_conflict_is_never_overwritten(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
             root = Path(temp)
@@ -1396,6 +1542,28 @@ class InstallerCoreTests(unittest.TestCase):
 
             self.assertEqual(report["status"], "modified")
             self.assertTrue(marker.is_file())
+
+    def test_uninstall_refuses_user_added_symlink(self) -> None:
+        """A link is outside Pala's owned tree even when it points at a safe file."""
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root)
+            install_root = root / "home" / "plugins" / "pala-project-studio"
+            state_root = root / "local" / "Pala"
+            self.installer.install_bundle(source, install_root, state_root)
+            target = root / "keep-me.txt"
+            target.write_text("preserve", encoding="utf-8")
+            link = install_root / "user-link.txt"
+            try:
+                link.symlink_to(target)
+            except OSError as exc:
+                self.skipTest(f"symlinks unavailable in this profile: {exc}")
+
+            report = self.installer.uninstall_bundle(install_root, state_root)
+
+            self.assertEqual(report["status"], "modified")
+            self.assertTrue(link.is_symlink())
+            self.assertTrue(target.is_file())
 
     def test_uninstall_allows_runtime_pycache_junk(self) -> None:
         """Issue #13 junk must not block uninstall the way user-added files do."""
