@@ -177,6 +177,47 @@ def active_freshness_level(
     return freshness(workflow.get("updated_at"), now)
 
 
+def quality_signal(root: Path, workflow: dict[str, object]) -> dict[str, object]:
+    """Return only safe, displayable ledger fields for the local status page."""
+    ticket = str(workflow.get("active_ticket") or "").strip()
+    empty: dict[str, object] = {
+        "available": False,
+        "status": "not-run",
+        "ticket": ticket,
+        "risk": {"level": "unknown", "reasons": []},
+        "coverage": {"passed": 0, "required": 0},
+        "last_problem": "quality ledger not initialized" if ticket else "no active ticket",
+        "next_action": f"initialize quality ledger for {ticket}" if ticket else "begin a ticket",
+    }
+    if not ticket:
+        return empty
+    try:
+        import pala_quality
+
+        if not pala_quality.quality_ledger_path(root, ticket).is_file():
+            return empty
+        report = pala_quality.quality_gate(root, ticket)
+        risk = report.get("risk") if isinstance(report.get("risk"), dict) else {}
+        coverage = report.get("coverage") if isinstance(report.get("coverage"), dict) else {}
+        return {
+            "available": True,
+            "status": str(report.get("status") or "blocked"),
+            "ticket": str(report.get("ticket") or ticket),
+            "risk": {
+                "level": str(risk.get("level") or "unknown"),
+                "reasons": [str(item)[:80] for item in list(risk.get("reasons") or [])[:4]],
+            },
+            "coverage": {
+                "passed": int(coverage.get("passed") or 0),
+                "required": int(coverage.get("required") or 0),
+            },
+            "last_problem": str(report.get("last_problem") or "yok")[:120],
+            "next_action": str(report.get("next_action") or "")[:160],
+        }
+    except (ImportError, OSError, ValueError, json.JSONDecodeError):
+        return {**empty, "status": "blocked", "last_problem": "quality ledger unreadable"}
+
+
 def build_status_model(
     root: Path,
     *,
@@ -196,19 +237,22 @@ def build_status_model(
     workflow: dict[str, object] = {}
     try:
         import pala_state
-
-        manifest = pala_state.load_manifest(root)
-        documents = dict(manifest.get("documents") or {})
+    except ImportError:
+        pala_state = None  # type: ignore[assignment]
+    if pala_state is not None:
+        try:
+            manifest = pala_state.load_manifest(root)
+            documents = dict(manifest.get("documents") or {})
+        except (OSError, ValueError, json.JSONDecodeError):
+            documents = {}
         try:
             workflow = pala_state.load_workflow(root)
         except (OSError, ValueError, json.JSONDecodeError):
             workflow = {}
-    except (OSError, ValueError, json.JSONDecodeError):
+    if not documents:
         try:
-            import pala_state
-
             documents = dict(pala_state.discover(root).get("documents") or {})
-        except (OSError, ValueError, json.JSONDecodeError):
+        except (AttributeError, OSError, ValueError, json.JSONDecodeError):
             documents = {}
 
     memory = contract_context(root, documents, workflow)
@@ -235,8 +279,11 @@ def build_status_model(
     if update is None:
         update, update_checked_at = _resolve_update(cache_path)
 
+    quality = quality_signal(root, workflow)
     next_action = (
-        coherence.get("inferred_next")
+        quality.get("next_action")
+        if quality.get("status") == "blocked"
+        else coherence.get("inferred_next")
         or workflow.get("next_action")
         or ""
     )
@@ -255,6 +302,7 @@ def build_status_model(
         "provisions": provisions,
         "next_action": next_action,
         "last_gate": last_gate_signal(workflow, events),
+        "quality": quality,
         "freshness_level": active_freshness_level(
             root, projects, workflow, now=now
         ),

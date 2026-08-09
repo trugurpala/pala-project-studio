@@ -15,3 +15,8 @@ build/
 .codex/pala-status.html
 .codex/pala-project.json
 reports/pdf_ingest_scratch/
+artifacts/wip/
+
+.pala/runtime/
+.pala/tmp/
+

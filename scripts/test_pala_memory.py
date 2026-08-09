@@ -130,6 +130,64 @@ class MemoryContractTests(unittest.TestCase):
                     blockers=[],
                 )
 
+    def test_checkpoint_rejects_soft_done_as_evidence_name(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            pala_state.begin_work(root, "T-1", "Do work")
+            for laundered in ("done=passed", "ok=passed", "bitti=passed", "complete=passed"):
+                with self.assertRaises(ValueError, msg=laundered):
+                    pala_state.checkpoint_work(
+                        root,
+                        next_action="Next ticket",
+                        verification=[laundered],
+                        blockers=[],
+                    )
+
+    def test_git_checkpoint_ignores_plugin_data_noise(self) -> None:
+        import subprocess
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@example.com"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "test"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            (root / "README.md").write_text("hello\n", encoding="utf-8")
+            subprocess.run(["git", "add", "README.md"], cwd=root, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "commit", "-m", "init"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            plugin_noise = (
+                root / ".codex" / "plugin-data" / "pala" / "v3" / "tickets" / "T-1.json"
+            )
+            plugin_noise.parent.mkdir(parents=True)
+            plugin_noise.write_text("{}", encoding="utf-8")
+
+            noise_only = pala_state.git_checkpoint(root)
+            self.assertEqual(noise_only.get("changed_count"), 0)
+
+            real_change = root / "src.txt"
+            real_change.write_text("change\n", encoding="utf-8")
+            with_real = pala_state.git_checkpoint(root)
+            self.assertEqual(with_real.get("changed_count"), 1)
+            self.assertNotEqual(
+                noise_only.get("changed_snapshot_sha256"),
+                with_real.get("changed_snapshot_sha256"),
+            )
+
     def test_checkpoint_accepts_structured_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

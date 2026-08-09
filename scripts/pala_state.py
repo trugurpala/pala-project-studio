@@ -138,6 +138,38 @@ IGNORED_DISCOVERY_DIRS = {
 }
 
 
+def quality_gate_report(root: Path, ticket: str) -> dict[str, object]:
+    """Read a ticket's local quality decision without creating or running it."""
+    try:
+        import pala_quality
+
+        ledger = pala_quality.quality_ledger_path(root, ticket)
+        if not ledger.is_file():
+            return {
+                "available": False,
+                "status": "not-run",
+                "next_action": f"initialize quality ledger for {ticket}",
+            }
+        report = pala_quality.quality_gate(root, ticket)
+        return {"available": True, **report}
+    except (ImportError, OSError, ValueError, json.JSONDecodeError) as exc:
+        return {
+            "available": False,
+            "status": "blocked",
+            "next_action": f"repair quality ledger for {ticket}",
+            "detail": str(exc)[:240],
+        }
+
+
+def require_quality_gate(root: Path, ticket: str) -> dict[str, object]:
+    """Fail closed only when a caller explicitly claims ticket quality."""
+    report = quality_gate_report(root, ticket)
+    if report.get("status") != "passed":
+        action = str(report.get("next_action") or "run required quality gates")
+        raise ValueError(f"quality gate blocked for {ticket}; next action: {action}")
+    return report
+
+
 def session_key(session_id: str) -> str:
     """Return a bounded stable key without persisting the raw Codex session id."""
     from pala_models import SessionKey
@@ -482,6 +514,12 @@ def _normalize_evidence_entries(entries: list[str]) -> list[dict[str, str]]:
                 "checkpoint refused: evidence must look like "
                 "'unittest=passed' or 'install=configured-not-verified'"
             )
+        name = match.group("name").strip()[:120]
+        if name.casefold() in SOFT_DONE_RE:
+            raise ValueError(
+                "checkpoint refused: soft done word is not an evidence name; "
+                "use a real gate like 'unittest=passed'"
+            )
         status = match.group("status").casefold().replace("_", "-")
         if status not in EVIDENCE_STATUSES:
             raise ValueError(f"unsupported evidence status: {status}")
@@ -489,7 +527,7 @@ def _normalize_evidence_entries(entries: list[str]) -> list[dict[str, str]]:
             raise ValueError("checkpoint refused: verification contains failed status")
         parsed.append(
             {
-                "name": match.group("name").strip()[:120],
+                "name": name,
                 "status": status,
                 "detail": match.group("rest").strip()[:200],
             }
@@ -688,15 +726,17 @@ def git_checkpoint(root: Path) -> dict[str, object]:
         }
     filtered = []
     workflow_name = WORKFLOW.as_posix().casefold()
+    plugin_data_prefix = ".codex/plugin-data/".casefold()
     for line in status.splitlines():
         candidate = line[3:].strip().strip('"').replace("\\", "/").casefold()
-        if candidate == workflow_name:
+        if candidate == workflow_name or candidate.startswith(plugin_data_prefix):
             continue
         filtered.append(line)
     changed_paths = [
         value
         for value in changed_git_paths(root)
         if value.replace("\\", "/").casefold() != workflow_name
+        and not value.replace("\\", "/").casefold().startswith(plugin_data_prefix)
     ]
     changed_snapshot = git_paths_snapshot(root, changed_paths)
     fingerprint = hashlib.sha256()
@@ -730,13 +770,16 @@ def git_diff_paths(root: Path, before: str, after: str) -> list[str] | None:
     if output is None:
         return None
     workflow_name = WORKFLOW.as_posix().casefold()
+    plugin_data_prefix = ".codex/plugin-data/".casefold()
     paths = []
     for value in output.split(b"\0"):
         if not value:
             continue
         decoded = value.decode("utf-8", errors="surrogateescape")
-        if decoded.replace("\\", "/").casefold() != workflow_name:
-            paths.append(decoded)
+        normalized = decoded.replace("\\", "/").casefold()
+        if normalized == workflow_name or normalized.startswith(plugin_data_prefix):
+            continue
+        paths.append(decoded)
     return paths
 
 
@@ -972,6 +1015,7 @@ def checkpoint_work(
     changed_summary: str = "",
     changed_files: list[str] | None = None,
     session_id: str | None = None,
+    quality_ticket: str | None = None,
 ) -> None:
     from pala_memory import (
         append_status_mismatch,
@@ -986,6 +1030,9 @@ def checkpoint_work(
         raise ValueError(f"unsupported verification tier: {tier}")
     if has_failed_verification(verification):
         raise ValueError("checkpoint refused: verification contains failed status")
+    quality: dict[str, object] | None = None
+    if quality_ticket:
+        quality = require_quality_gate(root, quality_ticket)
     evidence = _normalize_evidence_entries(verification)
     try:
         manifest = load_manifest(root)
@@ -1045,6 +1092,7 @@ def checkpoint_work(
             "changed_files": bounded_strings(changed_files or [], limit=16),
             "memory_mismatch": coherence if coherence.get("mismatch") else None,
             "checkpoint_basis": checkpoint_basis(root, manifest),
+            "quality_gate": quality,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
     )
@@ -1384,6 +1432,10 @@ def parser() -> argparse.ArgumentParser:
     checkpoint_parser.add_argument("--session-key")
     checkpoint_parser.add_argument("--ticket")
     checkpoint_parser.add_argument(
+        "--quality-ticket",
+        help="Quality ledger'i passed olmadan bu checkpoint'i passed sayma",
+    )
+    checkpoint_parser.add_argument(
         "--tier", choices=VERIFICATION_TIERS, default="ticket"
     )
     doctor_parser = subparsers.add_parser("doctor")
@@ -1401,6 +1453,11 @@ def parser() -> argparse.ArgumentParser:
         child.add_argument("--cwd", default=".")
         child.add_argument("--ticket", required=True)
         child.add_argument("--session-key", required=True)
+        if command == "complete":
+            child.add_argument(
+                "--quality-ticket",
+                help="Bu ticket icin quality ledger passed olmadan complete yapma",
+            )
     debug_gate_parser = subparsers.add_parser("debug-gate")
     debug_gate_parser.add_argument("--cwd", default=".")
     debug_gate_parser.add_argument(
@@ -1491,6 +1548,12 @@ def main() -> int:
         print(str(root / WORKFLOW))
         return 0
     if args.command == "checkpoint":
+        if args.quality_ticket:
+            try:
+                require_quality_gate(root, args.quality_ticket)
+            except ValueError as exc:
+                print(str(exc), file=sys.stderr)
+                return 2
         if args.session_key:
             if not args.ticket:
                 print("ticket is required with --session-key", file=sys.stderr)
@@ -1517,6 +1580,7 @@ def main() -> int:
                 args.verification,
                 args.blocker,
                 args.tier,
+                quality_ticket=args.quality_ticket,
             )
         except ValueError as exc:
             print(str(exc), file=sys.stderr)
@@ -1540,6 +1604,8 @@ def main() -> int:
 
         if args.command == "complete":
             try:
+                if args.quality_ticket:
+                    require_quality_gate(root, args.quality_ticket)
                 from pala_debug_gate import complete_fail_closed
 
                 documents: dict[str, object] | None = None

@@ -213,10 +213,105 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertEqual(len(marketplace["plugins"]), 1)
         entry = marketplace["plugins"][0]
         self.assertEqual(entry["name"], "pala-project-studio")
-        self.assertEqual(entry["source"], {"source": "local", "path": "./"})
+        self.assertEqual(entry["source"], {"source": "local", "path": "."})
         self.assertEqual(entry["policy"]["installation"], "AVAILABLE")
         self.assertEqual(entry["policy"]["authentication"], "ON_INSTALL")
         self.assertEqual(entry["category"], "Developer Tools")
+        self.assertNotEqual(entry["source"]["path"], "")
+        self.assertNotEqual(entry["source"]["path"], "./")
+
+    def test_kur_cmd_runs_bypass_install_and_prints_turkish_next_steps(self) -> None:
+        kur = (PLUGIN_ROOT / "Kur.cmd").read_text(encoding="utf-8")
+        compact = " ".join(kur.split())
+        self.assertIn("ExecutionPolicy Bypass", compact)
+        self.assertIn(r"scripts\Install-Pala.ps1", kur)
+        self.assertIn("-Mode Install", compact)
+        lowered = kur.casefold()
+        for marker in ("plugins", "/hooks", "yeni bir sohbet"):
+            self.assertIn(marker, lowered)
+
+    def test_installer_gui_next_steps_cover_plugins_hooks_and_new_chat(self) -> None:
+        installer_path = PLUGIN_ROOT / "scripts" / "pala_installer.py"
+        spec = importlib.util.spec_from_file_location(
+            "pala_installer_ux", installer_path
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError("cannot load pala_installer.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        message = module.install_gui_next_steps_message()
+        lowered = message.casefold()
+        for marker in ("plugins", "/hooks", "yeni bir sohbet", "sonraki 3 adim"):
+            self.assertIn(marker, lowered)
+        wrapper = (PLUGIN_ROOT / "scripts" / "Install-Pala.ps1").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Show-PalaGuiNextSteps", wrapper)
+        self.assertIn("gui_next_steps", wrapper)
+        self.assertIn("Plugins'te Pala", wrapper)
+
+    def test_vibe_install_docs_contain_native_cli_and_forbid_install_myths(
+        self,
+    ) -> None:
+        """Native CLI is primary; Plus-paste / ZIP-upload-as-primary stay myths."""
+        marketplace_add = (
+            "codex plugin marketplace add trugurpala/pala-project-studio"
+        )
+        plugin_add = "codex plugin add pala-project-studio@pala-project-studio"
+        vibe_docs = (
+            PLUGIN_ROOT / "docs" / "VIBE_INSTALL.md",
+            PLUGIN_ROOT / "docs" / "VIBE_FIRST_SESSION.md",
+            PLUGIN_ROOT / "README.md",
+        )
+        for path in vibe_docs:
+            text = path.read_text(encoding="utf-8")
+            self.assertIn(marketplace_add, text, path.name)
+            self.assertIn(plugin_add, text, path.name)
+
+        vibe_install = (PLUGIN_ROOT / "docs" / "VIBE_INSTALL.md").read_text(
+            encoding="utf-8"
+        )
+        vibe_first = (PLUGIN_ROOT / "docs" / "VIBE_FIRST_SESSION.md").read_text(
+            encoding="utf-8"
+        )
+        readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
+
+        # Explicit myth denials in the vibe install bible.
+        self.assertIn("metin yapıştır = kurulum", vibe_install)
+        self.assertIn("ZIP yükle → Install", vibe_install)
+        self.assertIn("ZIP-upload UI yok", vibe_install)
+        self.assertRegex(
+            vibe_install,
+            r"metin yapıştır = kurulum\s*\|\s*\*\*Yok\.\*\*",
+        )
+        self.assertRegex(
+            vibe_install,
+            r"ZIP yükle → Install\s*\|\s*\*\*Yok\.\*\*",
+        )
+
+        # First-session + README must not sell ZIP-upload / Plus-paste as doors.
+        for name, text in (
+            ("VIBE_FIRST_SESSION.md", vibe_first),
+            ("README.md", readme),
+            ("VIBE_INSTALL.md", vibe_install),
+        ):
+            lowered = text.casefold()
+            self.assertNotIn("plus'a yapıştırarak kur", lowered, name)
+            self.assertNotIn("chatgpt plus paste install", lowered, name)
+            self.assertNotIn("upload the zip to plugins", lowered, name)
+            self.assertNotIn("plugins'e zip yükle ve install", lowered, name)
+
+        self.assertRegex(readme, r"ZIP Codex Plugins.e yüklenmez")
+        self.assertRegex(
+            vibe_first.casefold(),
+            r"zip-upload|zip yükleme",
+        )
+        # Unregistered cwd: SessionStart silent (not a broken install).
+        self.assertIn("Kayıtsız klasörde", vibe_first)
+        self.assertIn("SessionStart **boş**", vibe_first)
+        self.assertIn("Kayıtsız klasör", vibe_install)
+        self.assertIn("plugin=drifted", vibe_install)
+        self.assertIn("Repair", vibe_install)
 
     def test_skill_metadata_uses_consistent_brand_and_narrow_implicit_invocation(self) -> None:
         metadata = (SKILL_ROOT / "agents" / "openai.yaml").read_text(
@@ -236,8 +331,8 @@ class UserExperienceContractTests(unittest.TestCase):
 
     def test_orchestrator_is_concise_and_declares_human_contract(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
-        # Premium kontrol checklist + marketplace path guidance share this budget.
-        self.assertLessEqual(len(skill.split()), 650)
+        # Thin skill for Codex progressive disclosure (detail in references/).
+        self.assertLessEqual(len(skill.split()), 480)
         for principle in (
             "Understand before changing.",
             "Choose the smallest correct and sustainable path.",
@@ -246,6 +341,7 @@ class UserExperienceContractTests(unittest.TestCase):
         ):
             self.assertIn(principle, skill)
         self.assertIn("(references/specialist-routing.md)", skill)
+        self.assertIn("references/kontrol-et.md", skill)
         self.assertIn("1–3 short lines", skill)
         self.assertIn("user's language", skill)
 
@@ -267,10 +363,10 @@ class UserExperienceContractTests(unittest.TestCase):
     def test_kontrol_et_readonly_checklist_markers(self) -> None:
         """Premium 'pala kontrol et' Codex checklist stays explicit and read-only."""
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        ref = (REFERENCE_ROOT / "kontrol-et.md").read_text(encoding="utf-8")
+        for marker in ("kontrol et", "rapor", "denetle", "references/kontrol-et.md"):
+            self.assertIn(marker, skill)
         for marker in (
-            "kontrol et",
-            "rapor",
-            "denetle",
             "Presence",
             "pala_report",
             "discover",
@@ -278,18 +374,61 @@ class UserExperienceContractTests(unittest.TestCase):
             "PLAN",
             "DEBUGGING",
             "pala-status.html",
-            "do not register, begin",
         ):
-            self.assertIn(marker, skill)
-        # Numbered steps covering presence → report → discover → docs → gates → URL
+            self.assertIn(marker, ref)
+        self.assertIn("do not register, begin", ref.casefold())
         for step in ("1.", "2.", "3.", "4.", "5.", "6.", "7."):
-            self.assertIn(step, skill)
-        readonly_block = skill.split("## Task Modes", 1)[-1].split("## Operating", 1)[0]
-        self.assertIn("register", readonly_block.casefold())
+            self.assertIn(step, ref)
+        self.assertIn("do not register, begin, edit, or write state", skill.casefold())
         self.assertRegex(
-            readonly_block,
+            skill,
             r"(?is)do not register.*begin",
         )
+
+    def test_continuity_refs_using_pala_plan_execute_debug(self) -> None:
+        """Superpowers-inspired continuity refs stay thin and Pala-shaped."""
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("references/using-pala.md", skill)
+        self.assertLessEqual(len(skill.split()), 480)
+        using = (REFERENCE_ROOT / "using-pala.md").read_text(encoding="utf-8")
+        plan = (REFERENCE_ROOT / "plan-tickets.md").read_text(encoding="utf-8")
+        execute = (REFERENCE_ROOT / "execute-tickets.md").read_text(encoding="utf-8")
+        debug = (REFERENCE_ROOT / "debugging-inc.md").read_text(encoding="utf-8")
+        design = (
+            PLUGIN_ROOT
+            / "docs"
+            / "superpowers"
+            / "specs"
+            / "2026-08-09-pala-vs-superpowers-continuity-design.md"
+        ).read_text(encoding="utf-8")
+        for text in (using, plan, execute, debug, design):
+            self.assertLessEqual(len(text.split()), 900)
+        for marker in (
+            "active ticket only",
+            "passed",
+            "not-run",
+            "blocked",
+            "configured-not-verified",
+            "plan-tickets.md",
+            "execute-tickets.md",
+            "debugging-inc.md",
+            "quality-gates.md",
+        ):
+            self.assertIn(marker, using)
+        self.assertIn("M*-T*", plan)
+        self.assertIn("Kanıt", plan)
+        self.assertIn("begin --ticket", execute)
+        self.assertIn("INC-", debug)
+        self.assertIn("Iron law", debug)
+        qg = (REFERENCE_ROOT / "quality-gates.md").read_text(encoding="utf-8")
+        self.assertIn("Verification before done", qg)
+        self.assertIn("configured-not-verified", qg)
+        self.assertIn("do not invent soft", qg.casefold())
+        routing = (REFERENCE_ROOT / "specialist-routing.md").read_text(encoding="utf-8")
+        self.assertIn("using-pala.md", routing)
+        self.assertIn("Claude-only", routing)
+        self.assertIn("What Pala already beats", design)
+        self.assertIn("What we deliberately skip", design)
 
     def test_specialist_routing_is_conditional_and_current(self) -> None:
         path = REFERENCE_ROOT / "specialist-routing.md"
@@ -544,6 +683,12 @@ class PortablePackageContractTests(unittest.TestCase):
                 names,
             )
             self.assertIn("pala-project-studio/Install-Pala.ps1", names)
+            self.assertIn("pala-project-studio/Kur.cmd", names)
+            packager_source = PACKAGER_PATH.read_text(encoding="utf-8")
+            self.assertIn('plugin_root / "Kur.cmd"', packager_source)
+            self.assertIn('plugin_root / "KUR.md"', packager_source)
+            if (PLUGIN_ROOT / "KUR.md").is_file():
+                self.assertIn("pala-project-studio/KUR.md", names)
             self.assertIn("pala-project-studio/scripts/pala_installer.py", names)
             self.assertIn("pala-project-studio/README.md", names)
             self.assertIn("pala-project-studio/PROJECT.md", names)
@@ -573,6 +718,22 @@ class PortablePackageContractTests(unittest.TestCase):
                     packager.validate_archive_name(value)
         with self.assertRaises(ValueError):
             packager.ensure_unique_names(["Root/File.py", "root/file.py"])
+
+    @unittest.skipUnless(PACKAGER_PATH.is_file(), "packager not implemented")
+    def test_packager_forbids_secret_shaped_and_sqlite_sources(self) -> None:
+        packager = load_packager()
+        for relative in (
+            Path("scripts/credentials.json"),
+            Path("hooks/id_rsa"),
+            Path("hooks/id_rsa.pub"),
+            Path("skills/secrets.json"),
+            Path("data/pala.sqlite"),
+            Path("scripts/token.pem"),
+        ):
+            with self.subTest(relative=str(relative)):
+                self.assertTrue(packager.is_forbidden_source(relative))
+        self.assertFalse(packager.is_forbidden_source(Path("scripts/pala_quality.py")))
+        self.assertFalse(packager.is_forbidden_source(Path("docs/SECURITY.md")))
 
 
 if __name__ == "__main__":

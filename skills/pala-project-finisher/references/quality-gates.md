@@ -28,7 +28,28 @@ start tests, builds, network calls, or GitHub mutations automatically.
    checks and review the diff.
 6. At the planned milestone/release boundary run the corresponding full gate.
 
-Report each applicable gate as `passed`, `failed`, `blocked`, or `not run` with
-the command and evidence. Do not report a speed or token-saving percentage
-without a measured baseline and comparison in the same environment. Record
-warm/cold conditions, command, run count, and duration when performance matters.
+Report each applicable gate as `passed`, `not-run`, `blocked`, or
+`configured-not-verified` with the command and evidence. Do not invent soft
+aliases (`failed`, `not run`, `done`). Do not report a speed or token-saving
+percentage without a measured baseline and comparison in the same environment.
+Record warm/cold conditions, command, run count, and duration when performance
+matters.
+
+For Pala's local Delivery Quality Engine (discover → ledger → explicit record →
+status), use `scripts/pala_quality.py` and
+`docs/PALA_0_9_QUALITY_ENGINE.md`. Hooks never run gates.
+
+## Verification before done
+
+Iron law: no completion, fix, or satisfaction claim without fresh verification
+evidence in **this** turn.
+
+1. Identify the command that proves the claim.
+2. Run that command fully (not a prior run from memory).
+3. Read exit code and failures.
+4. If evidence does not support the claim, report the real label.
+5. Only then claim status - with the command and label.
+
+Before `checkpoint` / "ticket complete": STATUS next action updated; Kanıt
+commands recorded; open INC- addressed or explicitly deferred as `blocked` /
+`not-run`.

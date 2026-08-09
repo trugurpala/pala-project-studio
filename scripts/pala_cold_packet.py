@@ -17,6 +17,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pala_tokens import approx_tokens as _estimate_tokens
+
 MINIMAL_MAX_BYTES = 2048
 PROFILES = ("minimal", "standard", "milestone")
 EVIDENCE_SOURCES = (
@@ -318,11 +320,6 @@ def capability_manifest(
         "base_commit": git.get("base_commit"),
         "evidence_policy": "passed only with command+exit+timestamp+path",
     }
-
-
-def _estimate_tokens(text: str) -> int:
-    # Cheap approx: ~4 chars/token; used for budget metadata only (not a claim).
-    return max(1, (len(text) + 3) // 4) if text else 0
 
 
 def context_record(

@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -42,7 +43,11 @@ PACKAGE_FILES = (
     "managed-tools.lock.json",
 )
 FORBIDDEN_PARTS = {".git", ".codex", "__pycache__", ".pytest_cache", ".ruff_cache"}
-FORBIDDEN_SUFFIXES = {".pyc", ".pyo", ".pem", ".key"}
+FORBIDDEN_SUFFIXES = {".pyc", ".pyo", ".pem", ".key", ".sqlite"}
+FORBIDDEN_BASENAMES = {"credentials.json", "id_rsa"}
+SECRET_SHAPED_BASENAME = re.compile(
+    r"(?i)^(?:id_rsa(?:\.[^.]+)?|credentials(?:\.[^.]+)?|secrets?(?:\.[^.]+)?)$"
+)
 
 
 def now_utc() -> str:
@@ -254,6 +259,44 @@ def trusted_legacy_pala(entry: dict[str, object]) -> bool:
     )
 
 
+def resolve_codex_home() -> Path:
+    configured = os.environ.get("CODEX_HOME", "").strip()
+    if configured:
+        return Path(configured)
+    return Path.home() / ".codex"
+
+
+def codex_runtime_cache_dir(
+    version: str, *, codex_home: Path | None = None
+) -> Path:
+    """Versioned Codex plugin cache path for Pala.
+
+    Codex copies marketplace files into
+    ``$CODEX_HOME/plugins/cache/<marketplace>/<plugin>/<version>/``.
+    Same version string does not imply the cache mirrors the marketplace tree.
+    """
+    home = codex_home if codex_home is not None else resolve_codex_home()
+    return home / "plugins" / "cache" / OWNER / OWNER / version
+
+
+def codex_runtime_cache_matches(
+    install_root: Path,
+    version: str,
+    *,
+    codex_home: Path | None = None,
+) -> bool:
+    """True when Codex cache is absent or fingerprints marketplace install_root.
+
+    Absent cache is treated as a match so version-only inventory stays valid in
+    tests and before the first materialization. When the cache directory exists,
+    allowlisted tree fingerprints must match or Repair must refresh.
+    """
+    cache_dir = codex_runtime_cache_dir(version, codex_home=codex_home)
+    if not cache_dir.is_dir():
+        return True
+    return tree_fingerprint(cache_dir) == tree_fingerprint(install_root.resolve())
+
+
 def codex_status(
     install_root: Path,
     expected_version: str,
@@ -322,18 +365,28 @@ def codex_status(
             "conflicting_plugins": untrusted_duplicates,
         }
     legacy_plugins = [str(entry.get("pluginId")) for entry in duplicate_entries]
-    target_ready = bool(
+    cache_stale = False
+    version_ready = bool(
         target
         and target.get("version") == expected_version
         and target.get("enabled")
     )
+    if version_ready and not codex_runtime_cache_matches(
+        install_root, expected_version
+    ):
+        cache_stale = True
+    target_ready = bool(version_ready and not cache_stale)
     if legacy_plugins:
         status = "legacy_pala"
     elif marketplace is None:
         status = "missing"
     elif target is None:
         status = "missing"
-    elif target.get("version") != expected_version or not target.get("enabled"):
+    elif (
+        target.get("version") != expected_version
+        or not target.get("enabled")
+        or cache_stale
+    ):
         status = "outdated"
     else:
         status = "ready"
@@ -347,6 +400,7 @@ def codex_status(
         "expected_version": expected_version,
         "enabled": bool(target and target.get("enabled")),
         "target_ready": target_ready,
+        "cache_stale": cache_stale,
         "legacy_plugins": legacy_plugins,
     }
 
@@ -371,6 +425,7 @@ def ensure_codex_install(
 
     marketplace_added = False
     target_was_present = bool(before.get("plugin_id") == PLUGIN_ID)
+    removed_for_cache_refresh = False
     removed_legacy: list[str] = []
     try:
         if not before.get("marketplace_registered"):
@@ -384,6 +439,11 @@ def ensure_codex_install(
                 ]
             )
             marketplace_added = True
+        # Same version string can leave a stale Codex cache after Repair. Force
+        # remove+add so Codex recopies marketplace files into the versioned cache.
+        if target_was_present and before.get("cache_stale"):
+            invoke(["plugin", "remove", PLUGIN_ID, "--json"])
+            removed_for_cache_refresh = True
         invoke(["plugin", "add", PLUGIN_ID, "--json"])
         after_add = codex_status(install_root, expected_version, invoke=invoke)
         if not after_add.get("target_ready"):
@@ -402,7 +462,12 @@ def ensure_codex_install(
                 invoke(["plugin", "add", legacy_plugin, "--json"])
             except Exception:
                 pass
-        if not target_was_present:
+        if removed_for_cache_refresh:
+            try:
+                invoke(["plugin", "add", PLUGIN_ID, "--json"])
+            except Exception:
+                pass
+        elif not target_was_present:
             try:
                 invoke(["plugin", "remove", PLUGIN_ID, "--json"])
             except Exception:
@@ -448,7 +513,12 @@ def safe_source_file(relative: Path) -> bool:
     lowered = {part.casefold() for part in relative.parts}
     if lowered.intersection(FORBIDDEN_PARTS):
         return False
-    if relative.name.casefold().endswith(tuple(FORBIDDEN_SUFFIXES)):
+    name = relative.name
+    if name.casefold().endswith(tuple(FORBIDDEN_SUFFIXES)):
+        return False
+    if name.casefold() in {item.casefold() for item in FORBIDDEN_BASENAMES}:
+        return False
+    if SECRET_SHAPED_BASENAME.fullmatch(name):
         return False
     if any(
         part.casefold() == ".env" or part.casefold().startswith(".env.")
@@ -521,6 +591,73 @@ def tree_fingerprint(root: Path) -> str:
         digest.update(path.read_bytes())
         digest.update(b"\0")
     return digest.hexdigest().upper()
+
+
+def bundle_file_hashes(root: Path) -> dict[str, str]:
+    """Return the exact copied-file manifest used for uninstall protection."""
+    root = root.resolve()
+    return {
+        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest().upper()
+        for path in bundle_files(root)
+    }
+
+
+def is_runtime_artifact(relative: Path) -> bool:
+    """Pala-owned runtime leftovers that may appear after installation."""
+    return (
+        any(part.casefold() == "__pycache__" for part in relative.parts)
+        or relative.suffix.casefold() in {".pyc", ".pyo"}
+    )
+
+
+def install_has_user_added_files(
+    install_root: Path, file_hashes: dict[str, object] | None = None
+) -> bool:
+    """True when an install tree has an unowned/changed non-runtime entry.
+
+    New installs persist an exact file manifest. That protects files inside
+    owned directories too (including `.env`), rather than trusting today's
+    mutable directory contents. Legacy installs retain the older fallback.
+    """
+    install_root = install_root.resolve()
+    if not install_root.is_dir():
+        return False
+    expected = {
+        str(path).replace("\\", "/").casefold(): str(digest).casefold()
+        for path, digest in (file_hashes or {}).items()
+        if isinstance(path, str) and isinstance(digest, str)
+    }
+    expected_dirs: set[str] = set()
+    for relative in expected:
+        for parent in Path(relative).parents:
+            value = parent.as_posix().casefold()
+            if value != ".":
+                expected_dirs.add(value)
+    legacy_allowed = {
+        path.relative_to(install_root).as_posix().casefold()
+        for path in bundle_files(install_root)
+    }
+    for path in install_root.rglob("*"):
+        # Never follow a user link: it can point outside this install root.
+        if path.is_symlink():
+            return True
+        relative = path.relative_to(install_root)
+        if is_runtime_artifact(relative):
+            continue
+        key = relative.as_posix().casefold()
+        if path.is_dir():
+            if expected and key not in expected_dirs:
+                return True
+            continue
+        if expected:
+            if key not in expected:
+                return True
+            if hashlib.sha256(path.read_bytes()).hexdigest().casefold() != expected[key]:
+                return True
+            continue
+        if not safe_source_file(relative) or key not in legacy_allowed:
+            return True
+    return False
 
 
 def bundle_fingerprint(source: Path) -> str:
@@ -736,6 +873,39 @@ def hooks_next_step_message(project: dict[str, object] | None) -> str:
     )
 
 
+def plugin_drift_next_step_message(plugin: dict[str, object] | None) -> str:
+    """Tell vibe users how to clear source≠install fingerprint drift.
+
+    ``plugin=drifted`` after local edits is expected honesty, not soft-healthy.
+    Runtime junk must not cause drift (Issue #13); real drift needs Repair/sync.
+    """
+    status = ""
+    if isinstance(plugin, dict):
+        status = str(plugin.get("status") or "").strip().casefold()
+    if status != "drifted":
+        return ""
+    return (
+        "plugin=drifted (source!=install fingerprint). "
+        "Install-Pala -Mode Repair veya Update / marketplace sync; "
+        "healthy sayma. Sonra Doctor tekrar."
+    )
+
+
+def install_gui_next_steps_lines() -> list[str]:
+    """Turkish Codex Work follow-ups after a successful Install (no network)."""
+    return [
+        "Sonraki 3 adim (Codex Work):",
+        "1) Plugins'te Pala gorunuyor mu kontrol edin.",
+        "2) /hooks ile Pala hook guvenini (trust) verin.",
+        "3) Yeni bir sohbet acin.",
+    ]
+
+
+def install_gui_next_steps_message() -> str:
+    """Single printable block for Install / Kur.cmd success paths."""
+    return "\n".join(install_gui_next_steps_lines())
+
+
 def project_doctor(install_root: Path, project_root: Path) -> dict[str, object]:
     script = install_root / "scripts" / "pala_state.py"
     if not script.is_file():
@@ -816,6 +986,10 @@ def doctor_installation(
     experts_ready = bool(node_path and uv_path)
     healthy = plugin_ready
     hooks_next = hooks_next_step_message(project)
+    plugin_payload = bundle["plugin"]
+    plugin_next = plugin_drift_next_step_message(
+        plugin_payload if isinstance(plugin_payload, dict) else None
+    )
     self_audit_script = source / "scripts" / "pala_self_audit.py"
     self_audit = {
         "status": (
@@ -847,6 +1021,8 @@ def doctor_installation(
         "experts_ready": experts_ready,
         "status": "ready" if healthy else "attention_required",
         "hooks_next_step": hooks_next,
+        "plugin_next_step": plugin_next,
+        "gui_next_steps": install_gui_next_steps_message(),
         "self_audit": self_audit,
         "shared_store": shared_store,
         "plugin": bundle["plugin"],
@@ -942,6 +1118,7 @@ def install_bundle(
             "install_root": str(install_root),
             "version": source_manifest["version"],
             "fingerprint": installed_fingerprint,
+            "file_hashes": bundle_file_hashes(install_root),
             "source": OFFICIAL_REPOSITORY,
             "license": "MIT",
             "plugin_id": PLUGIN_ID,
@@ -1077,6 +1254,7 @@ def install_all(
         "bundle": bundle,
         "codex": codex,
         "update_cache": update_cache,
+        "gui_next_steps": install_gui_next_steps_message(),
     }
 
 
@@ -1091,7 +1269,10 @@ def uninstall_bundle(
     if state is None:
         return {"status": "external_conflict", "changed": False}
     actual = tree_fingerprint(install_root)
-    if state.get("fingerprint") != actual:
+    file_hashes = state.get("file_hashes") if isinstance(state.get("file_hashes"), dict) else None
+    if state.get("fingerprint") != actual or install_has_user_added_files(
+        install_root, file_hashes
+    ):
         return {"status": "modified", "changed": False}
     if dry_run:
         return {"status": "would_uninstall", "changed": False}
@@ -1117,6 +1298,18 @@ def finalize_verified_uninstall(
     state = owned_state(install_root, state_root)
     if state is None:
         return {"status": "external_conflict", "changed": False}
+    # Re-validate after Codex remove. Missing Pala-owned files are expected,
+    # but a remaining user file, symlink, or changed owned file is never wiped.
+    if install_root.exists():
+        file_hashes = state.get("file_hashes") if isinstance(state.get("file_hashes"), dict) else None
+        if file_hashes is None:
+            # Legacy state cannot distinguish a Codex-removed file from an
+            # owned-file modification, so retain its conservative behavior.
+            modified = state.get("fingerprint") != tree_fingerprint(install_root)
+        else:
+            modified = install_has_user_added_files(install_root, file_hashes)
+        if modified:
+            return {"status": "modified", "changed": False}
     if install_root.exists():
         trash = install_root.parent / f".{OWNER}.uninstall-{uuid.uuid4().hex}"
         os.replace(install_root, trash)

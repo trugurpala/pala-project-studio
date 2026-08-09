@@ -865,3 +865,81 @@ makinesi kurulumu bu milestonda yok.
 - Uzak Codex makinesine Install/Update/push/PR/release
 - Soft “A/B issues fixed” iddiası
 - Hooks UI trust = `passed` (CLI’dan iddia yok)
+
+## M30 — Vibe Codex host-fit (2026-08-09)
+
+Amaç: Codex host `additionalContext` ~1000-token sert tavanı + progressive
+disclosure altında vibe first-session’ı truncation-safe ve ince skill ile
+kilitlemek. Plan:
+`docs/superpowers/plans/2026-08-09-vibe-codex-host-fit.md`.
+
+Kaynak uygulama (branch `feat/m30-vibe-codex-host-fit`): limits doc, shared
+`pala_tokens`, SessionStart çift bütçe, thin skill + `references/kontrol-et.md`,
+host-fit contract tests, evidence bind. Checkpoint ayrıca
+`.codex/plugin-data/` yollarını workflow gibi hariç tutar (v3 ticket gürültüsü).
+
+| Paket | Kanıt |
+| --- | --- |
+| Limits + tokens + dual budget + thin skill | `passed` |
+| Focused unittest / installed verify / Gate0 9/9 | `passed` |
+| Tam source verify | `not-run` |
+| Hooks UI trust | `configured-not-verified` |
+
+### Bilerek yapılmayanlar (M30)
+
+- `/hooks` UI trust = `passed`
+- `v0.8.1` tag/release
+- Soft “A/B fixed”
+- Marketplace sync of M30 without Install after merge
+
+## M31 — Superpowers continuity for Codex (2026-08-09)
+
+Amaç: Superpowers process skill’lerinden Pala ürününe uyan süreklilik boşluklarını
+(using ritual, ticket plan/execute, INC- debug, verify-before-done) ince
+`references/` + contract test ile kapatmak. Design:
+`docs/superpowers/specs/2026-08-09-pala-vs-superpowers-continuity-design.md`.
+
+#### M31-T1 — Continuity refs + skill pointer
+
+- **Sahip ajan:** Cursor agent
+- **Amaç:** Pala continuity refs + tests + local ZIP; Superpowers wholesale yok.
+- **Dosyalar:** `docs/superpowers/specs/2026-08-09-pala-vs-superpowers-continuity-design.md`, `skills/pala-project-finisher/references/using-pala.md`, `skills/pala-project-finisher/references/plan-tickets.md`, `skills/pala-project-finisher/references/execute-tickets.md`, `skills/pala-project-finisher/references/debugging-inc.md`, `skills/pala-project-finisher/references/quality-gates.md`, `skills/pala-project-finisher/references/specialist-routing.md`, `skills/pala-project-finisher/SKILL.md`, `scripts/test_plugin_experience.py`, `scripts/test_pala_tools.py`, `STATUS.md`, `CHANGELOG.md`, `PLAN.md`, `docs/README.md`
+- **Bitti sayılır:** Focused unittest + `verify.py` passed; Desktop final ZIP+SHA; local commit; no push; `/hooks` trust claimed değil.
+- **Bağımlılık:** M30
+- **Kanıt:** `passed` (continuity contract + host_fit; verify/ZIP this turn)
+
+- [x] M31-T1: Continuity refs + skill pointer
+
+### Bilerek yapılmayanlar (M31)
+
+- Superpowers skill tree wholesale copy
+- Claude-only subagent/companion as Codex features
+- Push / PR / tag / `/hooks` trust = passed
+
+## M32 — Delivery Quality Engine 0.9 (2026-08-09)
+
+Amaç: Proje-yerel kalite kapılarını keşfet, ticket başına kanıt defteri tut,
+checkpoint/complete’te fail-closed kal; hook’tan gate çalıştırma.
+
+#### M32-T1 — pala_quality engine + packaging secret allowlist
+
+- **Sahip ajan:** Cursor agent
+- **Amaç:** `pala_quality` plan/init/record/status; Status HTML beş sinyal;
+  portable/install secret-shaped forbid; verify + Desktop final ZIP.
+- **Dosyalar:** `scripts/pala_quality.py`, `scripts/test_pala_quality.py`,
+  `scripts/pala_state.py`, `scripts/pala_report.py`, `scripts/pala_view.py`,
+  `scripts/verify.py`, `scripts/build_portable.py`, `scripts/pala_installer.py`,
+  `docs/PALA_0_9_QUALITY_ENGINE.md`, `docs/PALA_0_9_BENCHMARK.md`,
+  `STATUS.md`, `CHANGELOG.md`, `PLAN.md`
+- **Bitti sayılır:** Quality unittest + packaging contract + `verify.py` passed;
+  Desktop `pala-project-studio-0.8.1-final.zip` + SHA; push/PR/tag yok.
+- **Bağımlılık:** M31
+- **Kanıt:** `passed` (quality 21 + packaging; verify/ZIP this turn)
+
+- [x] M32-T1: Delivery Quality Engine + packaging P1
+
+### Bilerek yapılmayanlar (M32)
+
+- Push / PR / tag / `gh release`
+- `/hooks` trust = `passed`
+

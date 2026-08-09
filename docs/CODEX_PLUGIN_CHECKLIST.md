@@ -7,8 +7,8 @@ Evidence labels only: `passed` | `not-run` | `blocked` | `configured-not-verifie
 | Manifest `.codex-plugin/plugin.json` | Source `0.8.1+codex.*` | `passed` (prep; GitHub tag `not-run`) |
 | Marketplace `.agents/plugins/marketplace.json` | Local `./` single plugin | `passed` |
 | Hooks convention `hooks/hooks.json` | SessionStart + statusMessage | `passed` |
-| Skill budget `SKILL.md` ≤450 words | Contract tests | `passed` |
-| SessionStart limit | `additionalContextLimit` | `passed` |
+| Skill body size | Thin skill; detail in `references/kontrol-et.md` | contract tests |
+| SessionStart budget | Dual: char limit + approx-token ≤900 (host ~1000 hard) | contract tests |
 | `/hooks` UI trust | Human Codex Work click | `configured-not-verified` |
 | Installed vs source verify | `docs/INSTALL_ARTIFACT_CONTRACT.md` | `passed` (runtime profile + `--mode installed`) |
 | Integrity fingerprint | Allowlisted `tree_fingerprint` | `passed` (issue #13) |

@@ -3,7 +3,7 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|resume|compact",
+        "matcher": "startup|resume|clear|compact",
         "hooks": [
           {
             "type": "command",
@@ -11,7 +11,7 @@
             "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pala_hook.py\"",
             "timeout": 10,
             "statusMessage": "Pala yanınızda",
-            "additionalContextLimit": 2048
+            "additionalContextLimit": 1800
           }
         ]
       }
@@ -51,7 +51,7 @@
             "type": "command",
             "command": "python \"${PLUGIN_ROOT}/scripts/pala_hook.py\"",
             "commandWindows": "py -3 \"%PLUGIN_ROOT%\\scripts\\pala_hook.py\"",
-            "timeout": 10,
+            "timeout": 3,
             "statusMessage": "Oturum sahipliği kapatılıyor"
           }
         ]

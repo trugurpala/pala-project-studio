@@ -31,9 +31,12 @@ user wants one particular template, design, dataset, or repository.
   alone does not trigger GitHub.
 - GitHub stage, commit, push, pull request, tag, release, and deployment are
   distinct actions. Authority for one does not authorize another.
-- Use applicable `superpowers:` process skills for brainstorming behavior
-  changes, systematic debugging, test-driven development, plan execution, and
-  verification. Do not load unrelated process skills.
+- Prefer Pala continuity refs first: `using-pala.md`, `plan-tickets.md`,
+  `execute-tickets.md`, `debugging-inc.md`, and `quality-gates.md` (verification
+  before done). These own STATUS/PLAN/INC/evidence for Codex project continuity.
+- If installed, optional `superpowers:` skills may fill process gaps those refs
+  do not cover. Do not claim Claude-only subagent or companion flows as Codex
+  features. Do not load unrelated process skills.
 
 For other ecosystems, apply the same rule: prefer an installed current
 specialist, then official version-matched documentation, then bounded local

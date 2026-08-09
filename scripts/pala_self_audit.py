@@ -70,7 +70,7 @@ def audit_presence(root: Path) -> dict[str, str]:
         return _check("presence", "failed", "skill missing presence opener")
     if session.get("statusMessage") != "Pala yanınızda":
         return _check("presence", "failed", "SessionStart statusMessage mismatch")
-    if int(session.get("additionalContextLimit") or 0) != pala_hook.SESSION_CONTEXT_LIMIT:
+    if int(session.get("additionalContextLimit") or 0) != pala_hook.SESSION_CONTEXT_CHAR_LIMIT:
         return _check("presence", "failed", "additionalContextLimit mismatch")
     message = pala_hook.session_context(
         {"status": "STATUS.md", "plan": "PLAN.md"},
@@ -80,8 +80,12 @@ def audit_presence(root: Path) -> dict[str, str]:
     )["hookSpecificOutput"]["additionalContext"]
     if not str(message).startswith(pala_hook.PRESENCE_LINE):
         return _check("presence", "failed", "session context missing presence prefix")
-    if len(str(message)) > pala_hook.SESSION_CONTEXT_LIMIT:
-        return _check("presence", "failed", "session context over limit")
+    if len(str(message)) > pala_hook.SESSION_CONTEXT_CHAR_LIMIT:
+        return _check("presence", "failed", "session context over char limit")
+    from pala_tokens import approx_tokens
+
+    if approx_tokens(str(message)) > pala_hook.SESSION_CONTEXT_TOKEN_BUDGET:
+        return _check("presence", "failed", "session context over token budget")
     return _check("presence", "passed", "SessionStart + skill presence ok")
 
 
@@ -93,6 +97,19 @@ def audit_hook_safety(root: Path) -> dict[str, str]:
             return _check("hook_safety", "failed", f"forbidden pattern: {banned}")
     if "SessionStart" not in text or "additionalContext" not in text:
         return _check("hook_safety", "failed", "SessionStart contract missing")
+    hooks_json = json.loads((root / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+    session_end = hooks_json.get("hooks", {}).get("SessionEnd", [{}])[0].get("hooks", [{}])[0]
+    try:
+        session_end_timeout = int(session_end.get("timeout") or 0)
+    except (TypeError, ValueError):
+        session_end_timeout = 0
+    # Codex clamps SessionEnd above 3s and warns in /hooks UI.
+    if session_end_timeout < 1 or session_end_timeout > 3:
+        return _check(
+            "hook_safety",
+            "failed",
+            f"SessionEnd timeout must be 1..3s (got {session_end_timeout})",
+        )
     return _check("hook_safety", "passed", "hook stays local and non-mutating")
 
 

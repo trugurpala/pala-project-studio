@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -47,7 +48,7 @@ def validate_json(root: Path) -> None:
     if not isinstance(entry, dict) or entry.get("name") != "pala-project-studio":
         raise ValueError("repo marketplace plugin entry is invalid")
     source = entry.get("source")
-    if not isinstance(source, dict) or source != {"source": "local", "path": "./"}:
+    if not isinstance(source, dict) or source != {"source": "local", "path": "."}:
         raise ValueError("repo marketplace must load Pala from the repository root")
 
 
@@ -119,13 +120,38 @@ def run_self_audit(root: Path, *, profile: str = "source") -> None:
         )
 
 
+def extract_portable_archive(archive_path: Path, destination: Path) -> Path:
+    """Validate and extract a Pala portable ZIP into an isolated temporary root."""
+    packager = load_packager()
+    with zipfile.ZipFile(archive_path) as archive:
+        names = archive.namelist()
+        if not names:
+            raise ValueError("portable archive is empty")
+        for name in names:
+            packager.validate_archive_name(name)
+        prefixes = {Path(name).parts[0] for name in names}
+        if prefixes != {packager.ARCHIVE_ROOT}:
+            raise ValueError("portable archive must contain one Pala root directory")
+        forbidden = {
+            f"{packager.ARCHIVE_ROOT}/{name}"
+            for name in ("STATUS.md", "PLAN.md", "DEBUGGING.md", "PROGRESS.md")
+        }
+        if forbidden.intersection(names):
+            raise ValueError("portable archive contains source-only project state")
+        for info in archive.infolist():
+            target = destination.joinpath(*Path(info.filename).parts)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(archive.read(info))
+    return destination / packager.ARCHIVE_ROOT
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument(
         "--mode",
-        choices=("source", "installed"),
+        choices=("source", "portable", "installed"),
         default="source",
-        help="source = full release gate; installed = lean marketplace gate",
+        help="source = full gate; portable = ZIP extract gate; installed = lean marketplace gate",
     )
     result.add_argument(
         "--root",
@@ -150,6 +176,18 @@ def main(argv: list[str] | None = None) -> int:
             announce("Runtime self-audit çalıştırılıyor")
             run_self_audit(root, profile="runtime")
             announce("PASSED: installed mode (runtime self-audit)")
+            return 0
+
+        if args.mode == "portable":
+            if args.root is None or root.suffix.casefold() != ".zip":
+                raise ValueError("portable mode requires --root <pala-portable.zip>")
+            announce("Taşınabilir ZIP güvenle ayıklanıyor")
+            with tempfile.TemporaryDirectory(prefix="pala-portable-verify-") as temp:
+                portable_root = extract_portable_archive(root, Path(temp))
+                validate_json(portable_root)
+                validate_python_syntax(portable_root)
+                run_self_audit(portable_root, profile="runtime")
+            announce("PASSED: portable mode (clean extract + runtime self-audit)")
             return 0
 
         announce("JSON sözleşmeleri kontrol ediliyor")

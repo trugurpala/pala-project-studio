@@ -50,7 +50,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Build portable ZIP and runtime-audit extract
+      - name: Build and verify portable ZIP, then runtime-audit extract
         env:
           PYTHONIOENCODING: utf-8
           PYTHONDONTWRITEBYTECODE: "1"
@@ -59,6 +59,8 @@ jobs:
           $ErrorActionPreference = "Stop"
           $out = Join-Path $env:RUNNER_TEMP "pala-artifact-smoke.zip"
           python scripts/build_portable.py --output $out
+          python scripts/verify.py --mode portable --root $out
+          if ($LASTEXITCODE -ne 0) { throw "portable verification failed" }
           $extract = Join-Path $env:RUNNER_TEMP "pala-marketplace"
           New-Item -ItemType Directory -Path $extract | Out-Null
           Expand-Archive -LiteralPath $out -DestinationPath $extract -Force

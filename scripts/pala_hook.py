@@ -12,28 +12,83 @@ import sys
 from pathlib import Path
 
 from pala_store import WorkflowStore
+from pala_tokens import approx_tokens
 
 MANIFEST = Path(".codex/pala-project.json")
 WORKFLOW = Path(".codex/pala-workflow.json")
 WORKFLOW_SCHEMA_VERSIONS = (1, 2)
-# Presence + minimal cold packet; hooks.json additionalContextLimit must match.
+# Presence + minimal cold packet for registered projects only.
 PRESENCE_LINE = "Pala burada — bu oturumda yanındayım."
-SESSION_CONTEXT_LIMIT = 2048
+# Pala product char ceiling. hooks.json additionalContextLimit mirrors this
+# number for self-audit sync — it is NOT the Codex host token-spill semantic
+# by itself. Real clip is the approx-token budget below (host hard ~1000).
+SESSION_CONTEXT_CHAR_LIMIT = 1800
+# Approx-token budget under Codex hard ~1000-token additionalContext cap.
+SESSION_CONTEXT_TOKEN_BUDGET = 900
+# Back-compat alias for older imports/tests during migration.
+SESSION_CONTEXT_LIMIT = SESSION_CONTEXT_CHAR_LIMIT
 
 
 def emit(value: dict[str, object]) -> None:
     sys.stdout.write(json.dumps(value, ensure_ascii=False))
 
 
+def _fit_session_message(message: str) -> str:
+    """Trim legacy middle first so presence + tail (cold packet / gate) survive."""
+    if (
+        len(message) <= SESSION_CONTEXT_CHAR_LIMIT
+        and approx_tokens(message) <= SESSION_CONTEXT_TOKEN_BUDGET
+    ):
+        return message
+    prefix = PRESENCE_LINE
+    if not message.startswith(prefix):
+        clipped = message[: SESSION_CONTEXT_CHAR_LIMIT - 3] + "..."
+        while approx_tokens(clipped) > SESSION_CONTEXT_TOKEN_BUDGET and len(clipped) > 64:
+            clipped = clipped[: max(64, len(clipped) - 64)]
+        return clipped
+    body = message[len(prefix) :].lstrip()
+    keep_tail = max(160, int(len(body) * 0.4))
+    while True:
+        candidate = f"{prefix} {body}"
+        if (
+            len(candidate) <= SESSION_CONTEXT_CHAR_LIMIT
+            and approx_tokens(candidate) <= SESSION_CONTEXT_TOKEN_BUDGET
+        ):
+            return candidate
+        if len(body) <= keep_tail + 32:
+            tail = body[-keep_tail:] if len(body) > keep_tail else body
+            candidate = f"{prefix} ...{tail}"
+            if len(candidate) > SESSION_CONTEXT_CHAR_LIMIT:
+                candidate = candidate[: SESSION_CONTEXT_CHAR_LIMIT - 3] + "..."
+            while (
+                approx_tokens(candidate) > SESSION_CONTEXT_TOKEN_BUDGET
+                and len(candidate) > len(prefix) + 32
+            ):
+                candidate = candidate[: max(len(prefix) + 16, len(candidate) - 48)]
+            return candidate
+        drop = max(48, (len(body) - keep_tail) // 4)
+        head = body[: max(0, len(body) - keep_tail - drop)]
+        tail = body[-keep_tail:]
+        body = f"{head}...{tail}"
+
+
 def git_root(cwd: Path) -> Path | None:
-    result = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode == 0 and result.stdout.strip():
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=2,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        result = None
+    if (
+        result is not None
+        and result.returncode == 0
+        and result.stdout.strip()
+    ):
         return Path(result.stdout.strip()).resolve()
     for candidate in (cwd.resolve(), *cwd.resolve().parents):
         if (candidate / MANIFEST).is_file():
@@ -104,6 +159,17 @@ def local_health(root: Path) -> dict[str, str]:
     }
 
 
+def _session_restore_prefix(source: str | None, compacted: bool) -> str:
+    """Orient after host SessionStart sources; never claim mid-turn memory."""
+    if compacted or source == "compact":
+        return "Context was compacted; reconcile before edits. "
+    if source == "resume":
+        return "Session resumed; re-read STATUS + active ticket before edits. "
+    if source == "clear":
+        return "Session cleared; reload STATUS + active ticket before edits. "
+    return ""
+
+
 def session_context(
     documents: dict[str, object],
     workflow: dict[str, object] | None,
@@ -115,17 +181,21 @@ def session_context(
     memory: dict[str, object] | None = None,
     tools_summary: str | None = None,
     cold_packet_text: str | None = None,
+    source: str | None = None,
 ) -> dict[str, object]:
     status = documents.get("status")
     plan = documents.get("plan")
     project = documents.get("project")
-    prefix = "Context was compacted; reconcile before edits. " if compacted else ""
+    prefix = _session_restore_prefix(source, compacted)
     active = workflow.get("active_ticket") if workflow else None
     next_action = workflow.get("next_action") if workflow else None
     dirty = bool(workflow and workflow.get("dirty"))
     blockers = workflow.get("blockers", []) if workflow else []
     blocker_count = len(blockers) if isinstance(blockers, list) else 0
-    needs_reconcile = bool(reconciliation and reconciliation.get("needed"))
+    needs_reconcile = bool(
+        (reconciliation and reconciliation.get("needed"))
+        or (workflow and workflow.get("needs_reconcile"))
+    )
     reason_count = len(reconciliation.get("reasons", [])) if reconciliation else 0
     kind = project_kind if isinstance(project_kind, str) else "unknown"
     health = health or {}
@@ -154,55 +224,69 @@ def session_context(
         if isinstance(cmd_memory, dict) and cmd_memory.get("hint"):
             cmd_hint = str(cmd_memory.get("hint") or "").strip() or None
     tools = tools_summary or "tools=n/a"
-    message = (
-        f"{PRESENCE_LINE} {prefix}{health_text}Pala project kind={kind}. "
-        f"Once durum sayfasini ac: pala_report.py --open. "
-        f"Memory read_order=AGENTS>CURRENT_STATUS>PROGRESS>plan>TOOLING>DEBUG>git. "
-        f"Read status first: status={status or project}; "
-        f"active ticket only in plan={plan}. "
-        f"active={active or 'none'}; next={next_action or 'reconcile first'}; "
-        f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
-        f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
-        f"ticket_mismatch={str(mismatch).lower()}; debug_open={debug_open}; {tools}. "
-        "Do not re-plan completed scope. Continue authorized local work; "
-        "full gate only at milestone/release; then checkpoint one ticket."
-    )
+    packet = (cold_packet_text or "").strip()
+    next_text = next_action or "reconcile first"
+    if packet:
+        message = (
+            f"{PRESENCE_LINE} {prefix}{health_text}"
+            f"kind={kind}; active={active or 'none'}; next={next_text}; "
+            f"status={status or project}; plan={plan}. "
+            f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
+            f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
+            f"ticket_mismatch={str(mismatch).lower()}; debug_open={debug_open}."
+        )
+    else:
+        message = (
+            f"{PRESENCE_LINE} {prefix}{health_text}Pala project kind={kind}. "
+            f"Once durum sayfasini ac: pala_report.py --open. "
+            f"Memory read_order=AGENTS>CURRENT_STATUS>PROGRESS>plan>TOOLING>DEBUG>git. "
+            f"Read status first: status={status or project}; "
+            f"active ticket only in plan={plan}. "
+            f"active={active or 'none'}; next={next_text}; "
+            f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
+            f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
+            f"ticket_mismatch={str(mismatch).lower()}; debug_open={debug_open}; {tools}. "
+            "Do not re-plan completed scope. Continue authorized local work; "
+            "full gate only at milestone/release; then checkpoint one ticket."
+        )
     if gate_message:
         try:
             from pala_debug_gate import inject_session_gate
 
-            message = inject_session_gate(message, gate_message, SESSION_CONTEXT_LIMIT)
+            message = inject_session_gate(message, gate_message, SESSION_CONTEXT_CHAR_LIMIT)
         except ImportError:
-            if len(message) + len(gate_message) + 1 <= SESSION_CONTEXT_LIMIT:
+            if len(message) + len(gate_message) + 1 <= SESSION_CONTEXT_CHAR_LIMIT:
                 message = f"{message} {gate_message}"
             else:
-                message = (message[: SESSION_CONTEXT_LIMIT - len(gate_message) - 4] + "... " + gate_message)
+                message = (
+                    message[: SESSION_CONTEXT_CHAR_LIMIT - len(gate_message) - 4]
+                    + "... "
+                    + gate_message
+                )
     if cmd_hint and "do not retry" not in message.casefold():
         extra = cmd_hint
-        if len(message) + len(extra) + 1 <= SESSION_CONTEXT_LIMIT:
+        if len(message) + len(extra) + 1 <= SESSION_CONTEXT_CHAR_LIMIT:
             message = f"{message} {extra}"
         else:
-            message = message[: SESSION_CONTEXT_LIMIT - len(extra) - 4] + "... " + extra
-    packet = (cold_packet_text or "").strip()
+            message = (
+                message[: SESSION_CONTEXT_CHAR_LIMIT - len(extra) - 4] + "... " + extra
+            )
     if packet:
-        # Prefer evidence-first cold packet; keep presence + health + ticket cues.
-        room = SESSION_CONTEXT_LIMIT - len(message) - 1
+        room = SESSION_CONTEXT_CHAR_LIMIT - len(message) - 1
         if room >= 80:
             if len(packet) > room:
                 packet = packet[: room - 3] + "..."
             message = f"{message}\n{packet}"
         else:
-            # Shrink legacy body so the cold packet still fits.
             keep_head = PRESENCE_LINE
-            body_budget = max(120, SESSION_CONTEXT_LIMIT - len(packet) - len(keep_head) - 8)
+            body_budget = max(
+                120, SESSION_CONTEXT_CHAR_LIMIT - len(packet) - len(keep_head) - 8
+            )
             legacy = message[len(PRESENCE_LINE) :].strip()
             if len(legacy) > body_budget:
                 legacy = legacy[: body_budget - 3] + "..."
             message = f"{keep_head} {legacy}\n{packet}"
-    elif len(message) > SESSION_CONTEXT_LIMIT:
-        message = message[: SESSION_CONTEXT_LIMIT - 3] + "..."
-    if len(message) > SESSION_CONTEXT_LIMIT:
-        message = message[: SESSION_CONTEXT_LIMIT - 3] + "..."
+    message = _fit_session_message(message)
     return {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
@@ -227,7 +311,11 @@ def main() -> int:
 
     if event_name == "PreCompact":
         workflow = load_workflow(root)
-        if workflow and workflow.get("active_ticket"):
+        if workflow and (
+            workflow.get("active_ticket")
+            or workflow.get("dirty")
+            or workflow.get("next_action")
+        ):
             workflow["needs_reconcile"] = True
             save_workflow(root, workflow)
         session_id = event.get("session_id")
@@ -239,18 +327,28 @@ def main() -> int:
     if event_name == "SessionStart":
         workflow = load_workflow(root)
         session_id = event.get("session_id")
+        source = event.get("source") if isinstance(event.get("source"), str) else None
         if isinstance(session_id, str) and session_id.strip():
             WorkflowStore(root).heartbeat(session_id, "session_start")
             owned_ticket = WorkflowStore(root).active_for_session(session_id)
             if owned_ticket is not None:
-                workflow = {
-                    "active_ticket": owned_ticket.get("ticket"),
-                    "next_action": owned_ticket.get("next_action"),
-                    "dirty": owned_ticket.get("dirty"),
+                # Merge into disk workflow — never drop needs_reconcile from PreCompact.
+                merged = dict(workflow) if isinstance(workflow, dict) else {
+                    "schema_version": 2,
                     "blockers": [],
                 }
+                merged["active_ticket"] = owned_ticket.get("ticket")
+                owned_next = owned_ticket.get("next_action")
+                if isinstance(owned_next, str) and owned_next.strip():
+                    merged["next_action"] = owned_next
+                elif not merged.get("next_action"):
+                    merged["next_action"] = "reconcile first"
+                merged["dirty"] = owned_ticket.get("dirty")
+                if not isinstance(merged.get("blockers"), list):
+                    merged["blockers"] = []
+                workflow = merged
         reconciliation = reconciliation_report(root, payload, workflow)
-        compacted = event.get("source") == "compact" or bool(
+        compacted = source == "compact" or bool(
             workflow and workflow.get("needs_reconcile")
         )
         memory = None
@@ -334,6 +432,7 @@ def main() -> int:
                 memory,
                 tools_summary,
                 cold_packet_text=cold_text,
+                source=source,
             )
         )
         return 0

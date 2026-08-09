@@ -89,6 +89,7 @@ def _decision_strip(
     brain: object,
     last_gate: object,
     freshness_level: object,
+    quality: object,
 ) -> str:
     """Top decision strip: max 5 signals (Şimdi | INC | ticket | gate | tazelik)."""
     now_text = _now_text(next_action, coherence.get("active"))
@@ -137,6 +138,29 @@ def _decision_strip(
         ("ticket uyumu", f"{ticket_label} — {ticket_detail}"[:72], ticket_tone),
         ("son gate", gate_label[:72], gate_tone),
         ("tazelik", fresh_labels.get(fresh, fresh), fresh_tone),
+    ]
+    # Delivery Quality Engine replaces generic status hints with the five
+    # concrete shipping signals. It intentionally carries no command output.
+    quality = quality if isinstance(quality, dict) else {}
+    risk = quality.get("risk") if isinstance(quality.get("risk"), dict) else {}
+    coverage = quality.get("coverage") if isinstance(quality.get("coverage"), dict) else {}
+    ticket = str(quality.get("ticket") or coherence.get("active") or "yok")
+    risk_level = str(risk.get("level") or "unknown")
+    reasons = ", ".join(str(item) for item in list(risk.get("reasons") or [])[:3])
+    risk_label = f"{risk_level} — {reasons}" if reasons else risk_level
+    quality_status = str(quality.get("status") or "not-run")
+    quality_tone = (
+        "ok" if quality_status == "passed" else "alert"
+        if quality_status in {"blocked", "failed"} else "warn"
+    )
+    risk_tone = "alert" if risk_level == "high" else "warn" if risk_level in {"medium", "unknown"} else "ok"
+    coverage_label = f"{int(coverage.get('passed') or 0)}/{int(coverage.get('required') or 0)} passed"
+    cells = [
+        ("Aktif ticket", ticket[:72], "now"),
+        ("Risk seviyesi", risk_label[:72], risk_tone),
+        ("Quality coverage", coverage_label, quality_tone),
+        ("Son eksik gate", str(quality.get("last_problem") or "quality ledger not initialized")[:72], quality_tone),
+        ("Tek sonraki eylem", str(quality.get("next_action") or next_action or "yok")[:120], "now"),
     ]
     parts: list[str] = []
     for key, value, tone in cells:
@@ -455,6 +479,7 @@ def render(model: dict[str, object], *, freshness_fn: Any) -> str:
     freshness_level = model.get("freshness_level")
     if not isinstance(freshness_level, str) or not freshness_level:
         freshness_level = "stale"
+    quality = model.get("quality")
 
     mismatch = bool(coherence.get("mismatch"))
     mismatch_banner = (
@@ -468,6 +493,7 @@ def render(model: dict[str, object], *, freshness_fn: Any) -> str:
         brain=brain,
         last_gate=last_gate,
         freshness_level=freshness_level,
+        quality=quality,
     )
 
     radios: list[str] = [
