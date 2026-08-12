@@ -13,17 +13,17 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 class ReleaseTruthTests(unittest.TestCase):
-    def test_truth_uses_local_identity_and_keeps_remote_not_run(self) -> None:
+    def test_truth_uses_local_identity_and_reflects_published_release(self) -> None:
         truth = release_truth(ROOT)
         self.assertEqual(truth["authority"], "product-identity.json")
         self.assertEqual(truth["product_version"], "1.0.0")
-        self.assertEqual(truth["remote_publish"], "not-run")
+        self.assertEqual(truth["remote_publish"], "passed")
 
     def test_matrix_and_drift_are_deterministic(self) -> None:
         self.assertEqual(drift_lint(ROOT)["status"], "passed")
         matrix = publication_matrix(ROOT)
-        self.assertEqual(matrix["public_release"]["status"], "not-run")
-        self.assertEqual(matrix["remote_publish"], "not-run")
+        self.assertEqual(matrix["public_release"]["status"], "passed")
+        self.assertEqual(matrix["remote_publish"], "passed")
 
     def test_current_publication_matrix_has_no_required_version_drift(self) -> None:
         matrix = current_publication_matrix(ROOT)

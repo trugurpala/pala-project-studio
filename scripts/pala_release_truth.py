@@ -17,13 +17,14 @@ def _json(path: Path) -> dict[str, Any]:
 
 def release_truth(root: Path) -> dict[str, object]:
     identity = _json(root / "product-identity.json")
+    remote_publish = str(identity.get("remote_publish", "not-run"))
     return {
         "product": identity["product"],
         "product_version": identity["product_version"],
         "plugin_version": identity["plugin_version"],
         "artifact_name": identity["artifact_name"],
         "release_status": identity["release_status"],
-        "remote_publish": "not-run",
+        "remote_publish": remote_publish,
         "real_remote_deploy": "not-run",
         "last_published_version": identity.get("last_published_version", ""),
         "authority": "product-identity.json",
@@ -32,10 +33,11 @@ def release_truth(root: Path) -> dict[str, object]:
 
 def publication_matrix(root: Path) -> dict[str, object]:
     truth = release_truth(root)
+    published = truth["remote_publish"] == "passed"
     return {
-        "local_candidate": {"status": "configured-not-verified", "version": truth["product_version"], "artifact": truth["artifact_name"]},
-        "public_release": {"status": "not-run", "version": truth["last_published_version"]},
-        "remote_publish": "not-run",
+        "local_candidate": {"status": "passed" if published else "configured-not-verified", "version": truth["product_version"], "artifact": truth["artifact_name"]},
+        "public_release": {"status": "passed" if published else "not-run", "version": truth["product_version"] if published else truth["last_published_version"]},
+        "remote_publish": truth["remote_publish"],
         "real_remote_deploy": "not-run",
         "write_authority": "separate-explicit-authority-required",
     }

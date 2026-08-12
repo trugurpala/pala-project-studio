@@ -17,7 +17,7 @@ class M68ClosureTests(unittest.TestCase):
         self.assertTrue(result["xss_escaped"])
         self.assertTrue(result["diagnostic_redaction"])
         self.assertTrue(result["design_advisory_only"])
-        self.assertEqual(result["remote_publish"], "not-run")
+        self.assertEqual(result["remote_publish"], "passed")
         self.assertEqual(result["network"], "not-run")
 
     def test_manifest_has_sealed_candidate_shape_without_publication_claim(self) -> None:
