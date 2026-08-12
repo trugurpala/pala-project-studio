@@ -1,7 +1,7 @@
 {
   "name": "pala-project-studio",
-  "version": "0.8.1+codex.20260808124500",
-  "description": "Codex i\u00e7in kal\u0131c\u0131 proje haf\u0131zas\u0131, token-verimli y\u00fcr\u00fctme ve kan\u0131ta ba\u011fl\u0131 do\u011frulama.",
+  "version": "1.0.0",
+  "description": "Local-first software delivery OS for planning, coordinating and verifying AI-assisted software projects.",
   "author": {
     "name": "Pala",
     "url": "https://github.com/trugurpala"

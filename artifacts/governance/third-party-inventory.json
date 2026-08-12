@@ -1,0 +1,45 @@
+{
+  "schema": "pala.third_party_inventory.v1",
+  "retrieved_at": "2026-08-12",
+  "distribution_policy": "Only clearly compatible, explicitly audited surfaces may be copied. Unclear surfaces remain external references.",
+  "entries": [
+    {
+      "name": "ui-ux-pro-max",
+      "repository": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+      "commit": "abb7f2fd5a083fa1ff55c326a963ff0d95c33f99",
+      "release_tag": "v2.5.0",
+      "release_commit": "07f4ef3ac2568c25a3b0c8ef5165a86abc3e56e4",
+      "license": "MIT",
+      "license_source": "LICENSE at pinned main commit",
+      "license_hash_sha256": "738F69DFA83DB5C347C678FB9D90E560877059F0DE93A327C39001BFF92DC014",
+      "source_paths_reviewed": ["LICENSE", "skill.json", ".claude/skills/ui-ux-pro-max/SKILL.md", "src/ui-ux-pro-max/data", "src/ui-ux-pro-max/scripts", "cli"],
+      "imported_files": [],
+      "local_hashes": {},
+      "upstream_purpose": "Advisory UI/UX design intelligence and optional CLI distribution.",
+      "pala_purpose": "Read-only advisory input for DesignAdvisor; never task, quality, lifecycle, or acceptance authority.",
+      "modifications": "None; no upstream files copied and the CLI was not installed.",
+      "update_policy": "Re-audit commit, applicable file licenses, and provenance before any future import; do not blindly track latest.",
+      "status": "external-reference",
+      "license_status": "configured-not-verified-for-cli-distribution"
+    },
+    {
+      "name": "github-actions-observation",
+      "repository": "https://github.com/actions/checkout and https://github.com/actions/setup-python",
+      "commit": "pinned in THIRD_PARTY_NOTICES.md",
+      "release_tag": null,
+      "release_commit": null,
+      "license": "MIT",
+      "license_source": "upstream repository notices",
+      "license_hash_sha256": null,
+      "source_paths_reviewed": [],
+      "imported_files": [],
+      "local_hashes": {},
+      "upstream_purpose": "Read-only CI workflow actions.",
+      "pala_purpose": "Historical workflow provenance only.",
+      "modifications": "None.",
+      "update_policy": "Re-pin and re-audit before remote workflow changes.",
+      "status": "external-reference",
+      "license_status": "passed"
+    }
+  ]
+}

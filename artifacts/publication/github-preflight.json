@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "observed_at": "2026-08-12T05:13:43.3352144Z",
+  "repository": {
+    "full_name": "trugurpala/pala-project-studio",
+    "visibility": "public",
+    "default_branch": "main",
+    "archived": false,
+    "description": "Pala Project Studio — Codex plugin for durable project memory, local status, and evidence-gated execution (Turkish-first, local-first)",
+    "homepage": "https://github.com/trugurpala/pala-project-studio#pala-project-studio",
+    "license": "MIT",
+    "topics": [
+      "agent-skills",
+      "agentic-workflows",
+      "codex",
+      "coding-agents",
+      "developer-tools",
+      "evidence-based",
+      "local-first",
+      "mit",
+      "openai-codex",
+      "powershell",
+      "sqlite",
+      "windows"
+    ]
+  },
+  "permissions": {
+    "current_owner": "trugurpala",
+    "push": "passed",
+    "repository_admin": "passed",
+    "credential_material": "not-recorded"
+  },
+  "latest_release": {
+    "tag": "v0.8.1",
+    "title": "Pala 0.8.1",
+    "published_at": "2026-08-09T02:14:31Z",
+    "commit": "9cf3b0f96b36949f1807e93b5f142de06d5e4625"
+  },
+  "tags": [
+    "v0.3.3",
+    "v0.4.0",
+    "v0.4.1",
+    "v0.4.2",
+    "v0.4.3",
+    "v0.4.4",
+    "v0.7.1",
+    "v0.8.0",
+    "v0.8.1"
+  ],
+  "pull_requests": {
+    "open": [],
+    "latest_merged": {
+      "number": 20,
+      "title": "Pala 0.8.1: M30 vibe host-fit, quality engine, release ground",
+      "merge_commit": "9cf3b0f96b36949f1807e93b5f142de06d5e4625"
+    }
+  },
+  "branch_protection": {
+    "main": "not-configured",
+    "rulesets": "not-configured",
+    "mutation": "not-requested"
+  },
+  "actions": {
+    "status": "passed",
+    "workflows": [
+      {"name": "Quality", "path": ".github/workflows/quality.yml", "state": "active"},
+      {"name": "Dependabot Updates", "path": "dynamic/dependabot/dependabot-updates", "state": "active"}
+    ],
+    "latest_quality_run": {
+      "status": "passed",
+      "conclusion": "success",
+      "head_sha": "58fcf61b2f83dc534793c754134bf14f5702794a",
+      "url": "https://github.com/trugurpala/pala-project-studio/actions/runs/31290223414"
+    }
+  },
+  "wiki": {"status": "not-applicable", "enabled": false},
+  "pages": {"status": "not-applicable", "enabled": false},
+  "cost_guard": {
+    "status": "configured-not-verified",
+    "billing": "unknown",
+    "observed_path": "public repository with existing standard GitHub-hosted workflows",
+    "larger_runners": "not-observed",
+    "billing_mutation": "not-requested"
+  },
+  "remote_publish": "not-run",
+  "real_remote_deploy": "not-run",
+  "source": "read-only gh api, gh release/pr, and git ls-remote inspection"
+}

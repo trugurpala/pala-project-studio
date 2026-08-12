@@ -53,7 +53,8 @@ Arka planda yine desteklenen `codex plugin marketplace add` /
 Doctor ayrımı:
 
 - `plugin_ready` / `healthy` — çekirdek (Python≥3.10, Git, Codex CLI, plugin)
-- `experts_ready` — isteğe bağlı (Node, uv, uzman işçiler)
+- `expert_prerequisites_ready` — isteğe bağlı uzman kurulumu için Node + uv
+- `experts_ready` — Pala'ya ait beş yönetilen uzman worker gerçekten doğrulandı
 - `hook_safety` — dosya kontrolü; **≠** Codex `/hooks` UI trust
 - `hooks_next_step` — `/hooks` + yeni sohbet hatırlatması
 

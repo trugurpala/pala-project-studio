@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "observed_at": "2026-08-12T05:28:41.7938637Z",
+  "repository_hygiene": {
+    "status": "passed",
+    "tracked_count": 58,
+    "untracked_count": 104,
+    "ignored_count": 13562,
+    "tracked_junk": [],
+    "untracked_junk": []
+  },
+  "secret_scan": {
+    "status": "passed",
+    "findings": [],
+    "raw_matches": "never-recorded",
+    "historical_local_paths": 17
+  },
+  "source_material": {
+    "license": "MIT",
+    "tests_retained": true,
+    "ci_retained": true,
+    "runtime_state_excluded": true
+  },
+  "remote_visibility_change": "not-requested",
+  "billing_change": "not-requested",
+  "force_push": "not-requested"
+}

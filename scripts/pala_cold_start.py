@@ -16,19 +16,36 @@ from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = PLUGIN_ROOT / "scripts"
+COMMAND_TIMEOUT_SECONDS = 60
+TIMEOUT_EXIT_CODE = 124
 
 
-def _time_command(command: list[str], *, cwd: Path) -> int:
+def _time_command(command: list[str], *, cwd: Path) -> dict[str, int | str]:
     started = time.perf_counter()
-    subprocess.run(
-        command,
-        cwd=cwd,
-        check=False,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    try:
+        result = subprocess.run(
+            command,
+            cwd=cwd,
+            check=False,
+            shell=False,
+            timeout=COMMAND_TIMEOUT_SECONDS,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except subprocess.TimeoutExpired:
+        result = None
     elapsed_ms = int(round((time.perf_counter() - started) * 1000))
-    return max(elapsed_ms, 0)
+    if result is None:
+        return {
+            "elapsed_ms": max(elapsed_ms, 0),
+            "returncode": TIMEOUT_EXIT_CODE,
+            "status": "blocked",
+        }
+    return {
+        "elapsed_ms": max(elapsed_ms, 0),
+        "returncode": int(result.returncode),
+        "status": "passed" if result.returncode == 0 else "failed",
+    }
 
 
 def command_specs(root: Path) -> list[dict[str, object]]:
@@ -90,21 +107,29 @@ def run_benchmark(n: int = 3, root: Path | None = None) -> dict[str, object]:
     for spec in specs:
         name = str(spec["name"])
         argv = list(spec["argv"])  # type: ignore[arg-type]
-        times: list[int] = []
+        samples: list[dict[str, int | str]] = []
         for _ in range(n):
-            times.append(_time_command(argv, cwd=root))
+            samples.append(_time_command(argv, cwd=root))
+        times = [int(sample["elapsed_ms"]) for sample in samples]
+        statuses = {str(sample["status"]) for sample in samples}
+        status = "blocked" if "blocked" in statuses else "failed" if "failed" in statuses else "passed"
         samples_ms.extend(times)
         per_command.append(
             {
                 "name": name,
                 "samples_ms": times,
                 "median_ms": int(statistics.median(times)),
+                "status": status,
+                "returncodes": [int(sample["returncode"]) for sample in samples],
             }
         )
     hit = memory_hit_canary(root)
+    command_statuses = {str(item["status"]) for item in per_command}
+    report_status = "blocked" if "blocked" in command_statuses else "failed" if "failed" in command_statuses else "passed"
     report = {
         "n": n,
         "root": str(root),
+        "status": report_status,
         "samples_ms": samples_ms,
         "median_ms": int(statistics.median(samples_ms)),
         "commands": per_command,
@@ -129,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     report = run_benchmark(n=args.n, root=args.root)
     print(json.dumps(report, ensure_ascii=False, indent=2))
-    return 0
+    return 0 if report["status"] == "passed" else 2
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -68,10 +69,41 @@ def load_module(name: str, filename: str):
 
 pala_state = load_module("pala_state_p0", "pala_state.py")
 pala_store = load_module("pala_store_p0", "pala_store.py")
+pala_quality = load_module("pala_quality_p0", "pala_quality.py")
 pala_paths = load_module("pala_paths_p0", "pala_paths.py")
+pala_p0_smoke = load_module("pala_p0_smoke", "pala_p0_smoke.py")
 
 
 class ScriptPathFrictionTests(unittest.TestCase):
+    def test_smoke_child_timeout_is_a_failed_completed_process(self) -> None:
+        with patch.object(
+            pala_p0_smoke.subprocess,
+            "run",
+            side_effect=subprocess.TimeoutExpired(["py"], 30),
+        ) as run:
+            result = pala_p0_smoke._run_py(
+                Path("pala_state.py"), [], cwd=PLUGIN_ROOT, env={}
+            )
+
+        self.assertEqual(result.returncode, 124)
+        self.assertIn("timed out", result.stderr.casefold())
+        self.assertEqual(run.call_args.kwargs["timeout"], pala_p0_smoke.SMOKE_TIMEOUT_SECONDS)
+        self.assertFalse(run.call_args.kwargs["shell"])
+
+    def test_verify_timeout_is_a_failed_gate_result(self) -> None:
+        verify = load_module("pala_verify_timeout", "verify.py")
+        with (
+            patch.object(verify, "validate_json"),
+            patch.object(verify, "validate_python_syntax"),
+            patch.object(verify, "run_code_audit"),
+            patch.object(
+                verify,
+                "run_contract_tests",
+                side_effect=subprocess.TimeoutExpired(["py"], 120),
+            ),
+        ):
+            self.assertEqual(verify.main(["--mode", "source"]), 1)
+
     def test_skill_does_not_instruct_relative_scripts_from_project_cwd(self) -> None:
         skill = SKILL.read_text(encoding="utf-8")
         self.assertNotIn("../../scripts/", skill)
@@ -192,9 +224,31 @@ class CompleteTicketRecoveryTests(unittest.TestCase):
             root = Path(temp)
             (root / ".codex").mkdir()
             pala_state.begin_work(
-                root, "P0-T2", "Ship recovery", session="session-alpha"
+                root,
+                "P0-T2",
+                "Ship recovery",
+                session="session-alpha",
+                acceptance=["P0 friction quality gate passes"],
             )
             store = pala_store.WorkflowStore(root)
+            record = store._read_ticket("P0-T2")
+            record["task_contract"]["acceptance"][0]["quality_check_ids"] = ["unit:p0"]
+            store._write(store._ticket_path("P0-T2"), record)
+            pala_quality.write_ledger(root, "P0-T2", {"checks": [{
+                "id": "unit:p0",
+                "kind": "unit",
+                "required": True,
+                "status": "not-run",
+                "command": "py -3 -m unittest scripts.test_pala_p0_friction",
+            }]})
+            pala_quality.record_result(
+                root,
+                "P0-T2",
+                "unit:p0",
+                status="passed",
+                command="py -3 -m unittest scripts.test_pala_p0_friction",
+                exit_code=0,
+            )
             store.record_verification(
                 "P0-T2",
                 "session-alpha",
@@ -212,6 +266,8 @@ class CompleteTicketRecoveryTests(unittest.TestCase):
                 "P0-T2",
                 "--session-key",
                 "session-alpha",
+                "--quality-ticket",
+                "P0-T2",
             ]):
                 with patch.object(sys, "stderr", stderr), patch.object(sys, "stdout", stdout):
                     # Disable fail-closed gate by ensuring no open INC / empty docs
@@ -263,9 +319,30 @@ class CompleteTicketRecoveryTests(unittest.TestCase):
                     "lifecycle smoke",
                     "--session-key",
                     "life-session",
+                    "--acceptance",
+                    "lifecycle quality gate passes",
                 ]
             )
             self.assertEqual(code, 0, msg=err)
+            store = pala_store.WorkflowStore(root)
+            record = store._read_ticket("P0-LIFE")
+            record["task_contract"]["acceptance"][0]["quality_check_ids"] = ["unit:life"]
+            store._write(store._ticket_path("P0-LIFE"), record)
+            pala_quality.write_ledger(root, "P0-LIFE", {"checks": [{
+                "id": "unit:life",
+                "kind": "unit",
+                "required": True,
+                "status": "not-run",
+                "command": "unittest",
+            }]})
+            pala_quality.record_result(
+                root,
+                "P0-LIFE",
+                "unit:life",
+                status="passed",
+                command="unittest",
+                exit_code=0,
+            )
             code, out, err = run(
                 [
                     "checkpoint",
@@ -277,6 +354,8 @@ class CompleteTicketRecoveryTests(unittest.TestCase):
                     "life-session",
                     "--next-action",
                     "complete",
+                    "--verification",
+                    "lifecycle-checkpoint=passed",
                 ]
             )
             self.assertEqual(code, 0, msg=err)
@@ -328,6 +407,8 @@ class CompleteTicketRecoveryTests(unittest.TestCase):
                         "P0-LIFE",
                         "--session-key",
                         "life-session",
+                        "--quality-ticket",
+                        "P0-LIFE",
                     ]
                 )
             self.assertEqual(code, 0, msg=err)

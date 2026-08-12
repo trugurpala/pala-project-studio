@@ -53,6 +53,31 @@ class ExpertInstallerTests(unittest.TestCase):
                 self.installer.install_binary("demo", {"version": "1.0", "source_url": "https://example.invalid", "sha256": "0" * 64}, state, fetch=lambda _: b"wrong")
             self.assertFalse((state / "experts" / "demo" / "1.0").exists())
 
+    def test_fetch_rejects_non_https_before_any_network_access(self) -> None:
+        for url in (
+            "file:///C:/secret.txt",
+            "http://example.invalid/expert",
+            "data:text/plain,x",
+            "https://TOKEN@example.invalid/expert",
+            "https://example.invalid/expert?token=hidden",
+        ):
+            with self.subTest(url=url):
+                with self.assertRaises(ValueError):
+                    self.installer._fetch(url)
+
+    def test_install_rejects_unsafe_url_even_with_an_injected_fetcher(self) -> None:
+        payload = b"pala-owned-expert"
+        spec = {
+            "version": "1.0",
+            "source_url": "file:///C:/secret.txt",
+            "sha256": hashlib.sha256(payload).hexdigest(),
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaises(ValueError):
+                self.installer.install_binary(
+                    "demo", spec, Path(temp) / "Pala", fetch=lambda _: payload
+                )
+
     def test_inspection_reports_missing_and_modified_owned_payload(self) -> None:
         payload = b"pala-owned-expert"
         spec = {"version": "1.0", "source_url": "https://example.invalid/expert", "sha256": hashlib.sha256(payload).hexdigest()}
@@ -192,6 +217,22 @@ class ExpertInstallerTests(unittest.TestCase):
             )
             self.assertEqual(result["state"], "ready")
             self.assertEqual(result["environment"]["OLLAMA_HOST"], "127.0.0.1:11435")
+
+    def test_powershell_installer_keeps_experts_explicit_and_nonfatal(self) -> None:
+        """Core install stays local-first even when an optional worker is unavailable."""
+        entry = (ROOT / "Install-Pala.ps1").read_text(encoding="utf-8")
+        script = (ROOT / "scripts" / "Install-Pala.ps1").read_text(encoding="utf-8")
+
+        self.assertIn("[switch]$InstallExperts", entry)
+        self.assertIn('if ($InstallExperts) { $arguments["InstallExperts"] = $true }', entry)
+        self.assertIn("[switch]$InstallExperts", script)
+        self.assertIn("Uzman isciler varsayilan olarak kurulmaz", script)
+        self.assertNotIn("if ($expertExit -ne 0) { exit $expertExit }", script)
+        self.assertIn("return [pscustomobject]@{ Payload = $expertPayload; ExitCode = $expertExit }", script)
+
+        opt_in_guard = script.index("if ($InstallExperts -and $expertInstall.ExitCode -eq 0)")
+        model_call = script.index("Invoke-PalaLocalModel", opt_in_guard)
+        self.assertGreater(model_call, opt_in_guard)
 
 
 if __name__ == "__main__":

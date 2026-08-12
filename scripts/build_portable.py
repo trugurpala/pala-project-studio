@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import re
 import sys
+import urllib.parse
 import zipfile
 from collections.abc import Iterable
 from pathlib import Path, PurePosixPath
@@ -45,10 +46,7 @@ def ensure_unique_names(names: Iterable[str]) -> None:
         key = normalized.casefold()
         previous = seen.get(key)
         if previous is not None:
-            raise ValueError(
-                f"case-insensitive archive collision: {previous!r} and "
-                f"{normalized!r}"
-            )
+            raise ValueError(f"case-insensitive archive collision: {previous!r} and {normalized!r}")
         seen[key] = normalized
 
 
@@ -68,10 +66,7 @@ def is_forbidden_source(path: Path) -> bool:
             pass
         else:
             return True
-    if any(
-        part.casefold() == ".env" or part.casefold().startswith(".env.")
-        for part in path.parts
-    ):
+    if any(part.casefold() == ".env" or part.casefold().startswith(".env.") for part in path.parts):
         return True
     name = path.name
     if name.casefold() in {item.casefold() for item in FORBIDDEN_BASENAMES}:
@@ -96,44 +91,64 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "LICENSE",
         plugin_root / "managed-tools.lock.json",
         plugin_root / "OPEN_SOURCE.md",
+        plugin_root / "GOAL.md",
         plugin_root / "PROJECT.md",
+        plugin_root / "product-identity.json",
         plugin_root / "README.md",
+        plugin_root / "README.tr.md",
         plugin_root / "SECURITY.md",
         plugin_root / "SUPPORT.md",
         plugin_root / "CHANGELOG.md",
         plugin_root / "CONTRIBUTING.md",
         plugin_root / "CODE_OF_CONDUCT.md",
         plugin_root / "THIRD_PARTY_NOTICES.md",
+        plugin_root / "artifacts" / "governance" / "third-party-inventory.json",
+        plugin_root / "locales" / "en.json",
+        plugin_root / "locales" / "tr-ascii.json",
+        plugin_root / "design" / "tokens.json",
+        plugin_root / "policies" / "accessibility.json",
+        plugin_root / "policies" / "core-quality.json",
+        plugin_root / "policies" / "release.json",
         plugin_root / ".github" / "workflows" / "quality.yml",
         plugin_root / "docs" / "README.md",
+        plugin_root / "docs" / "RELEASE_1.0.0.md",
         plugin_root / "docs" / "CODEX_SCOPE_AND_LIMITS.md",
         plugin_root / "docs" / "PALA_0_4_SINGLE_DOOR.md",
         plugin_root / "docs" / "PALA_0_5_MEMORY_CONTRACT.md",
         plugin_root / "docs" / "PALA_0_6_STATUS_SURFACE.md",
         plugin_root / "docs" / "PALA_0_7_LOCAL_STORE.md",
         plugin_root / "docs" / "PALA_0_9_QUALITY_ENGINE.md",
+        plugin_root / "docs" / "PALA_0_9_0_OPERATING_SYSTEM.md",
         plugin_root / "docs" / "PALA_0_9_BENCHMARK.md",
         plugin_root / "docs" / "PALA_0_9_1_HARDENING.md",
+        plugin_root / "docs" / "PALA_0_9_2_CODE_QUALITY_CONTROL.md",
+        plugin_root / "docs" / "PALA_0_9_3_MODULARITY.md",
+        plugin_root / "docs" / "PALA_0_9_4_INSTALL_BOUNDARY.md",
+        plugin_root / "docs" / "PALA_0_9_5_INSTALL_INTEGRITY.md",
         plugin_root / "docs" / "PALA_EVERYWHERE.md",
         plugin_root / "docs" / "PALA_INTERNAL_PROVISION.md",
+        plugin_root / "docs" / "VIBE_INSTALL.md",
         plugin_root / "docs" / "VIBE_FIRST_SESSION.md",
+        plugin_root / "docs" / "INSTALL_ARTIFACT_CONTRACT.md",
+        plugin_root / "docs" / "CODEX_PLUGIN_CHECKLIST.md",
+        plugin_root / "docs" / "PALA_SHARED_MEMORY.md",
         plugin_root / "docs" / "FORK_PACK.md",
-        plugin_root / "docs" / "RELEASE_0_8_0_CHECKLIST.md",
         plugin_root / "portable" / "cursor" / "README.md",
         plugin_root / "portable" / "cursor" / "SKILL.md",
         plugin_root / ".cursor" / "rules" / "pala-memory.mdc",
     ]
     for directory in ("hooks", "skills"):
-        candidates.extend(
-            path for path in (plugin_root / directory).rglob("*") if path.is_file()
-        )
+        candidates.extend(path for path in (plugin_root / directory).rglob("*") if path.is_file())
     demo_root = plugin_root / "examples" / "demo-software-project"
     candidates.extend(path for path in demo_root.rglob("*") if path.is_file())
+    # The source repository keeps tests and historical release plans for
+    # maintainers; the portable artifact is an end-user runtime/install
+    # surface and must not ship those development-only files.
     candidates.extend(
         path
         for pattern in ("*.py", "*.ps1")
         for path in (plugin_root / "scripts").glob(pattern)
-        if path.is_file()
+        if path.is_file() and not path.name.startswith("test_")
     )
 
     files: list[Path] = []
@@ -151,14 +166,38 @@ def source_files(plugin_root: Path) -> list[Path]:
     return sorted(set(files), key=lambda path: path.as_posix().casefold())
 
 
+MARKDOWN_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+
+
+def validate_internal_markdown_links(plugin_root: Path) -> list[str]:
+    """Return unresolved relative Markdown links on the portable surface."""
+    root = Path(plugin_root).resolve()
+    files = source_files(root)
+    included = {path.resolve() for path in files}
+    problems: list[str] = []
+    for source in files:
+        if source.suffix.casefold() != ".md":
+            continue
+        text = source.read_text(encoding="utf-8")
+        for raw in MARKDOWN_LINK.findall(text):
+            target = raw.strip().strip("<>").split(maxsplit=1)[0]
+            if not target or target.startswith(("#", "http://", "https://", "mailto:")):
+                continue
+            relative = urllib.parse.unquote(target.split("#", maxsplit=1)[0])
+            resolved = (source.parent / relative).resolve()
+            if resolved not in included and not (
+                resolved.is_dir() and any(resolved in path.parents for path in included)
+            ):
+                problems.append(f"{source.relative_to(root).as_posix()} -> {target}")
+    return sorted(set(problems), key=str.casefold)
+
+
 def archive_entries(plugin_root: Path) -> list[tuple[Path, str]]:
     """Map allowlisted sources to safe, collision-free archive names."""
     entries = [
         (
             path,
-            validate_archive_name(
-                f"{ARCHIVE_ROOT}/{path.relative_to(plugin_root).as_posix()}"
-            ),
+            validate_archive_name(f"{ARCHIVE_ROOT}/{path.relative_to(plugin_root).as_posix()}"),
         )
         for path in source_files(plugin_root)
     ]
@@ -175,6 +214,9 @@ def build_archive(output: Path, plugin_root: Path = PLUGIN_ROOT) -> list[str]:
     if not output.parent.is_dir():
         raise FileNotFoundError(f"output directory does not exist: {output.parent}")
 
+    broken_links = validate_internal_markdown_links(plugin_root)
+    if broken_links:
+        raise ValueError("portable internal links are unresolved: " + "; ".join(broken_links))
     entries = archive_entries(plugin_root)
     try:
         with zipfile.ZipFile(

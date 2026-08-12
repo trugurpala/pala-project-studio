@@ -1,0 +1,5 @@
+{
+  "summary": "Codex candidate prepared for quality verification",
+  "changed_files": ["app/water_tracker.py"],
+  "canonical_done": false
+}

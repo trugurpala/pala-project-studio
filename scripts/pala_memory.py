@@ -393,6 +393,8 @@ def ticket_coherence_report(
     workflow: dict[str, object] | None,
     status_text: str = "",
     plan_text: str = "",
+    *,
+    allow_expected_transition: bool = False,
 ) -> dict[str, object]:
     """Compare active ticket with next-action / status wording."""
     workflow = workflow or {}
@@ -401,6 +403,21 @@ def ticket_coherence_report(
     next_action = workflow.get("next_action")
     next_s = next_action.strip() if isinstance(next_action, str) else ""
     inferred = _infer_next_from_text(status_text) or ""
+    successor_tickets = _ticket_tokens(next_s)
+    status_tickets = _ticket_tokens(inferred)
+    if (
+        allow_expected_transition
+        and successor_tickets
+        and status_tickets
+        and status_tickets.issubset(successor_tickets)
+    ):
+        return {
+            "ok": True,
+            "active": active_s or None,
+            "inferred_next": inferred or next_s or None,
+            "mismatch": False,
+            "note": "expected checkpoint transition",
+        }
     combined_next = " ".join(part for part in (next_s, inferred) if part)
     next_tickets = _ticket_tokens(combined_next) | _ticket_tokens(plan_text[:2000])
     mismatch = False

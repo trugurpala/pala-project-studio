@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "pack_id": "accessibility",
+  "pack_version": "1.0.0",
+  "profile": "Web",
+  "source": {
+    "authority": "W3C Web Content Accessibility Guidelines",
+    "version": "2.2",
+    "status": "configured-not-verified",
+    "checked_at": "2026-08-12T00:00:00Z",
+    "freshness_days": 180,
+    "refs": ["https://www.w3.org/TR/WCAG22/"]
+  },
+  "rules": [
+    {
+      "id": "web.keyboard-focus",
+      "title": "Keyboard focus is visible and ordered",
+      "category": "accessibility",
+      "severity": "high",
+      "profiles": ["Web", "Release"],
+      "enforcement": "required",
+      "evidence_required": true,
+      "unknown": "configured-not-verified",
+      "message": "Record keyboard and narrow-layout evidence before release claims."
+    },
+    {
+      "id": "web.reduced-motion",
+      "title": "Respect reduced-motion preferences",
+      "category": "accessibility",
+      "severity": "medium",
+      "profiles": ["Web"],
+      "enforcement": "required",
+      "evidence_required": true,
+      "unknown": "configured-not-verified",
+      "message": "Motion must have a reduced-motion path and a tested outcome."
+    }
+  ]
+}

@@ -24,7 +24,86 @@ ALLOWED_CACHE_KEYS = {
     "status",
     "available_version",
     "url",
+    "asset_name",
+    "asset_url",
+    "asset_sha256",
+    "asset_digest_source",
 }
+
+
+def normalize_version(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    raw = value.strip()
+    if not raw:
+        return None
+    if raw[0] in {"v", "V"}:
+        raw = raw[1:]
+    return raw.split("+", 1)[0]
+
+
+def normalize_sha256(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip()
+    if normalized.lower().startswith("sha256:"):
+        normalized = normalized[7:]
+    normalized = normalized.strip().replace(" ", "")
+    if len(normalized) != 64:
+        return None
+    lowered = normalized.lower()
+    if any(char not in "0123456789abcdef" for char in lowered):
+        return None
+    return lowered
+
+
+def release_asset_digest(asset: object) -> str | None:
+    if not isinstance(asset, dict):
+        return None
+    candidate = asset.get("digest") if isinstance(asset.get("digest"), str) else None
+    return normalize_sha256(candidate)
+
+
+def pick_release_asset(payload: dict[str, object]) -> dict[str, object] | None:
+    assets = payload.get("assets")
+    if not isinstance(assets, list):
+        return None
+    matches: list[dict[str, object]] = []
+    for item in assets:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if not isinstance(name, str):
+            continue
+        lowered = name.casefold()
+        if (
+            "pala-project-studio" in lowered
+            and lowered.endswith(".zip")
+        ):
+            matches.append(item)
+    if not matches:
+        return None
+    # Prefer explicit `final` asset, then lexical order for determinism.
+    return sorted(
+        matches,
+        key=lambda item: (0 if str(item.get("name", "")).lower().endswith("-final.zip") else 1, str(item.get("name")).lower()),
+    )[0]
+
+
+def release_asset_record(payload: dict[str, object]) -> dict[str, object] | None:
+    asset = pick_release_asset(payload)
+    if asset is None or not isinstance(asset, dict):
+        return None
+    url = asset.get("browser_download_url")
+    if not isinstance(url, str):
+        return None
+    digest = release_asset_digest(asset)
+    return {
+        "name": str(asset.get("name", "")),
+        "url": url,
+        "sha256": digest,
+        "digest_source": "asset",
+    }
 
 
 def read_cache(path: Path) -> dict[str, object] | None:
@@ -119,6 +198,10 @@ def result_from_cache(cached: dict[str, object], source: str) -> dict[str, objec
         "installed_version": cached.get("installed_version"),
         "available_version": cached.get("available_version"),
         "url": cached.get("url"),
+        "asset_name": cached.get("asset_name"),
+        "asset_url": cached.get("asset_url"),
+        "asset_sha256": cached.get("asset_sha256"),
+        "asset_digest_source": cached.get("asset_digest_source"),
         "message": (
             "Pala update available"
             if cached.get("status") == "update-available"
@@ -139,7 +222,8 @@ def check_update(
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     cached = read_cache(cache_path)
     if cache_is_fresh(cached, installed_version, now):
-        assert cached is not None
+        if cached is None:
+            raise ValueError("fresh update cache is missing")
         return result_from_cache(cached, "cache")
 
     try:
@@ -148,12 +232,20 @@ def check_update(
         url = release.get("html_url")
         if not isinstance(available, str):
             raise ValueError("release version is missing")
+        available_version = normalize_version(available)
+        if available_version is None:
+            raise ValueError("release version is missing")
+        asset = release_asset_record(release)
         payload = {
             "checked_at": now.isoformat(),
             "installed_version": installed_version,
             "status": "update-available" if newer(available, installed_version) else "current",
-            "available_version": available.lstrip("v"),
+            "available_version": available_version,
             "url": url if isinstance(url, str) else None,
+            "asset_name": asset.get("name") if asset else None,
+            "asset_url": asset.get("url") if asset else None,
+            "asset_sha256": asset.get("sha256") if asset else None,
+            "asset_digest_source": asset.get("digest_source") if asset else None,
         }
     except (OSError, ValueError, json.JSONDecodeError):
         payload = {
@@ -162,6 +254,10 @@ def check_update(
             "status": "unavailable",
             "available_version": None,
             "url": None,
+            "asset_name": None,
+            "asset_url": None,
+            "asset_sha256": None,
+            "asset_digest_source": None,
         }
 
     write_cache(cache_path, payload)

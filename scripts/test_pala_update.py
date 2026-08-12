@@ -28,6 +28,37 @@ pala_update = load_module()
 
 
 class PalaUpdateTests(unittest.TestCase):
+    def test_081_detects_082_as_available(self) -> None:
+        now = datetime(2026, 8, 10, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory() as temp:
+            cache = Path(temp) / "update.json"
+            result = pala_update.check_update(
+                "0.8.1",
+                cache,
+                now=now,
+                fetch=Mock(
+                    return_value={
+                        "tag_name": "v0.8.2",
+                        "html_url": "https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.2",
+                        "assets": [
+                            {
+                                "name": "pala-project-studio-0.8.2-final.zip",
+                                "browser_download_url": "https://github.com/..../pala-project-studio-0.8.2-final.zip",
+                                "digest": "sha256:ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890",
+                            },
+                        ],
+                    }
+                ),
+            )
+
+        self.assertEqual(result["status"], "update-available")
+        self.assertEqual(result["available_version"], "0.8.2")
+        self.assertEqual(result["asset_name"], "pala-project-studio-0.8.2-final.zip")
+        self.assertEqual(
+            result["asset_sha256"],
+            "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+        )
+
     def test_release_check_cache_is_separate_from_installer_update_state(self) -> None:
         self.assertEqual(pala_update.default_cache_path().name, "release-check-cache.json")
         self.assertNotEqual(pala_update.default_cache_path().name, "update-cache.json")
@@ -63,6 +94,12 @@ class PalaUpdateTests(unittest.TestCase):
                 return_value={
                     "tag_name": "v0.4.0",
                     "html_url": "https://github.com/trugurpala/pala-project-studio/releases/tag/v0.4.0",
+                    "assets": [
+                        {
+                            "name": "pala-project-studio-0.4.0-final.zip",
+                            "browser_download_url": "https://github.com/..../pala-project-studio-0.4.0-final.zip",
+                        }
+                    ],
                 }
             )
             result = pala_update.check_update("0.3.3", cache, now=now, fetch=fetch)
@@ -71,7 +108,11 @@ class PalaUpdateTests(unittest.TestCase):
         self.assertEqual(result["source"], "remote")
         self.assertEqual(result["status"], "update-available")
         self.assertEqual(result["available_version"], "0.4.0")
+        self.assertEqual(result["asset_name"], "pala-project-studio-0.4.0-final.zip")
+        self.assertIsNone(result["asset_sha256"])
         self.assertEqual(cached["status"], "update-available")
+        self.assertEqual(cached["asset_name"], "pala-project-studio-0.4.0-final.zip")
+        self.assertIsNone(cached["asset_sha256"])
         fetch.assert_called_once()
 
     def test_network_failure_is_nonblocking_and_secrets_free(self) -> None:

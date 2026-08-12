@@ -12,18 +12,23 @@ import sys
 from pathlib import Path
 
 from pala_store import WorkflowStore
+from pala_state_core import workflow_path
 from pala_tokens import approx_tokens
+from pala_hook_session import session_context as _session_context
 
 MANIFEST = Path(".codex/pala-project.json")
 WORKFLOW = Path(".codex/pala-workflow.json")
 WORKFLOW_SCHEMA_VERSIONS = (1, 2)
 # Presence + minimal cold packet for registered projects only.
-PRESENCE_LINE = "Pala burada — bu oturumda yanındayım."
-# Pala product char ceiling. hooks.json additionalContextLimit mirrors this
-# number for self-audit sync — it is NOT the Codex host token-spill semantic
-# by itself. Real clip is the approx-token budget below (host hard ~1000).
+PRESENCE_LINE = "Pala burada â€” bu oturumda yanÄ±ndayÄ±m."
+# Codex host spill threshold configured in hooks.json.  The host interprets it
+# as an approximate token threshold (default ~2500); it is deliberately not
+# Pala's own output-size limit even if the same numeric value may match.
+ADDITIONAL_CONTEXT_SPILL_TOKEN_THRESHOLD = 1800
+# Pala product character ceiling for the message it constructs.
 SESSION_CONTEXT_CHAR_LIMIT = 1800
-# Approx-token budget under Codex hard ~1000-token additionalContext cap.
+# Pala's conservative approximate-token product budget, independent of host
+# spill handling.  It preserves room for normal conversation context.
 SESSION_CONTEXT_TOKEN_BUDGET = 900
 # Back-compat alias for older imports/tests during migration.
 SESSION_CONTEXT_LIMIT = SESSION_CONTEXT_CHAR_LIMIT
@@ -112,7 +117,10 @@ def load(root: Path) -> dict[str, object] | None:
 
 
 def load_workflow(root: Path) -> dict[str, object] | None:
-    path = root / WORKFLOW
+    path = workflow_path(root)
+    legacy_path = root / WORKFLOW
+    if not path.is_file() and legacy_path.is_file():
+        path = legacy_path
     if not path.is_file():
         return None
     try:
@@ -142,7 +150,9 @@ def reconciliation_report(
 
 
 def save_workflow(root: Path, payload: dict[str, object]) -> None:
-    (root / WORKFLOW).write_text(
+    path = workflow_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
         newline="\n",
@@ -183,116 +193,191 @@ def session_context(
     cold_packet_text: str | None = None,
     source: str | None = None,
 ) -> dict[str, object]:
-    status = documents.get("status")
-    plan = documents.get("plan")
-    project = documents.get("project")
-    prefix = _session_restore_prefix(source, compacted)
-    active = workflow.get("active_ticket") if workflow else None
-    next_action = workflow.get("next_action") if workflow else None
-    dirty = bool(workflow and workflow.get("dirty"))
-    blockers = workflow.get("blockers", []) if workflow else []
-    blocker_count = len(blockers) if isinstance(blockers, list) else 0
-    needs_reconcile = bool(
-        (reconciliation and reconciliation.get("needed"))
-        or (workflow and workflow.get("needs_reconcile"))
+    return _session_context(
+        documents,
+        workflow,
+        compacted,
+        project_kind=project_kind,
+        profiles=profiles,
+        reconciliation=reconciliation,
+        health=health,
+        memory=memory,
+        tools_summary=tools_summary,
+        cold_packet_text=cold_packet_text,
+        source=source,
+        operations={
+            "PRESENCE_LINE": PRESENCE_LINE,
+            "SESSION_CONTEXT_CHAR_LIMIT": SESSION_CONTEXT_CHAR_LIMIT,
+            "_fit_session_message": _fit_session_message,
+            "_session_restore_prefix": _session_restore_prefix,
+        },
     )
-    reason_count = len(reconciliation.get("reasons", [])) if reconciliation else 0
-    kind = project_kind if isinstance(project_kind, str) else "unknown"
-    health = health or {}
-    health_text = (
-        "Pala local health: "
-        f"plugin={health.get('plugin', 'loaded')}; "
-        f"python={health.get('python', 'unknown')}; "
-        f"git={health.get('git', 'unknown')}; "
-        f"hook={health.get('hook', 'running')}. "
-    )
-    coherence = (memory or {}).get("ticket_coherence") if isinstance(memory, dict) else None
-    mismatch = bool(isinstance(coherence, dict) and coherence.get("mismatch"))
-    brain = (memory or {}).get("debugging_brain") if isinstance(memory, dict) else None
-    if isinstance(brain, dict) and "open" in brain:
-        debug_open = int(brain.get("open") or 0)
-    else:
-        debug_open = 0
-    gate = (memory or {}).get("debug_gate") if isinstance(memory, dict) else None
-    gate_message = None
-    if isinstance(gate, dict) and gate.get("message"):
-        if gate.get("warn") or gate.get("do_not_retry"):
-            gate_message = str(gate.get("message") or "").strip() or None
-    cmd_hint = None
-    if isinstance(memory, dict):
-        cmd_memory = memory.get("cmd_memory")
-        if isinstance(cmd_memory, dict) and cmd_memory.get("hint"):
-            cmd_hint = str(cmd_memory.get("hint") or "").strip() or None
-    tools = tools_summary or "tools=n/a"
-    packet = (cold_packet_text or "").strip()
-    next_text = next_action or "reconcile first"
-    if packet:
-        message = (
-            f"{PRESENCE_LINE} {prefix}{health_text}"
-            f"kind={kind}; active={active or 'none'}; next={next_text}; "
-            f"status={status or project}; plan={plan}. "
-            f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
-            f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
-            f"ticket_mismatch={str(mismatch).lower()}; debug_open={debug_open}."
-        )
-    else:
-        message = (
-            f"{PRESENCE_LINE} {prefix}{health_text}Pala project kind={kind}. "
-            f"Once durum sayfasini ac: pala_report.py --open. "
-            f"Memory read_order=AGENTS>CURRENT_STATUS>PROGRESS>plan>TOOLING>DEBUG>git. "
-            f"Read status first: status={status or project}; "
-            f"active ticket only in plan={plan}. "
-            f"active={active or 'none'}; next={next_text}; "
-            f"dirty={str(dirty).lower()}; blockers={blocker_count}; "
-            f"reconcile={str(needs_reconcile).lower()}({reason_count}); "
-            f"ticket_mismatch={str(mismatch).lower()}; debug_open={debug_open}; {tools}. "
-            "Do not re-plan completed scope. Continue authorized local work; "
-            "full gate only at milestone/release; then checkpoint one ticket."
-        )
-    if gate_message:
-        try:
-            from pala_debug_gate import inject_session_gate
 
-            message = inject_session_gate(message, gate_message, SESSION_CONTEXT_CHAR_LIMIT)
-        except ImportError:
-            if len(message) + len(gate_message) + 1 <= SESSION_CONTEXT_CHAR_LIMIT:
-                message = f"{message} {gate_message}"
-            else:
-                message = (
-                    message[: SESSION_CONTEXT_CHAR_LIMIT - len(gate_message) - 4]
-                    + "... "
-                    + gate_message
-                )
-    if cmd_hint and "do not retry" not in message.casefold():
-        extra = cmd_hint
-        if len(message) + len(extra) + 1 <= SESSION_CONTEXT_CHAR_LIMIT:
-            message = f"{message} {extra}"
-        else:
-            message = (
-                message[: SESSION_CONTEXT_CHAR_LIMIT - len(extra) - 4] + "... " + extra
-            )
-    if packet:
-        room = SESSION_CONTEXT_CHAR_LIMIT - len(message) - 1
-        if room >= 80:
-            if len(packet) > room:
-                packet = packet[: room - 3] + "..."
-            message = f"{message}\n{packet}"
-        else:
-            keep_head = PRESENCE_LINE
-            body_budget = max(
-                120, SESSION_CONTEXT_CHAR_LIMIT - len(packet) - len(keep_head) - 8
-            )
-            legacy = message[len(PRESENCE_LINE) :].strip()
-            if len(legacy) > body_budget:
-                legacy = legacy[: body_budget - 3] + "..."
-            message = f"{keep_head} {legacy}\n{packet}"
-    message = _fit_session_message(message)
-    return {
-        "hookSpecificOutput": {
-            "hookEventName": "SessionStart",
-            "additionalContext": message,
-        }
+
+def _handle_precompact(event: dict[str, object], root: Path) -> int:
+    workflow = load_workflow(root)
+    if workflow and (
+        workflow.get("active_ticket") or workflow.get("dirty") or workflow.get("next_action")
+    ):
+        workflow["needs_reconcile"] = True
+        save_workflow(root, workflow)
+    session_id = event.get("session_id")
+    if isinstance(session_id, str) and session_id.strip():
+        WorkflowStore(root).heartbeat(session_id, "pre_compact")
+    emit({"continue": True})
+    return 0
+
+
+def _merge_session_ticket(
+    root: Path, workflow: dict[str, object] | None, session_id: object
+) -> dict[str, object] | None:
+    if not isinstance(session_id, str) or not session_id.strip():
+        return workflow
+    WorkflowStore(root).heartbeat(session_id, "session_start")
+    owned_ticket = WorkflowStore(root).active_for_session(session_id)
+    if owned_ticket is None:
+        return workflow
+    merged = dict(workflow) if isinstance(workflow, dict) else {
+        "schema_version": 2,
+        "blockers": [],
     }
+    merged["active_ticket"] = owned_ticket.get("ticket")
+    owned_next = owned_ticket.get("next_action")
+    merged["next_action"] = (
+        owned_next
+        if isinstance(owned_next, str) and owned_next.strip()
+        else (merged.get("next_action") or "reconcile first")
+    )
+    merged["dirty"] = owned_ticket.get("dirty")
+    if not isinstance(merged.get("blockers"), list):
+        merged["blockers"] = []
+    return merged
+
+
+def _session_memory(
+    root: Path,
+    documents: dict[str, object],
+    payload: dict[str, object],
+    workflow: dict[str, object] | None,
+) -> tuple[dict[str, object] | None, str | None, dict[str, object] | None]:
+    try:
+        from pala_memory import contract_context
+        from pala_tool_memory import short_hook_summary, tool_memory_report
+
+        memory = contract_context(root, documents, workflow)
+        try:
+            from pala_debug_gate import evaluate_gate, session_memory_hit
+
+            memory["debug_gate"] = evaluate_gate(root, documents, surface="session")
+            brain = memory.get("debugging_brain")
+            debug_open = int(brain.get("open") or 0) if isinstance(brain, dict) else 0
+            debugging_read = any(
+                isinstance(item, dict)
+                and item.get("purpose") == "debugging"
+                and bool(item.get("exists"))
+                for item in memory.get("read_order") or []
+            )
+            memory["memory_hit"] = session_memory_hit(
+                debug_open=debug_open, debugging_read=debugging_read
+            )
+            from pala_cmd_memory import active_blocks, context_packet_hint
+
+            memory["cmd_memory"] = {
+                "blocks": active_blocks(limit=5),
+                "hint": context_packet_hint(limit=3),
+            }
+        except (OSError, ValueError, TypeError, ImportError):
+            pass
+        profiles = payload.get("profiles")
+        tools = tool_memory_report(
+            profiles=list(profiles) if isinstance(profiles, list) else []
+        )
+        if isinstance(memory.get("ticket_coherence"), dict) and memory["ticket_coherence"].get("mismatch") and workflow is not None:
+            workflow = dict(workflow)
+            workflow["memory_mismatch"] = memory["ticket_coherence"]
+            workflow["needs_reconcile"] = True
+        return memory, short_hook_summary(tools), workflow
+    except (OSError, ValueError, TypeError, ImportError):
+        return None, None, workflow
+
+
+def _cold_session_text(
+    root: Path,
+    documents: dict[str, object],
+    workflow: dict[str, object] | None,
+    session_id: object,
+) -> str | None:
+    try:
+        from pala_cold_packet import session_packet_snippet, stamp_workflow_parallel
+
+        key = session_id if isinstance(session_id, str) else None
+        text = session_packet_snippet(
+            root,
+            documents=documents,
+            workflow=workflow,
+            session_id=key,
+            max_bytes=900,
+        )
+        stamp_workflow_parallel(root, session_id=key)
+        return text
+    except (OSError, ValueError, TypeError, ImportError):
+        return None
+
+
+def _handle_session_start(
+    event: dict[str, object], root: Path, payload: dict[str, object]
+) -> int:
+    documents = payload["documents"]
+    workflow = _merge_session_ticket(root, load_workflow(root), event.get("session_id"))
+    source = event.get("source") if isinstance(event.get("source"), str) else None
+    reconciliation = reconciliation_report(root, payload, workflow)
+    compacted = source == "compact" or bool(workflow and workflow.get("needs_reconcile"))
+    memory, tools_summary, workflow = _session_memory(root, documents, payload, workflow)
+    cold_text = _cold_session_text(root, documents, workflow, event.get("session_id"))
+    emit(
+        session_context(
+            documents,
+            workflow,
+            compacted,
+            payload.get("project_kind"),
+            payload.get("profiles"),
+            reconciliation,
+            local_health(root),
+            memory,
+            tools_summary,
+            cold_packet_text=cold_text,
+            source=source,
+        )
+    )
+    return 0
+
+
+def _handle_session_end(event: dict[str, object], root: Path) -> int:
+    session_id = event.get("session_id")
+    if isinstance(session_id, str) and session_id.strip():
+        WorkflowStore(root).heartbeat(session_id, "session_end")
+    emit({})
+    return 0
+
+
+def _handle_stop(event: dict[str, object], root: Path) -> int:
+    if event.get("stop_hook_active"):
+        emit({})
+        return 0
+    workflow = load_workflow(root)
+    if workflow and workflow.get("dirty"):
+        emit({
+            "decision": "block",
+            "reason": (
+                "Before ending this turn, reconcile the active ticket, "
+                "verification evidence, blockers, and exactly one next "
+                "action in the registered plan/status documents. Then "
+                "run the Pala state validator. Run /hooks if hook safety is unknown."
+            ),
+        })
+    else:
+        emit({})
+    return 0
 
 
 def main() -> int:
@@ -306,165 +391,16 @@ def main() -> int:
     payload = load(root)
     if payload is None:
         return 0
-    documents = payload["documents"]
     event_name = event.get("hook_event_name")
-
     if event_name == "PreCompact":
-        workflow = load_workflow(root)
-        if workflow and (
-            workflow.get("active_ticket")
-            or workflow.get("dirty")
-            or workflow.get("next_action")
-        ):
-            workflow["needs_reconcile"] = True
-            save_workflow(root, workflow)
-        session_id = event.get("session_id")
-        if isinstance(session_id, str) and session_id.strip():
-            WorkflowStore(root).heartbeat(session_id, "pre_compact")
-        emit({"continue": True})
-        return 0
-
+        return _handle_precompact(event, root)
     if event_name == "SessionStart":
-        workflow = load_workflow(root)
-        session_id = event.get("session_id")
-        source = event.get("source") if isinstance(event.get("source"), str) else None
-        if isinstance(session_id, str) and session_id.strip():
-            WorkflowStore(root).heartbeat(session_id, "session_start")
-            owned_ticket = WorkflowStore(root).active_for_session(session_id)
-            if owned_ticket is not None:
-                # Merge into disk workflow — never drop needs_reconcile from PreCompact.
-                merged = dict(workflow) if isinstance(workflow, dict) else {
-                    "schema_version": 2,
-                    "blockers": [],
-                }
-                merged["active_ticket"] = owned_ticket.get("ticket")
-                owned_next = owned_ticket.get("next_action")
-                if isinstance(owned_next, str) and owned_next.strip():
-                    merged["next_action"] = owned_next
-                elif not merged.get("next_action"):
-                    merged["next_action"] = "reconcile first"
-                merged["dirty"] = owned_ticket.get("dirty")
-                if not isinstance(merged.get("blockers"), list):
-                    merged["blockers"] = []
-                workflow = merged
-        reconciliation = reconciliation_report(root, payload, workflow)
-        compacted = source == "compact" or bool(
-            workflow and workflow.get("needs_reconcile")
-        )
-        memory = None
-        tools_summary = None
-        try:
-            from pala_memory import contract_context
-            from pala_tool_memory import short_hook_summary, tool_memory_report
-
-            memory = contract_context(root, documents, workflow)
-            try:
-                from pala_debug_gate import evaluate_gate, session_memory_hit
-
-                docs = documents if isinstance(documents, dict) else {}
-                gate = evaluate_gate(root, docs, surface="session")
-                memory["debug_gate"] = gate
-                brain = memory.get("debugging_brain")
-                debug_open = (
-                    int(brain.get("open") or 0) if isinstance(brain, dict) else 0
-                )
-                debugging_read = False
-                for item in memory.get("read_order") or []:
-                    if isinstance(item, dict) and item.get("purpose") == "debugging":
-                        debugging_read = bool(item.get("exists"))
-                        break
-                memory["memory_hit"] = session_memory_hit(
-                    debug_open=debug_open, debugging_read=debugging_read
-                )
-                try:
-                    from pala_cmd_memory import active_blocks, context_packet_hint
-
-                    memory["cmd_memory"] = {
-                        "blocks": active_blocks(limit=5),
-                        "hint": context_packet_hint(limit=3),
-                    }
-                except (OSError, ValueError, TypeError, ImportError):
-                    pass
-            except (OSError, ValueError, TypeError, ImportError):
-                pass
-            profiles = payload.get("profiles")
-            tools = tool_memory_report(
-                profiles=list(profiles) if isinstance(profiles, list) else []
-            )
-            tools_summary = short_hook_summary(tools)
-            if (
-                isinstance(memory.get("ticket_coherence"), dict)
-                and memory["ticket_coherence"].get("mismatch")
-            ):
-                if workflow is not None:
-                    workflow = dict(workflow)
-                    workflow["memory_mismatch"] = memory["ticket_coherence"]
-                    workflow["needs_reconcile"] = True
-        except (OSError, ValueError, TypeError, ImportError):
-            memory = None
-            tools_summary = None
-        cold_text = None
-        try:
-            from pala_cold_packet import session_packet_snippet, stamp_workflow_parallel
-
-            cold_text = session_packet_snippet(
-                root,
-                documents=documents if isinstance(documents, dict) else None,
-                workflow=workflow if isinstance(workflow, dict) else None,
-                session_id=session_id if isinstance(session_id, str) else None,
-                max_bytes=900,
-            )
-            stamp_workflow_parallel(
-                root,
-                session_id=session_id if isinstance(session_id, str) else None,
-            )
-        except (OSError, ValueError, TypeError, ImportError):
-            cold_text = None
-        emit(
-            session_context(
-                documents,
-                workflow,
-                compacted,
-                payload.get("project_kind"),
-                payload.get("profiles"),
-                reconciliation,
-                local_health(root),
-                memory,
-                tools_summary,
-                cold_packet_text=cold_text,
-                source=source,
-            )
-        )
-        return 0
-
+        return _handle_session_start(event, root, payload)
     if event_name == "SessionEnd":
-        session_id = event.get("session_id")
-        if isinstance(session_id, str) and session_id.strip():
-            WorkflowStore(root).heartbeat(session_id, "session_end")
-        emit({})
-        return 0
-
+        return _handle_session_end(event, root)
     if event_name == "Stop":
-        if event.get("stop_hook_active"):
-            emit({})
-            return 0
-        workflow = load_workflow(root)
-        if workflow and workflow.get("dirty"):
-            emit(
-                {
-                    "decision": "block",
-                    "reason": (
-                        "Before ending this turn, reconcile the active ticket, "
-                        "verification evidence, blockers, and exactly one next "
-                        "action in the registered plan/status documents. Then "
-                        "run the Pala state validator. Run /hooks if hook safety is unknown."
-                    ),
-                }
-            )
-        else:
-            emit({})
+        return _handle_stop(event, root)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

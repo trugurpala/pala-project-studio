@@ -4,14 +4,16 @@
 from __future__ import annotations
 
 import contextlib
+import importlib
 import importlib.util
 import io
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
-
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
@@ -35,10 +37,75 @@ def load_state():
     return module
 
 
+def load_discovery():
+    if str(SCRIPTS) not in sys.path:
+        sys.path.insert(0, str(SCRIPTS))
+    return importlib.import_module("pala_quality_discovery")
+
+
 class QualityPlanTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.quality = load_quality()
+
+    def test_policy_owner_preserves_the_public_quality_plan_api(self) -> None:
+        policy = importlib.import_module("pala_quality_policy")
+
+        self.assertIs(self.quality.build_quality_plan, policy.build_quality_plan)
+        self.assertIs(self.quality.risk_assessment, policy.risk_assessment)
+        self.assertEqual(self.quality.TIERS, policy.TIERS)
+
+    def test_policy_owner_preserves_complete_native_plan_order(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            (root / "package.json").write_text(
+                json.dumps(
+                    {
+                        "scripts": {
+                            "test:unit": "vitest run",
+                            "lint": "eslint .",
+                            "typecheck": "tsc --noEmit",
+                            "build": "vite build",
+                            "test:integration": "node integration.mjs",
+                            "migrate:check": "node migration-check.mjs",
+                            "smoke": "node smoke.mjs",
+                            "test:e2e": "playwright test",
+                            "audit": "npm audit --omit=dev",
+                        },
+                        "dependencies": {"react": "1"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "playwright.config.ts").write_text(
+                "export default {};\n", encoding="utf-8"
+            )
+
+            plan = self.quality.build_quality_plan(
+                root,
+                tier="ticket",
+                changed_files=["src/auth/session.ts", "db/migrations/001.sql"],
+            )
+
+            self.assertEqual(
+                [
+                    (item["id"], item["required"], item["status"], item["command"])
+                    for item in plan["checks"]
+                ],
+                [
+                    ("unit:test:unit", True, "not-run", "npm run test:unit"),
+                    ("lint:lint", True, "not-run", "npm run lint"),
+                    ("typecheck:typecheck", True, "not-run", "npm run typecheck"),
+                    ("build:build", True, "not-run", "npm run build"),
+                    ("integration:test:integration", True, "not-run", "npm run test:integration"),
+                    ("migration:migrate:check", True, "not-run", "npm run migrate:check"),
+                    ("runtime-smoke:smoke", True, "not-run", "npm run smoke"),
+                    ("browser:test:e2e", True, "not-run", "npm run test:e2e"),
+                    ("dependency:audit", True, "not-run", "npm run audit"),
+                    ("security:risk-surface", True, "blocked", None),
+                ],
+            )
+            self.assertEqual(plan["risk"], {"level": "high", "reasons": ["authentication", "migration"]})
 
     def test_node_project_derives_native_quality_commands(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
@@ -66,6 +133,38 @@ class QualityPlanTests(unittest.TestCase):
             self.assertEqual(plan["risk"]["level"], "medium")
             self.assertTrue(all(item["status"] == "not-run" for item in plan["checks"]))
 
+    def test_python_scripts_tests_use_an_explicit_discovery_root(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            scripts = root / "scripts"
+            scripts.mkdir()
+            (scripts / "test_sample.py").write_text(
+                "import unittest\n\nclass Sample(unittest.TestCase):\n    def test_ok(self):\n        self.assertTrue(True)\n",
+                encoding="utf-8",
+            )
+
+            plan = self.quality.build_quality_plan(root, tier="ticket")
+            unit = next(item for item in plan["checks"] if item["kind"] == "unit")
+
+            self.assertEqual(
+                unit["command"],
+                "py -3 -m unittest discover -s scripts -p test_*.py",
+            )
+            self.assertEqual(unit["status"], "not-run")
+
+    def test_unknown_python_test_root_is_not_given_a_vacuous_command(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            nested = root / "custom-checks"
+            nested.mkdir()
+            (nested / "test_sample.py").write_text("pass\n", encoding="utf-8")
+
+            plan = self.quality.build_quality_plan(root, tier="ticket")
+            unit = next(item for item in plan["checks"] if item["kind"] == "unit")
+
+            self.assertEqual(unit["status"], "configured-not-verified")
+            self.assertIsNone(unit["command"])
+
     def test_browser_is_required_only_for_existing_playwright_surface(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
             root = Path(temp)
@@ -81,6 +180,7 @@ class QualityPlanTests(unittest.TestCase):
 
             self.assertTrue(browser["required"])
             self.assertEqual(browser["command"], "npm run test:e2e")
+            self.assertEqual(browser["argv"], ["npm", "run", "test:e2e"])
 
     def test_non_ui_project_does_not_gain_a_browser_gate(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
@@ -132,6 +232,23 @@ class QualityPlanTests(unittest.TestCase):
 
             self.assertTrue(proof["required"])
             self.assertEqual(proof["command"], "py -3 scripts/verify.py --mode source")
+            self.assertEqual(
+                proof["argv"], ["py", "-3", "scripts/verify.py", "--mode", "source"]
+            )
+
+    def test_repo_contract_supplies_local_security_check_for_high_risk_hooks(self) -> None:
+        plan = self.quality.build_quality_plan(
+            ROOT,
+            tier="milestone",
+            changed_files=["scripts/pala_hook.py"],
+        )
+        checks = {str(item["id"]): item for item in plan["checks"]}
+
+        self.assertEqual(
+            checks["security:pala-code-audit"]["command"],
+            "py -3 scripts/pala_code_audit.py --root .",
+        )
+        self.assertNotIn("security:risk-surface", checks)
 
     def test_invalid_contract_fails_closed_instead_of_executing_shell_text(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
@@ -161,6 +278,13 @@ class QualityPlanTests(unittest.TestCase):
             (root / "node_modules" / "fixture").mkdir(parents=True)
             (root / "node_modules" / "fixture" / "test_fake.py").write_text("pass\n", encoding="utf-8")
             (root / "node_modules" / "fixture" / "index.html").write_text("<main />", encoding="utf-8")
+            (root / "artifacts" / "wip").mkdir(parents=True)
+            (root / "artifacts" / "wip" / "test_fake.py").write_text(
+                "pass\n", encoding="utf-8"
+            )
+            (root / "artifacts" / "wip" / "index.html").write_text(
+                "<main />", encoding="utf-8"
+            )
             plan = self.quality.build_quality_plan(root)
 
             self.assertFalse(any(item["kind"] in {"unit", "browser"} for item in plan["checks"]))
@@ -200,9 +324,10 @@ class QualityPlanTests(unittest.TestCase):
         self.assertIn("migration", plan["risk"]["reasons"])
         self.assertIn("git", plan)
         migration = next(item for item in plan["checks"] if item["kind"] == "migration")
-        security = next(item for item in plan["checks"] if item["kind"] == "security")
         self.assertEqual(migration["status"], "blocked")
-        self.assertEqual(security["status"], "blocked")
+        security = next(item for item in plan["checks"] if item["id"] == "security:pala-code-audit")
+        self.assertEqual(security["status"], "not-run")
+        self.assertFalse(any(item["id"] == "security:risk-surface" for item in plan["checks"]))
 
     def test_dangerous_configured_script_is_blocked_not_normalized(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
@@ -217,6 +342,90 @@ class QualityPlanTests(unittest.TestCase):
 
             self.assertEqual(lint["status"], "blocked")
             self.assertIsNone(lint["command"])
+
+
+class QualityDiscoveryTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.discovery = load_discovery()
+
+    def test_git_changed_surface_queries_are_shell_free_and_time_bounded(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            completed = subprocess.CompletedProcess(
+                args=["git"], returncode=0, stdout=b"src/feature.py\0"
+            )
+            with (
+                mock.patch.object(
+                    self.discovery.shutil, "which", return_value="C:/tools/git.exe"
+                ),
+                mock.patch.object(
+                    self.discovery.subprocess, "run", return_value=completed
+                ) as runner,
+            ):
+                paths, ignored = self.discovery.changed_paths(root)
+
+            self.assertEqual(paths, ["src/feature.py"])
+            self.assertEqual(ignored, [])
+            self.assertEqual(runner.call_count, 3)
+            for call in runner.call_args_list:
+                self.assertEqual(call.args[0][0], "C:/tools/git.exe")
+                self.assertEqual(call.kwargs["timeout"], self.discovery.GIT_TIMEOUT_SECONDS)
+                self.assertFalse(call.kwargs["shell"])
+
+    def test_memory_contract_documents_are_ignored_from_delivery_surface(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            completed = subprocess.CompletedProcess(
+                args=["git"],
+                returncode=0,
+                stdout=(
+                    b"STATUS.md\0PLAN.md\0PROGRESS.md\0DEBUGGING.md\0"
+                    b"artifacts/codex-compat/p0-smoke.json\0"
+                    b"artifacts/quality/.coverage-current\0"
+                    b"scripts/pala_state.py\0"
+                ),
+            )
+            with (
+                mock.patch.object(
+                    self.discovery.shutil, "which", return_value="C:/tools/git.exe"
+                ),
+                mock.patch.object(
+                    self.discovery.subprocess, "run", return_value=completed
+                ),
+            ):
+                paths, ignored = self.discovery.changed_paths(root)
+
+            self.assertEqual(paths, ["scripts/pala_state.py"])
+            self.assertEqual(
+                ignored,
+                [
+                    "artifacts/codex-compat/p0-smoke.json",
+                    "artifacts/quality/.coverage-current",
+                    "DEBUGGING.md",
+                    "PLAN.md",
+                    "PROGRESS.md",
+                    "STATUS.md",
+                ],
+            )
+
+    def test_git_timeout_returns_an_empty_snapshot_without_crashing_plan_discovery(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            with (
+                mock.patch.object(
+                    self.discovery.shutil, "which", return_value="C:/tools/git.exe"
+                ),
+                mock.patch.object(
+                    self.discovery.subprocess,
+                    "run",
+                    side_effect=subprocess.TimeoutExpired(["git"], 5),
+                ),
+            ):
+                paths, ignored = self.discovery.changed_paths(root)
+
+            self.assertEqual(paths, [])
+            self.assertEqual(ignored, [])
 
 
 class QualityLedgerTests(unittest.TestCase):
@@ -308,7 +517,7 @@ class QualityLedgerTests(unittest.TestCase):
             self.quality.write_ledger(root, "Q9", first)
             self.quality.record_result(
                 root, "Q9", "unit:unittest", status="passed",
-                command="py -3 -m unittest discover", exit_code=0,
+                command="py -3 -m unittest discover -s tests -p test_*.py", exit_code=0,
             )
 
             changed.write_text("value = 2\n", encoding="utf-8")
@@ -324,6 +533,185 @@ class QualityLedgerTests(unittest.TestCase):
             decision = self.quality.quality_gate(root, "Q0")
             self.assertEqual(decision["status"], "blocked")
             self.assertEqual(decision["next_action"], "configure project-native quality gate")
+
+    def test_large_changed_surface_does_not_self_invalidate_at_ledger_limit(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-") as temp:
+            root = Path(temp)
+            changed_files = [f"src/file_{index:03d}.py" for index in range(100)]
+            plan = {
+                "changed_files": changed_files,
+                "surface_digest": "stable-digest",
+                "checks": [
+                    {
+                        "id": "unit:test",
+                        "kind": "unit",
+                        "required": True,
+                        "status": "not-run",
+                        "command": "py -3 -m unittest",
+                    }
+                ],
+            }
+            self.quality.write_ledger(root, "Q-LARGE", plan)
+            self.quality.record_result(
+                root,
+                "Q-LARGE",
+                "unit:test",
+                status="passed",
+                command="py -3 -m unittest",
+                exit_code=0,
+            )
+
+            with (
+                mock.patch.object(
+                    self.quality,
+                    "changed_paths",
+                    return_value=(changed_files, []),
+                ),
+                mock.patch.object(
+                    self.quality,
+                    "surface_digest",
+                    return_value="stable-digest",
+                ),
+            ):
+                decision = self.quality.quality_gate(root, "Q-LARGE")
+
+            self.assertEqual(decision["status"], "passed")
+
+
+class QualityRunnerTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.quality = load_quality()
+        cls.runner = importlib.import_module("pala_quality_runner")
+
+    def initialize(self, root: Path, argv: list[str]) -> tuple[str, str]:
+        contract = root / ".pala" / "quality.json"
+        contract.parent.mkdir(parents=True)
+        contract.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "checks": [
+                        {
+                            "id": "trusted-runner",
+                            "kind": "integration",
+                            "argv": argv,
+                            "tiers": ["ticket"],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        ticket, check_id = "QR-1", "integration:trusted-runner"
+        self.quality.write_ledger(
+            root, ticket, self.quality.build_quality_plan(root, tier="ticket")
+        )
+        return ticket, check_id
+
+    def test_runner_records_actual_zero_exit_and_digests_output(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-runner-") as temp:
+            root = Path(temp)
+            ticket, check_id = self.initialize(
+                root,
+                [sys.executable, "-c", "print('x' * 100000)", *(["z" * 200] * 4)],
+            )
+            result = self.runner.run_approved_check(
+                root, ticket, check_id, timeout_seconds=5
+            )
+            ledger = self.quality.read_ledger(root, ticket)
+            check = next(item for item in ledger["checks"] if item["id"] == check_id)
+
+        self.assertEqual(result["status"], "passed")
+        self.assertGreater(len(check["command"]), 500)
+        self.assertEqual(check["execution_authority"], "pala-quality-runner")
+        self.assertGreater(check["stdout_bytes"], 100000)
+        self.assertEqual(len(check["stdout_sha256"]), 64)
+        self.assertNotIn("stdout", check)
+
+    def test_runner_records_actual_nonzero_exit(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-runner-") as temp:
+            root = Path(temp)
+            ticket, check_id = self.initialize(
+                root, [sys.executable, "-c", "raise SystemExit(9)"]
+            )
+            result = self.runner.run_approved_check(
+                root, ticket, check_id, timeout_seconds=5
+            )
+            check = next(
+                item
+                for item in self.quality.read_ledger(root, ticket)["checks"]
+                if item["id"] == check_id
+            )
+
+        self.assertEqual(result["status"], "blocked")
+        self.assertEqual(check["status"], "failed")
+        self.assertEqual(check["exit_code"], 9)
+
+    def test_runner_timeout_is_blocked(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-runner-") as temp:
+            root = Path(temp)
+            ticket, check_id = self.initialize(
+                root, [sys.executable, "-c", "import time; time.sleep(2)"]
+            )
+            result = self.runner.run_approved_check(
+                root, ticket, check_id, timeout_seconds=0.01
+            )
+            check = next(
+                item
+                for item in self.quality.read_ledger(root, ticket)["checks"]
+                if item["id"] == check_id
+            )
+
+        self.assertEqual(result["status"], "blocked")
+        self.assertEqual(check["status"], "blocked")
+        self.assertEqual(check["exit_code"], 124)
+
+    def test_runner_rejects_recorded_command_drift(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-runner-") as temp:
+            root = Path(temp)
+            ticket, check_id = self.initialize(
+                root, [sys.executable, "-c", "raise SystemExit(0)"]
+            )
+            ledger = self.quality.read_ledger(root, ticket)
+            check = next(item for item in ledger["checks"] if item["id"] == check_id)
+            check["command"] = "forged-command"
+            self.quality._atomic_write(self.quality.quality_ledger_path(root, ticket), ledger)
+            result = self.runner.run_approved_check(
+                root, ticket, check_id, timeout_seconds=5
+            )
+
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("differs", result["detail"])
+
+    def test_runner_missing_executable_is_blocked(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-runner-") as temp:
+            root = Path(temp)
+            ticket, check_id = self.initialize(root, ["pala-command-does-not-exist"])
+            result = self.runner.run_approved_check(
+                root, ticket, check_id, timeout_seconds=5
+            )
+            check = next(
+                item
+                for item in self.quality.read_ledger(root, ticket)["checks"]
+                if item["id"] == check_id
+            )
+
+        self.assertEqual(result["status"], "blocked")
+        self.assertEqual(check["exit_code"], 127)
+
+    def test_runner_resolves_approved_windows_command_shim_without_shell(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-quality-runner-") as temp:
+            root = Path(temp)
+            ticket, check_id = self.initialize(
+                root, ["approved-command-shim", "-c", "raise SystemExit(0)"]
+            )
+            with mock.patch.object(self.runner.shutil, "which", return_value=sys.executable):
+                result = self.runner.run_approved_check(
+                    root, ticket, check_id, timeout_seconds=5
+                )
+
+        self.assertEqual(result["status"], "passed")
 
 
 class QualityIntegrationTests(unittest.TestCase):

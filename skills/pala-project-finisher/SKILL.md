@@ -1,11 +1,11 @@
 ---
 name: pala-project-finisher
-description: "Use for end-to-end software projects across Codex sessions: inspect, plan, rescue, implement, verify, run, continue, finish, or prepare open-source contributions. Do not use for ordinary chat or when another specialist skill/plugin is explicitly invoked without Pala."
+description: "Use for end-to-end software project work across Codex sessions. Do not use for ordinary chat or when another specialist skill/plugin is explicitly invoked without Pala."
 ---
 
 # Pala Project Finisher
 
-Own the locally achievable outcome; preserve user work and evidence.
+Own local outcomes; preserve user work and evidence.
 
 ## Human Contract
 
@@ -14,10 +14,18 @@ Own the locally achievable outcome; preserve user work and evidence.
 - Touch only the necessary scope.
 - Do not call it complete without evidence.
 
-Start with 1–3 short lines in the user's language. Open with
-"Pala burada — bu oturumda yanındayım."; confirm the outcome; say read-only
-discovery comes first. Ask only for material scope, safety, cost, or external-action decisions. No larger context, quota, or speedup claims.
-If lost mid-turn (no SessionStart), re-read STATUS/PLAN or ask for a cold packet — do not fake continuous memory.
+Start with 1–3 short lines in the user's language: open with "Pala burada — bu
+oturumda yanındayım.", confirm the outcome, and say read-only discovery comes
+first. Ask only material scope, safety, cost, or external-action decisions. No
+larger context, quota, or speedup claims. If SessionStart is absent, re-read
+STATUS/PLAN or request a cold packet.
+
+## Runtime authority
+
+TaskContract owns task semantics and `DONE`; WorkflowStore owns persistence and
+leases; the existing Pala Quality Engine maps `acceptance` to exit-code-`0`
+evidence. Handoff, cold packet, STATUS, and `generated` views are read models
+only.
 
 ## Task Modes
 
@@ -27,15 +35,20 @@ If lost mid-turn (no SessionStart), re-read STATUS/PLAN or ask for a cold packet
 
 ## Scripts (cwd-safe)
 
-Never use skill-relative script paths from the user project cwd. Resolve `pala_state.py` via install marketplace, `PALA_SCRIPTS_DIR` / `PALA_MARKETPLACE_ROOT`, or plugin `scripts/`. Windows install: `py -3 "%LOCALAPPDATA%\Pala\marketplace\scripts\pala_report.py" --cwd .` — and from this repo checkout: `py -3 scripts/pala_report.py --cwd .`.
+Never use skill-relative scripts from the project cwd. Resolve them via the
+marketplace, `PALA_SCRIPTS_DIR` / `PALA_MARKETPLACE_ROOT`, or plugin `scripts/`.
+Windows install: `py -3 "%LOCALAPPDATA%\Pala\marketplace\scripts\pala_report.py" --cwd .`; this checkout: `py -3 scripts/pala_report.py --cwd .`.
 
 ## Operating Contract
 
-1. **First surface:** run `pala_report.py --cwd . --open` before other work (Read-only/Plan: omit `--open` unless asked). Then `pala_state.py discover`, `instructions`, and when registered `context` (`--cwd .`).
+1. **First surface:** run `pala_report.py --cwd . --open` first (Read-only/Plan: omit `--open` unless asked), then `pala_state.py discover`, `instructions`, and registered `context`.
 2. Read [project-intake.md](references/project-intake.md). Classify project and task mode. Technology tags are discovery hints, not stack approval.
-3. Implementation: follow [using-pala.md](references/using-pala.md); then [token-efficient-context.md](references/token-efficient-context.md), [project-memory.md](references/project-memory.md), [project-memory-contract.md](references/project-memory-contract.md). Follow `read_order` (AGENTS → STATUS → PROGRESS → plan → TOOLING → DEBUGGING → git). Read status first and only the active ticket. Do not re-plan completed scope. When `PLAN.md` has task cards (`M*-T*`), pick one ID. Reconcile, then `pala_state.py begin --ticket <ID> --goal "…"` before edits (`--goal` required; optional `--session-key`). Before first implementation run `pala_update.py check` (24h cache; never from hooks).
+   Greenfield/new-product uses `pala_product_cli.py`; existing-project uses the
+   canonical report/context/task path. Both retain canonical authority.
+3. Implementation: follow [using-pala.md](references/using-pala.md) and its linked memory/context references. Follow `read_order`. Read status first and only the active ticket. Do not re-plan completed scope. If `PLAN.md` has `M*-T*` cards, choose one ID. Reconcile, then `pala_state.py begin --ticket <ID> --goal "…"` before edits. Before implementation run `pala_update.py check` (24h cache; never from hooks).
 4. Continue safe in-scope local work. Stop only for material decisions, missing external deps, or unsafe boundaries.
-5. Load only applicable references: [reuse-or-build.md](references/reuse-or-build.md), [architecture-selection.md](references/architecture-selection.md), [greenfield-scaffolding.md](references/greenfield-scaffolding.md), [frontend-engineering.md](references/frontend-engineering.md), [backend-engineering.md](references/backend-engineering.md), [modularity-budgets.md](references/modularity-budgets.md), [web-delivery.md](references/web-delivery.md), [specialist-routing.md](references/specialist-routing.md), and [open-source-intake.md](references/open-source-intake.md). For OSS also load [oss-contribution.md](references/oss-contribution.md).
+   Finish requests: verify and continue.
+5. Load applicable [reuse](references/reuse-or-build.md), [architecture](references/architecture-selection.md), [greenfield](references/greenfield-scaffolding.md), [frontend](references/frontend-engineering.md), [backend](references/backend-engineering.md), [modularity](references/modularity-budgets.md), [runtime](references/runtime-delivery.md), [GitHub](references/github-persistence.md), [handoff](references/owner-demo-handoff.md), and [context](references/token-efficient-context.md) references; include [specialist-routing.md](references/specialist-routing.md). For OSS also use [open-source-intake.md](references/open-source-intake.md) and [oss-contribution.md](references/oss-contribution.md).
 6. Follow [quality-gates.md](references/quality-gates.md). For large cross-module reviews use [code-intelligence.md](references/code-intelligence.md) only when it narrows context.
 7. For remote persistence read [github-persistence.md](references/github-persistence.md). OSS scouting stays read-only until separate remote-write authority; use `pala_oss.py` for policy checks.
 8. Before stopping, checkpoint and apply [runtime-delivery.md](references/runtime-delivery.md). For user-facing work also apply [owner-demo-handoff.md](references/owner-demo-handoff.md).

@@ -1,0 +1,50 @@
+[project]
+name = "pala-project-studio"
+version = "1.0.0rc0"
+description = "Development quality tooling for Pala Project Studio"
+requires-python = ">=3.10"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "bandit>=1.9,<2",
+    "coverage>=7.10,<8",
+    "mypy>=1.18,<2",
+    "pip-audit>=2.9,<3",
+    "pytest>=8.4,<10",
+    "ruff>=0.15,<1",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = [".venv", "artifacts", "dist"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.coverage.run]
+branch = true
+source = ["scripts"]
+omit = ["scripts/test_*.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+
+[tool.pytest.ini_options]
+testpaths = ["scripts"]
+python_files = ["test_*.py"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+follow_imports = "silent"
+files = [
+    "scripts/pala_authority.py",
+    "scripts/pala_cold_packet_git.py",
+    "scripts/pala_dependencies.py",
+    "scripts/pala_github.py",
+    "scripts/pala_task_contract.py",
+    "scripts/pala_verification_basis.py",
+]

@@ -58,7 +58,7 @@ Optional local index: `C:\Users\Pala-Pc\Desktop\Codex\pala-catalog.json` (secret
 
 - SessionStart message ≤ 800 characters; paths and scalars only.
 - Hooks never run tests, builds, network, or GitHub mutations.
-- See [2026-08-07-project-memory-contract-design.md](../superpowers/specs/2026-08-07-project-memory-contract-design.md).
+- See the bundled current contract in [PALA_SHARED_MEMORY.md](PALA_SHARED_MEMORY.md).
 
 ## Visual surface (future phase)
 

@@ -17,6 +17,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pala_cold_packet_git import git_surface
+from pala_cold_packet_packet import build_cold_packet as _build_cold_packet
+from pala_state_core import workflow_path
 from pala_tokens import approx_tokens as _estimate_tokens
 
 MINIMAL_MAX_BYTES = 2048
@@ -44,63 +47,43 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _run_git(root: Path, *args: str) -> str | None:
-    try:
-        import subprocess
-
-        result = subprocess.run(
-            ["git", *args],
-            cwd=root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except OSError:
-        return None
-    return result.stdout.strip() if result.returncode == 0 else None
-
-
 def _which(name: str) -> str | None:
     return shutil.which(name)
 
 
 def _tool_status(present: bool, *, probed: bool = True) -> str:
-    """Honest labels only — never invent passed without a real probe."""
+    """Honest labels only â€” never invent passed without a real probe."""
     if not probed:
         return "configured-not-verified"
     return "passed" if present else "not-run"
 
 
-def git_surface(root: Path) -> dict[str, object]:
-    """Branch / worktree / base commit from Git (highest evidence tier)."""
-    head = _run_git(root, "rev-parse", "HEAD")
-    branch = _run_git(root, "rev-parse", "--abbrev-ref", "HEAD")
-    toplevel = _run_git(root, "rev-parse", "--show-toplevel")
-    worktree = toplevel or str(root.resolve())
-    dirty = _run_git(root, "status", "--porcelain=v1")
-    changed: list[str] = []
-    if dirty is not None:
-        for line in dirty.splitlines():
-            if not line.strip():
-                continue
-            path = line[3:].strip().strip('"').replace("\\", "/")
-            if path and path.casefold() != ".codex/pala-workflow.json":
-                changed.append(path)
-    return {
-        "branch": branch or "unknown",
-        "worktree": worktree,
-        "base_commit": (head or "")[:40] or None,
-        "dirty": bool(dirty and dirty.strip()),
-        "changed_files": changed[:12],
-        "evidence_source": "source_git_test",
-        "freshness": "live" if head else "unknown",
-    }
-
-
 def _load_workflow(root: Path) -> dict[str, object]:
-    path = root / ".codex" / "pala-workflow.json"
+    path = workflow_path(root)
+    legacy_path = root / ".codex" / "pala-workflow.json"
+    if not path.is_file() and legacy_path.is_file():
+        path = legacy_path
     if not path.is_file():
-        return {}
+        try:
+            from pala_store import WorkflowStore
+
+            task = WorkflowStore(root).active_task_contract()
+        except (ImportError, OSError, ValueError):
+            task = None
+        if not isinstance(task, dict):
+            return {}
+        return {
+            "schema_version": 2,
+            "projection_of": "v3-task-contract",
+            "canonical_state": "v3",
+            "active_ticket": task.get("id"),
+            "goal": task.get("goal"),
+            "next_action": task.get("next_action"),
+            "dirty": True,
+            "blockers": [task.get("blocker")] if task.get("blocker") else [],
+            "verification": task.get("evidence") or [],
+            "verification_tier": "not-run",
+        }
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -120,7 +103,7 @@ def _status_snippet(root: Path, documents: dict[str, object] | None, *, max_char
         return ""
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped.startswith("## Şu an tek sonraki iş") or stripped.startswith(
+        if stripped.startswith("## Åu an tek sonraki iÅŸ") or stripped.startswith(
             "## Current next"
         ):
             continue
@@ -212,7 +195,7 @@ def detect_worktree_conflict(
     other_branch: str | None = None,
     this_branch: str | None = None,
 ) -> dict[str, object]:
-    """Two worktrees claiming the same ticket → reconcile required."""
+    """Two worktrees claiming the same ticket â†’ reconcile required."""
     if not ticket.strip():
         return {"conflict": False, "reconcile_required": False, "reason": ""}
     if not other_worktree:
@@ -263,16 +246,17 @@ def capability_manifest(
     *,
     plugin_version: str | None = None,
     authority: dict[str, bool] | None = None,
+    git_surface_data: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Read-only capability snapshot for session start (M29-T4)."""
-    git = git_surface(root)
+    git = git_surface_data if isinstance(git_surface_data, dict) else git_surface(root)
     auth = authority or {}
     py_ok = True
     node = _which("node") or _which("node.exe")
     git_bin = _which("git") or _which("git.exe")
     pytest = _which("pytest") or _which("pytest.exe")
     playwright = _which("playwright") or _which("playwright.exe")
-    # Browser: presence of playwright CLI only — never claim browser proof.
+    # Browser: presence of playwright CLI only â€” never claim browser proof.
     browser_status = _tool_status(bool(playwright), probed=True)
     if not playwright:
         browser_status = "not-run"
@@ -378,7 +362,7 @@ def select_documents_for_profile(
                 raw = path.read_text(encoding="utf-8")
                 freshness = "file"
                 if profile == "minimal":
-                    # Short STATUS only — never dump whole AGENTS/PLAN/…
+                    # Short STATUS only â€” never dump whole AGENTS/PLAN/â€¦
                     text = raw[:600]
                 elif profile == "standard":
                     text = raw[:1800]
@@ -478,6 +462,29 @@ def _do_not_retry_lines(*, limit: int = 3) -> list[dict[str, object]]:
         return []
 
 
+def _cold_packet_operations() -> dict[str, object]:
+    return {
+        "EVIDENCE_SOURCES": EVIDENCE_SOURCES,
+        "MINIMAL_MAX_BYTES": MINIMAL_MAX_BYTES,
+        "PROFILES": PROFILES,
+        "_do_not_retry_lines": _do_not_retry_lines,
+        "_last_verified": _last_verified,
+        "_load_workflow": _load_workflow,
+        "_open_blocker": _open_blocker,
+        "_status_snippet": _status_snippet,
+        "_utc_now": _utc_now,
+        "apply_doc_budget": apply_doc_budget,
+        "capability_manifest": capability_manifest,
+        "context_record": context_record,
+        "detect_stale_context": detect_stale_context,
+        "detect_worktree_conflict": detect_worktree_conflict,
+        "format_packet_text": format_packet_text,
+        "git_surface": git_surface,
+        "parallel_checkpoint_fields": parallel_checkpoint_fields,
+        "select_documents_for_profile": select_documents_for_profile,
+    }
+
+
 def build_cold_packet(
     root: Path,
     *,
@@ -488,146 +495,17 @@ def build_cold_packet(
     authority: dict[str, bool] | None = None,
     max_bytes: int | None = None,
 ) -> dict[str, object]:
-    """Assemble the evidence-first cold-session packet."""
-    if profile not in PROFILES:
-        profile = "minimal"
-    root = root.resolve()
-    wf = workflow if isinstance(workflow, dict) else _load_workflow(root)
-    git = git_surface(root)
-    stale = detect_stale_context(root, wf, git)
-    caps = capability_manifest(root, authority=authority)
-
-    parallel = wf.get("parallel") if isinstance(wf.get("parallel"), dict) else {}
-    conflict = detect_worktree_conflict(
-        ticket=str(wf.get("active_ticket") or ""),
-        this_worktree=str(git.get("worktree") or root),
-        other_worktree=str(parallel.get("worktree") or "") or None,
-        other_branch=str(parallel.get("branch") or "") or None,
-        this_branch=str(git.get("branch") or "") or None,
+    """Compatibility facade for packet assembly."""
+    return _build_cold_packet(
+        root,
+        profile=profile,
+        session_id=session_id,
+        documents=documents,
+        workflow=workflow,
+        authority=authority,
+        max_bytes=max_bytes,
+        operations=_cold_packet_operations(),
     )
-
-    # Do not apply stale Pala state fields when Git evidence wins.
-    if stale.get("stale_context") and not stale.get("apply_state"):
-        active_ticket = None
-        goal = None
-        next_action = "reconcile stale-context against Git HEAD"
-        state_freshness = "stale-context"
-    else:
-        active_ticket = wf.get("active_ticket")
-        goal = wf.get("goal")
-        next_action = wf.get("next_action") or _status_snippet(root, documents) or "reconcile first"
-        state_freshness = "fresh" if wf else "missing"
-
-    if conflict.get("reconcile_required"):
-        next_action = "reconcile parallel worktree conflict"
-        state_freshness = "conflict"
-
-    verified = _last_verified(wf)
-    # Timeout / unknown → do not continue without verify
-    continue_ok = True
-    status = str(verified.get("status") or "")
-    if status in {"timeout", "in-progress", "unknown", "interrupted"}:
-        continue_ok = False
-        next_action = "verify before continue (state in-progress/unknown)"
-
-    if caps.get("browser") in {"not-run", "blocked"} and "browser" in str(
-        next_action
-    ).casefold():
-        verified = {
-            **verified,
-            "browser_fallback": "not-run",
-            "note": "browser unavailable; do not claim passed",
-        }
-
-    do_not_retry = _do_not_retry_lines(limit=3)
-    blocker = _open_blocker(wf, stale)
-    if conflict.get("conflict"):
-        blocker = str(conflict.get("reason") or blocker)
-
-    budget_caps = {"minimal": 500, "standard": 2500, "milestone": 8000}
-    doc_records = select_documents_for_profile(root, documents, profile)
-    # Inject protected evidence records.
-    if blocker:
-        doc_records.append(
-            context_record(
-                name="open_blocker",
-                scope="open_blocker",
-                text=blocker,
-                freshness="live",
-                confidence="high",
-                protected=True,
-            )
-        )
-    doc_records.append(
-        context_record(
-            name="test_evidence",
-            scope="test_evidence",
-            text=f"{verified.get('name')}={verified.get('status')}",
-            freshness="workflow",
-            confidence="high",
-            protected=True,
-        )
-    )
-    if do_not_retry:
-        doc_records.append(
-            context_record(
-                name="do_not_retry",
-                scope="do_not_retry",
-                text="; ".join(
-                    f"{b.get('failure_class')}/{b.get('command_family')}"
-                    for b in do_not_retry
-                ),
-                freshness="sqlite",
-                confidence="high",
-                protected=True,
-            )
-        )
-    doc_records = apply_doc_budget(doc_records, max_tokens=budget_caps[profile])
-
-    packet: dict[str, object] = {
-        "schema": "pala.cold_packet.v1",
-        "profile": profile,
-        "active_ticket": active_ticket,
-        "goal": goal,
-        "branch": git.get("branch"),
-        "worktree": git.get("worktree"),
-        "base_commit": git.get("base_commit"),
-        "last_verified": verified,
-        "critical_changed_files": git.get("changed_files") or wf.get("changed_files") or [],
-        "open_blocker": blocker,
-        "next_action": next_action,
-        "do_not_retry": do_not_retry,
-        "state_freshness": state_freshness,
-        "evidence_source": (
-            "source_git_test"
-            if stale.get("stale_context") or git.get("base_commit")
-            else ("pala_sqlite" if wf else "markdown_handoff")
-        ),
-        "evidence_priority": list(EVIDENCE_SOURCES),
-        "stale_context": bool(stale.get("stale_context")),
-        "apply_state": bool(stale.get("apply_state")) and not conflict.get("conflict"),
-        "stale_reasons": stale.get("reasons") or [],
-        "continue_without_verify": continue_ok,
-        "parallel": parallel_checkpoint_fields(
-            session_id=session_id or (str(parallel.get("session_id") or "") or None),
-            worktree=str(git.get("worktree") or root),
-            branch=str(git.get("branch") or "unknown"),
-            base_commit=str(git.get("base_commit") or "") or None,
-            file_scope=list(git.get("changed_files") or [])[:16],
-        ),
-        "worktree_conflict": conflict,
-        "capability": caps,
-        "context_records": [
-            {k: v for k, v in r.items() if k != "text"} for r in doc_records
-        ],
-        "generated_at": _utc_now(),
-    }
-    text = format_packet_text(packet, max_bytes=max_bytes)
-    packet["text"] = text
-    packet["bytes"] = len(text.encode("utf-8"))
-    packet["within_budget"] = packet["bytes"] <= (max_bytes or MINIMAL_MAX_BYTES)
-    return packet
-
 
 def format_packet_text(
     packet: dict[str, object],
@@ -698,7 +576,7 @@ def stamp_workflow_parallel(
     file_scope: list[str] | None = None,
 ) -> dict[str, object]:
     """Write parallel safety fields onto pala-workflow.json (best-effort)."""
-    path = root / ".codex" / "pala-workflow.json"
+    path = workflow_path(root)
     wf = _load_workflow(root)
     if not wf:
         return {}

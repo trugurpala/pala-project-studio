@@ -1,5 +1,40 @@
 # Pala Project Studio 0.3–0.4 Uygulama Planı
 
+## M61 — Yerel RC sök-tak ve vaat doğrulama
+
+### M61-T1 — Eski/yeni kurulum karşılaştırmalı kabulü
+
+- **Sahip ajan:** Codex `/root`
+- **Amaç:** Mevcut Pala kurulumunu ölçülebilir bir taban çizgisiyle kaydetmek,
+  yalnız doğrulanan Pala kurulumunu kaldırmak, owner tarafından verilen final
+  ZIP'i kurmak ve aynı öz-sorgu/mini testlerle vaat–gerçeklik farkını raporlamak.
+- **Dosyalar:** `PLAN.md`, canonical WorkflowStore kaydı,
+  `artifacts/install-acceptance/m61-t1/`; makine-yerel Pala marketplace/runtime
+  kurulum kökleri yalnız installer'ın doğruladığı kapsamda.
+- **Bitti sayılır:** Eski kurulum kimliği ve Doctor/öz-sorgu/mini test tabanı
+  kaydedilmiş; hedef ZIP SHA-256 ve içerik manifesti doğrulanmış; kaldırma ile
+  kurulum exit `0`; yeni kurulum Doctor/installed verify ve aynı mini testlerden
+  geçmiş; her vaat `passed|not-run|blocked|configured-not-verified` ve ölçülen
+  başarı yüzdesiyle karşılaştırılmıştır.
+- **Bağımlılık:** `M60-T1` canonical `DONE`.
+- **Kanıt:** Installer `Status`, `Uninstall`, `Install/Update` ve `Doctor`
+  komutları; `py -3 scripts/verify.py --mode installed`; dar installer/plugin
+  deneyimi testleri; önce/sonra JSON çıktıları ve SHA-256 manifesti.
+
+## M60 — PALA 1.0 final evidence integrity closure
+
+- [x] Caller-supplied `--quality-command/--quality-exit-code` completion
+  authority bypass’ını adversarial testle yeniden üret ve kapat.
+- [x] Existing Quality Engine approved argv’sini bounded, shell-free
+  `pala-quality-runner` ile gerçek exit/output digest/basis’e bağla.
+- [x] Beş process-boundary ve beş direct-runner forgery regresyonunu geçir;
+  Windows command shim çözümünü shell açmadan doğrula.
+- [x] Fresh 10/10 release ledger, 536 canonical test, 75% coverage, security,
+  browser, source/portable/installed/Doctor ve validator kapılarını geçir.
+- [x] 205-entry reproducible exact ZIP, schema-v2 manifest ve canonical
+  TaskContract `DONE` / WorkflowStore `completed` kapanışını üret.
+- [x] Push/PR/merge/tag/release/remote deploy yapma (`not-run`).
+
 ## M1 — Codex-native kapsam ve hafıza
 
 - [x] Codex plugin, skill, hook, AGENTS, proje, context ve GitHub sınırlarını güncel resmî manual üzerinden doğrula.
@@ -943,3 +978,895 @@ checkpoint/complete’te fail-closed kal; hook’tan gate çalıştırma.
 - Push / PR / tag / `gh release`
 - `/hooks` trust = `passed`
 
+## M33 — Control Panel Modularity + Quality Ratchet (2026-08-09)
+
+Amaç: Delivery Quality Engine'in görünür kontrol yüzeyini küçük, sahipliği net
+modüllere ayır; Pala'nın kendi yeni kodunda sert güvenlik ve HTML sözleşmesi
+regresyonunu fail-closed tut. Eski M31 workflow kaydı otomatik kapatılmaz;
+ayrı bir reconciliation ticket'ında ele alınır.
+
+#### M33-T1 — Status renderer ownership + audit ratchet
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Status renderer'ın section ve karar kartı sorumluluklarını ayırırken
+  delivery kararını, mahremiyet varsayılanını ve erişilebilirlik sözleşmesini
+  aynen koru; Python test discovery'nin sıfır-test komutunu `passed`a
+  dönüştürmeyeceği gerçek bir proje köküne bağla.
+- **Dosyalar:** `scripts/pala_view.py`, `scripts/pala_view_sections.py`,
+  `scripts/pala_quality.py`, `scripts/test_pala_quality.py`,
+  `scripts/test_pala_code_audit.py`, `scripts/test_pala_tools.py`,
+  `docs/PALA_0_9_3_MODULARITY.md`, `STATUS.md`, `PROGRESS.md`,
+  `DEBUGGING.md`, `PLAN.md`.
+- **Bitti sayılır:** Root renderer 800 satır review eşiğinin altında;
+  delivery decision / required gate / privacy / keyboard HTML sözleşmeleri
+  korunur; static audit hard-security `passed`; source, portable ve installed
+  verify `passed`; `scripts/test_*.py` için discovery komutu gerçekten test
+  yüzeyini hedefler, sıfır-test sonucu gate kanıtı olamaz.
+- **Bağımlılık:** M32
+- **Kanıt:** `py -3 -m unittest scripts.test_pala_tools.PalaViewA11yTests scripts.test_pala_code_audit -v`; `py -3 scripts/verify.py --mode source`; portable ve installed verify.
+
+- [x] M33-T1: Status renderer ownership + audit ratchet
+
+### Bilerek yapılmayanlar (M33-T1)
+
+- `pala_quality`, `pala_state` ve installer'ın geniş refactor'ı
+- Stale M31 ticket'ını otomatik abandon/complete etmek
+- Commit / push / PR / tag / release / deploy
+
+## M34 — Core install truthfulness (2026-08-09)
+
+Amaç: Pala'nın çekirdek kurulumunu isteğe bağlı uzman araçların ağ, indirme veya
+paketleme sonucundan ayır. Kullanıcı açıkça istemedikçe installer uzman araç
+kurulumu başlatmaz; eksik ya da başarısız uzman araç çekirdek Pala'nın sağlıklı
+kurulduğu gerçeğini gizlemez.
+
+#### M34-T1 — Explicit expert-install boundary
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** `Install`, `Update` ve `Repair` için varsayılan yerel-first akışı
+  koru; uzman araçları yalnız `-InstallExperts` ile çağır. Uzman worker sonucu
+  çekirdeğin exit code'unu devralmaz, ham hata/URL göstermez ve başarısız
+  uzmandan sonra yerel model başlatmayı denemez.
+- **Dosyalar:** `Install-Pala.ps1`, `scripts/Install-Pala.ps1`,
+  `scripts/test_pala_expert_installer.py`, `STATUS.md`, `PROGRESS.md`,
+  `DEBUGGING.md`, `PLAN.md`.
+- **Bitti sayılır:** PowerShell sözleşme testi varsayılanın expert indirmediğini
+  ve expert exit'ini çekirdek exit'i yapmadığını doğrular; gerçek `Repair`
+  çekirdek healthy ile exit 0 döner; source, portable ve installed verify
+  `passed`.
+- **Bağımlılık:** M33-T1
+- **Kanıt:** explicit contract test; `Install-Pala.ps1 -Mode Repair`; source,
+  portable ve installed verify.
+
+- [x] M34-T1: Explicit expert-install boundary
+
+## M35 — Quality discovery boundary (2026-08-09)
+
+Amaç: Delivery Quality Engine'in salt-okunur proje keşfini ledger, gate ve CLI
+politikasından ayır; sabit Git sorgularının kabuksuz ve süre sınırlı olmasını
+sağla. Eski M31 workflow kaydı bu ticket'ın dışında kalır.
+
+#### M35-T1 — Bounded discovery owner
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Paket/CI, değişen-yüzey, Git özeti ve Python/UI keşfini
+  `pala_quality_discovery.py` sahibine ayır; `pala_quality.py` kamuya açık
+  plan/ledger/gate/CLI yüzeyini korur. Git yoksa veya beş saniye içinde cevap
+  vermezse plan çökmemeli; asla shell açmamalı.
+- **Dosyalar:** `scripts/pala_quality.py`, `scripts/pala_quality_discovery.py`,
+  `scripts/test_pala_quality.py`, `scripts/test_pala_code_audit.py`,
+  `docs/PALA_0_9_3_MODULARITY.md`, `STATUS.md`, `PROGRESS.md`, `PLAN.md`.
+- **Bitti sayılır:** Ana quality modülü 800 satır review eşiğinin altında;
+  hard-security `passed`; `pala_quality` için timeout uyarısı yok; discovery
+  timeout ve davranış sözleşmeleri, source/portable/installed verify geçer.
+- **Bağımlılık:** M34-T1
+- **Kanıt:** focused quality + code-audit tests; `verify.py --mode source`;
+  portable ve installed verify.
+
+- [x] M35-T1: Bounded discovery owner
+
+### Bilerek yapılmayanlar (M35-T1)
+
+- `build_quality_plan` içindeki policy dallarını davranış değiştirecek şekilde
+  ikinci kez parçalamak
+- `pala_state` veya installer'a geniş refactor karıştırmak
+- Stale M31 ticket'ını otomatik reconcile/complete etmek
+- Commit / push / PR / tag / release / deploy
+
+## M36 — Modified install tree safety (2026-08-09)
+
+Amaç: Pala'nın paket/kurulum iddiasını tam sahipli dosya ağacına bağla.
+Kullanıcının eklediği veya değiştirdiği bir dosya varsa Doctor, Repair ve Update
+üzerine yazmamalı; uninstall gibi `modified` ile durmalı.
+
+#### M36-T1 — Fail-closed user-file preservation
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Exact manifest dışındaki dosya veya hash değişikliği `modified`
+  döndürür; `install_all` Codex mutasyonundan önce durur. Yalnız gerçek
+  `__pycache__` altındaki bytecode runtime artığıdır; rastgele `.pyc/.pyo`
+  kullanıcı dosyasıdır.
+- **Dosyalar:** `scripts/pala_installer.py`, `scripts/test_pala_installer.py`,
+  `scripts/build_portable.py`, `docs/PALA_0_9_5_INSTALL_INTEGRITY.md`,
+  `STATUS.md`, `PROGRESS.md`, `PLAN.md`.
+- **Bitti sayılır:** User-added, changed owned file, dışarıdaki bytecode ve
+  update/repair-before-Codex testleri geçer; Doctor `modified` ve tek güvenli
+  sonraki adımı gösterir; source/portable/installed verify geçer.
+- **Bağımlılık:** M35-T1
+- **Kanıt:** focused installer suite; `verify.py --mode source`; portable ve
+  installed verify.
+
+- [x] M36-T1: Fail-closed user-file preservation
+
+### Bilerek yapılmayanlar (M36-T1)
+
+- Kullanıcı dosyasını otomatik silmek, taşımak veya bir Pala sürümüyle
+  değiştirmek
+- Installer'ın geniş bundle/transaction refactor'ı
+- Commit / push / PR / tag / release / deploy
+
+## M37 — State Git timeout boundary (2026-08-09)
+
+Amaç: Project-state keşfi ve checkpoint hesaplarında kullanılan Pala-sabit Git
+sorgularını tek bir kabuksuz, süre sınırlı yardımcıdan geçir. Git yoksa veya
+zaman aşımına uğrarsa workflow semantiğini değiştirmeden muhafazakâr sonuç dön.
+
+#### M37-T1 — Bounded state Git observation
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** `git_root`, metin/binary Git sorguları ve ancestry kontrolü tek
+  fixed-argv helper kullanır; `shell=False`, beş saniye timeout, missing/timeout
+  için mevcut `None` / cwd / `False` fallback'leri korunur.
+- **Dosyalar:** `scripts/pala_state.py`, `scripts/test_pala_tools.py`,
+  `scripts/test_pala_code_audit.py`, `docs/PALA_0_9_3_MODULARITY.md`,
+  `STATUS.md`, `PROGRESS.md`, `PLAN.md`.
+- **Bitti sayılır:** state Git timeout/missing/shell-free contractleri geçer;
+  static audit'te `pala_state.py` unbounded process kalmaz; source, portable ve
+  installed verify geçer.
+- **Bağımlılık:** M36-T1
+- **Kanıt:** focused state + code audit; `verify.py --mode source`; portable ve
+  installed verify.
+
+- [x] M37-T1: Bounded state Git observation
+
+### Bilerek yapılmayanlar (M37-T1)
+
+- `pala_state` workflow lifecycle/SQLite/main refactor'ı
+- Başka modüllerdeki timeout adaylarını bu ticket'a toplamak
+- Commit / push / PR / tag / release / deploy
+
+## M38 — Read-only observation boundary (2026-08-09)
+
+Goal: make the local discovery used by cold packets, optional code intelligence,
+and GitHub routing bounded and honest, without mixing long-running verification,
+smoke, or benchmark behavior into this narrow ticket.
+
+#### M38-T1 — Bounded local observation
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Local Git/UV discovery uses resolved executable, fixed argv,
+  `shell=False`, and a five-second timeout. Missing or timed-out commands never
+  claim a clean/passed result. The cold packet shares one Git snapshot with its
+  capability surface.
+- **Dosyalar:** `scripts/pala_cold_packet_git.py`, `scripts/pala_cold_packet.py`,
+  `scripts/pala_code_intel.py`, `scripts/pala_github.py`, contract tests, and
+  quality/modularity records.
+- **Bitti sayılır:** timeout and missing-binary fallback, `dirty=null` partial
+  snapshot, shared cold-packet snapshot, and redacted GitHub fallback pass;
+  the cold-packet core stays below the 800-line review threshold; source,
+  portable, and installed verification pass.
+- **Bağımlılık:** M37-T1
+- **Kanıt:** focused observation + code-audit tests; source, portable, and
+  installed verification.
+
+- [x] M38-T1: Bounded local observation
+
+### Intentionally deferred (M38-T1)
+
+- Optional `code-review-graph` build/update timeout semantics
+- Cold-start benchmark exit/timeout evidence schema
+- P0 smoke child and `git init` timeout fail-closed behavior
+- Release verifier test timeout policy
+- Commit / push / PR / tag / release / deploy
+
+## M39 — State Git/checkpoint ownership (2026-08-09)
+
+Amaç: `pala_state` içindeki yalnız Git/checkpoint gözlemini küçük, sahipliği
+net bir kardeş modüle çıkar; workflow, belge ve lifecycle kararlarını aynı
+public/CLI sözleşmesiyle state çekirdeğinde bırak.
+
+#### M39-T1 — State Git/checkpoint observation owner
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Git root/read/path/digest/checkpoint/ancestry/commit materialization
+  `pala_state_git.py` sahibine taşınır ve `pala_state.py` tarafından yeniden
+  dışa aktarılır. Fixed argv, `shell=False`, beş saniye timeout, NUL-safe path
+  ve missing/timeout muhafazakâr sonuçları korunur.
+- **Dosyalar:** `scripts/pala_state.py`, `scripts/pala_state_git.py`,
+  `scripts/pala_installer.py`, `scripts/test_pala_tools.py`,
+  `scripts/test_pala_installer.py`, `scripts/test_pala_code_audit.py`,
+  `docs/PALA_0_9_3_MODULARITY.md`, `STATUS.md`, `PROGRESS.md`, `PLAN.md`.
+- **Bitti sayılır:** State public/CLI davranışı ve Git timeout sözleşmeleri
+  geçer; eski Git/checkpoint tanımları state çekirdeğinde kalmaz; eksik yardımcı
+  içeren bundle install öncesi fail-closed olur; source, portable ve installed
+  verify geçer.
+- **Bağımlılık:** M38-T1
+- **Kanıt:** focused state/installer/audit tests; `verify.py --mode source`;
+  portable ve installed verify.
+
+- [x] M39-T1: State Git/checkpoint observation owner
+
+### Bilerek yapılmayanlar (M39-T1)
+
+- `pala_state` workflow lifecycle/SQLite/main refactor'ı
+- Installer'ın integrity/transaction çekirdeği refactor'ı
+- Release verifier, P0 smoke, cold-start veya optional graph timeout semantiği
+- Commit / push / PR / tag / release / deploy
+
+## M40 — Installer external Codex bridge (2026-08-09)
+
+Amaç: Installer içindeki dış Codex CLI/marketplace/cache işlemlerini tek bir
+owned bridge'e çıkar; bundle bütünlüğü, kullanıcı-dosyası koruması, atomik
+replacement ve rollback çekirdekte kalsın.
+
+#### M40-T1 — Codex bridge ownership
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Codex executable discovery, JSON argv, marketplace inventory/cache,
+  legacy migration ve add/remove rollback `pala_installer_codex.py` sahibine
+  taşınır. Core public API'yi ince wrapperlarla korur ve sibling-path loader ile
+  source/portable/installed module cache karışmasını önler.
+- **Dosyalar:** `scripts/pala_installer.py`,
+  `scripts/pala_installer_codex.py`, `scripts/test_pala_installer.py`,
+  `scripts/test_pala_code_audit.py`, `docs/PALA_0_9_3_MODULARITY.md`,
+  `STATUS.md`, `PROGRESS.md`, `PLAN.md`.
+- **Bitti sayılır:** Codex bridge shell-free/30-second çağrı, existing
+  marketplace/rollback contractleri, sibling loader, missing-helper
+  fail-closed ve portable member contractleri geçer; source, portable ve
+  installed verify geçer.
+- **Bağımlılık:** M39-T1
+- **Kanıt:** focused installer/audit/runtime tests; `verify.py --mode source`;
+  portable ve installed verify.
+
+- [x] M40-T1: Codex bridge ownership
+
+### Bilerek yapılmayanlar (M40-T1)
+
+- Bundle integrity, kullanıcı-dosyası koruması ve transaction/rollback çekirdeği
+  refactor'ı
+- `pala_state` workflow lifecycle/SQLite/main refactor'ı
+- Release verifier, P0 smoke, cold-start veya optional graph timeout semantiği
+- Commit / push / PR / tag / release / deploy
+
+## M42 — Quality policy ownership (2026-08-09)
+
+Amaç: Delivery Quality Engine'in plan politikasını ledger, gate ve CLI
+cephesinden ayır. Bu bir davranış değişikliği değil; mevcut proje-owned
+komut, Playwright, scanner ve risk-yüzeyi kararlarını daha küçük ve
+test-edilebilir sahiplerde tutma ticket'ıdır.
+
+#### M42-T1 — Quality plan policy owner
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** `pala_quality_policy.py`, salt-okunur discovery'den quality planını
+  kurar; contract/native/browser/scanner/risk yardımcıları tek fonksiyonluk
+  politika yüzeylerine ayrılır. `pala_quality.py` kamu API'sini, ledger'ı,
+  gate kararını ve CLI'yi aynen korur/re-export eder.
+- **Dosyalar:** `scripts/pala_quality.py`, `scripts/pala_quality_policy.py`,
+  `scripts/pala_installer.py`, `scripts/test_pala_quality.py`,
+  `scripts/test_pala_installer.py`, `scripts/test_pala_code_audit.py`,
+  `scripts/pala_view_sections.py`, `scripts/test_pala_memory.py`,
+  `scripts/test_pala_tools.py`,
+  `docs/PALA_0_9_3_MODULARITY.md`, `STATUS.md`, `PROGRESS.md`, `PLAN.md`.
+- **Bitti sayılır:** Planın gate sırası / required / status / command
+  sözleşmesi korunur; `build_quality_plan` artık audit function budget'ını
+  aşmaz; helper eksik bundle install öncesi fail-closed olur; source,
+  portable ve installed verify geçer. Status'taki `n/n` yalnız çalışma
+  bağlamı hazırlığıdır; proje ilerlemesi veya teslim yüzdesi değildir.
+- **Bağımlılık:** M40-T1
+- **Kanıt:** focused quality/installer/audit tests; `verify.py --mode source`;
+  portable ve installed verify.
+
+- [x] M42-T1: Quality plan policy owner
+
+### Bilerek yapılmayanlar (M42-T1)
+
+- Quality gate anlamını, scanner'ın ağ sınırını veya ledger kanıt
+  modelini değiştirmek
+- `pala_state` discovery/lifecycle refactor'ını bu ticket'a karıştırmak
+- Commit / push / PR / tag / release / deploy
+
+## M43 — Sıfırdan tek ana plan ve kontrollü teslim (2026-08-09)
+
+**Amaç:** Tarihsel M31 workflow kaydını mevcut kaynak ağaçtan ayır, M33–M42
+değişikliklerinin gerçek baseline'ını kanıtla ve kalan kod kalitesi işini
+tek-sorumluluk, fail-closed ve release'e hazır bir sırada tamamla.
+
+**Plan kilidi:** Bu kartlar yalnız aşağıdaki bağımlılık sırasıyla yürütülür.
+Bir eklenti, hook veya araç yeni bir iş önerebilir; ancak kart sırasını
+değiştiremez, test/build/ağ çağrısı başlatamaz ve kanıt üretmiş sayılmaz. Yeni
+bir kök neden varsa ilgili kart `blocked` yazılır ve `DEBUGGING.md`ye incident
+eklenir; owner açıkça onaylamadıkça yeni kart ya da sıra değişikliği yapılmaz.
+Her uygulama turunda yalnız bir açık ticket seçilir.
+
+#### M43-T1 — Sıfırdan uzlaştırma ve kilitli baseline
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Eski `M31-T1` checkpoint/parallel bilgisini canlı `main` HEAD'i ve
+  çalışma ağacından güvenli biçimde ayır; M43'ü tek aktif sıra olarak kaydet.
+- **Dosyalar:** `.codex/pala-workflow.json`,
+  `.codex/plugin-data/pala/v3/tickets/d252f696a71cb4ce35727866fcb1031b22b4de50c3c6a5caa359e3356f5b977a.json`,
+  `PLAN.md`, `STATUS.md`, `PROGRESS.md`, `DEBUGGING.md`.
+- **Bitti sayılır:** `pala_state context` aktif ticket, goal, next action ve
+  Git fingerprint için birbirini tutarlı gösterir; eski M31 kanıtı M43'e
+  taşınmaz; açık incident yoksa uydurulmaz; M43-T2 tek sonraki iş olur.
+- **Bağımlılık:** none.
+- **Kanıt:** `py -3 scripts/pala_state.py context --cwd .`;
+  `py -3 scripts/pala_state.py validate --cwd .`; kanıt etiketi bu ticket
+  çalıştırılana kadar `not-run`.
+
+#### M43-T2 — Güncel kaynak baseline kapısı
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** M33–M42 kaynak ağacını yeni bir bütün olarak, tarihsel sonuçlara
+  dayanmadan doğrula ve gerçek başlangıç kanıtını kaydet; legal bir
+  current→next ticket checkpoint'inin STATUS'u kendiliğinden değiştirip bu
+  kanıtı drift ettirmemesini sağla.
+- **Dosyalar:** `scripts/verify.py`, `scripts/pala_code_audit.py`,
+  `scripts/test_pala_code_audit.py`, `scripts/test_pala_quality.py`,
+  `scripts/test_pala_installer.py`, `scripts/test_pala_tools.py`, `STATUS.md`,
+  `PROGRESS.md`, `PLAN.md`, `DEBUGGING.md`, `scripts/pala_memory.py`,
+  `scripts/pala_state.py`, `scripts/pala_quality_discovery.py`.
+- **Bitti sayılır:** Açık test discovery en az bir test çalıştırır; source
+  verify ve hard-security audit gerçek exit sonucu ile kaydedilir;
+  maintainability bulguları `attention_required` olarak görünür kalır; ilk
+  hata varsa yalnız kök neden için incident açılır; STATUS ve checkpoint
+  `next_action` aynı sonraki ticket'ı gösterdiğinde false memory-mismatch
+  yazılmaz ve quality ledger kendiliğinden drift etmez.
+- **Bağımlılık:** M43-T1.
+- **Kanıt:** `py -3 -m unittest scripts.test_pala_tools.PalaStateTests -v`;
+  `py -3 -m unittest discover -s scripts -p test_*.py`;
+  `py -3 scripts/verify.py --mode source`;
+  `py -3 scripts/pala_code_audit.py --root .`.
+
+#### M43-T3 — Süre sınırlı süreç ve smoke sınırı
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Audit'in timeout'suz gösterdiği dış süreçleri davranış sınıfına
+  göre sınırla; P0 smoke ve doğrulama çocuk süreçlerinde timeout'un gerçek
+  `blocked`/başarısız sonucu gizlemesine izin verme.
+- **Dosyalar:** `scripts/pala_code_intel.py`, `scripts/pala_cold_start.py`,
+  `scripts/pala_p0_smoke.py`, `scripts/verify.py`,
+  `scripts/test_code_intelligence.py`, `scripts/test_pala_p0_friction.py`,
+  `scripts/test_pala_cold_start.py`, `scripts/test_pala_tools.py`,
+  `scripts/test_pala_code_audit.py`,
+  `docs/PALA_0_9_2_CODE_QUALITY_CONTROL.md`, `STATUS.md`, `PROGRESS.md`,
+  `PLAN.md`, `DEBUGGING.md`.
+- **Bitti sayılır:** Her dış süreç fixed argv / `shell=False` / uygun timeout
+  kullanır veya test-fixture istisnası belgelenir; timeout temiz ya da passed
+  görünmez; smoke orchestration fonksiyonu review eşiğinin altına iner ya da
+  ayrık sorumluluklara bölünür.
+- **Bağımlılık:** M43-T2.
+- **Kanıt:** İlgili dar unittest'ler; `py -3 scripts/pala_p0_smoke.py`;
+  `py -3 scripts/pala_code_audit.py --root .`; source verify.
+
+#### M43-T4 — State yaşam döngüsü ve CLI sahipliği
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** `pala_state.py` içindeki workflow reconcile, checkpoint ve CLI
+  orkestrasyonunu küçük sahipli modüllere ayır; M43-T1'in uzlaştırma
+  sözleşmesini değiştirmeden state çekirdeğini 800-satır review eşiğinin altına
+  indir.
+- **Dosyalar:** `scripts/pala_state.py`, `scripts/pala_state_core.py`,
+  `scripts/pala_state_documents.py`, `scripts/pala_state_git.py`,
+  `scripts/pala_state_lifecycle.py`, `scripts/pala_state_cli.py`,
+  `scripts/pala_installer.py`, `scripts/test_pala_tools.py`,
+  `scripts/test_pala_installer.py`, `scripts/test_pala_code_audit.py`,
+  `docs/PALA_0_9_3_MODULARITY.md`, `STATUS.md`, `PROGRESS.md`, `PLAN.md`,
+  `DEBUGGING.md`.
+- **Bitti sayılır:** Mevcut public/CLI sonuçları korunur; missing sibling
+  bundle install öncesi fail-closed olur; `main` ve `checkpoint_work` ayrı
+  test edilebilir sahiplerde kalır; eski state core 800-satır eşiğinin altında
+  olur.
+- **Bağımlılık:** M43-T3.
+- **Kanıt:** State/installer dar unittest'leri; static audit; source,
+  portable ve installed verify.
+
+#### M43-T5 — Installer integrity ve transaction sahipliği
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** `pala_installer.py` içindeki bundle manifesti, kullanıcı-dosyası
+  koruması, atomik replacement ve rollback'i dış Codex bridge'den ayrı küçük
+  sahiplere ayır; preservation sözleşmesini zayıflatma.
+- **Dosyalar:** `scripts/pala_installer.py`, `scripts/pala_installer_codex.py`,
+  `scripts/pala_installer_shared.py`, `scripts/pala_installer_core.py`,
+  `scripts/pala_installer_integrity.py`, `scripts/pala_installer_transaction.py`,
+  `scripts/build_portable.py`, `scripts/test_pala_installer.py`,
+  `scripts/test_pala_code_audit.py`, `docs/PALA_0_9_5_INSTALL_INTEGRITY.md`,
+  `STATUS.md`, `PROGRESS.md`, `PLAN.md`, `DEBUGGING.md`.
+- **Bitti sayılır:** Installer core 800-satır review eşiğinin altında kalır;
+  added/changed/symlink/bytecode `modified` koruması ve rollback sözleşmesi
+  aynen geçer; eksik yardımcı içeren bundle mutasyondan önce reddedilir.
+- **Bağımlılık:** M43-T4.
+- **Kanıt:** Installer dar unittest'leri; static audit; source, portable,
+  Repair ve installed verify.
+
+#### M43-T6 — Session, cold packet ve hook sorumlulukları
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Cold packet oluşturma ile hook session orchestration'ını ayrı,
+  sınırlı sahipliklere böl; kısa, secretsız ve stale-context fail-closed
+  sözleşmesini koru.
+- **Dosyalar:** `scripts/pala_cold_packet.py`, `scripts/pala_cold_packet_git.py`,
+  `scripts/pala_cold_packet_packet.py`, `scripts/pala_hook.py`,
+  `scripts/pala_hook_session.py`,
+  `.pala/quality.json`, `scripts/test_pala_cold_packet.py`,
+  `scripts/test_pala_quality.py`, `scripts/test_pala_tools.py`,
+  `scripts/test_pala_code_audit.py`, `hooks/hooks.json`,
+  `docs/PALA_0_9_3_MODULARITY.md`, `STATUS.md`, `PROGRESS.md`, `PLAN.md`,
+  `DEBUGGING.md`.
+- **Bitti sayılır:** `build_cold_packet`, `session_context` ve hook `main`
+  review eşiğini aşmaz; tek Git snapshot, context bütçesi ve timeout/missing
+  fallback testleri geçer; hook test/build/ağ başlatmaz.
+- **Bağımlılık:** M43-T5.
+- **Kanıt:** Cold packet/hook dar unittest'leri; static audit; source,
+  portable ve installed verify; `/hooks` UI trust `configured-not-verified`
+  kalır, ancak owner doğrularsa ayrı kanıt yazılır.
+
+#### M43-T7 — Status görünümü ve CSS sahipliği
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Status HTML'in public render sözleşmesini korurken büyük CSS ve
+  render fonksiyonlarını ayrı test edilebilir sahipliklere böl; context
+  readiness'i teslim yüzdesi gibi göstermeme kuralını koru.
+- **Dosyalar:** `scripts/pala_view.py`, `scripts/pala_view_sections.py`,
+  `scripts/pala_view_styles.py`, `scripts/pala_view_layout.py`,
+  `scripts/pala_installer_shared.py`, `scripts/test_pala_tools.py`,
+  `scripts/test_pala_memory.py`, `scripts/test_pala_code_audit.py`,
+  `scripts/test_pala_installer.py`, `scripts/pala_report.py`,
+  `docs/PALA_0_9_3_MODULARITY.md`, `STATUS.md`, `PROGRESS.md`, `PLAN.md`,
+  `DEBUGGING.md`.
+- **Bitti sayılır:** `_css` ve `render` review eşiklerini aşmaz; mevcut
+  privacy, keyboard, delivery-decision ve no-progress-claim HTML
+  sözleşmeleri geçer; yeni sibling paket/kurulum doğrulamasına dahildir.
+- **Bağımlılık:** M43-T6.
+- **Kanıt:** View/memory/code-audit dar unittest'leri; generated Status HTML
+  contract kontrolü; source, portable ve installed verify.
+
+#### M43-T8 — Milestone paketi ve owner teslimi
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** M43-T1…T7 kanıtlarını tek milestone ledger'ında birleştir, source
+  ve portable/installed yüzeyleri doğrula, owner'a değişmeyen güven sınırları
+  ile tek teslim özeti bırak.
+- **Dosyalar:** `scripts/verify.py`, `scripts/build_portable.py`,
+  `scripts/pala_quality.py`, `scripts/pala_report.py`, `STATUS.md`,
+  `PROGRESS.md`, `PLAN.md`, `DEBUGGING.md`.
+- **Bitti sayılır:** Güncel source, portable clean extract ve installed runtime
+  kontrollerinin gerçek kanıtı vardır; secret/package audit geçer; release,
+  remote publish ve `/hooks` owner UI güveni ayrı yetki/etiket olarak kalır.
+- **Bağımlılık:** M43-T7.
+- **Kanıt:** `py -3 scripts/verify.py --mode source`; portable clean-extract;
+  `py -3 scripts/verify.py --mode installed`; `pala_state doctor`; kalite
+  ledger milestone status.
+- **Sonuç:** `passed` — source, portable clean extract ve geçici installed
+  runtime doğrulandı; 3/3 milestone quality kapısı geçti. Yayın/publish ve
+  `/hooks` UI trust ayrı owner yetki/etiketinde kaldı.
+
+- [x] M43-T1: Sıfırdan uzlaştırma ve kilitli baseline
+- [x] M43-T2: Güncel kaynak baseline kapısı
+- [x] M43-T3: Süre sınırlı süreç ve smoke sınırı
+- [x] M43-T4: State yaşam döngüsü ve CLI sahipliği
+- [x] M43-T5: Installer integrity ve transaction sahipliği
+- [x] M43-T6: Session, cold packet ve hook sorumlulukları
+- [x] M43-T7: Status görünümü ve CSS sahipliği
+- [x] M43-T8: Milestone paketi ve owner teslimi
+
+### Bilerek yapılmayanlar (M43)
+
+- M43-T1'den önce stale `M31-T1` kaydını complete/abandon diye işaretlemek
+- Tarihsel `passed` kanıtını güncel çalışma ağacı için yeniden kullanmak
+- T2 başarısızken geniş refactor ya da paket/kurulum mutasyonu başlatmak
+- Owner açık yetkisi olmadan commit, push, PR, tag, release veya deploy yapmak
+
+## M44 — Runtime girişleri ve yeni oturum sürekliliği (2026-08-10)
+
+#### M44-T1 — Installed CLI ve stale-context hotfix'i
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Gerçek ZIP Update/çağırma yolunda bulunan eksik CLI importlarını
+  kapat ve yeni Codex oturumunda eski temiz M43-T5 v2 kaydının güncel iş gibi
+  görünmesini yeni workflow başlangıcıyla uzlaştır.
+- **Dosyalar:** `scripts/pala_installer.py`, `scripts/pala_state_documents.py`,
+  `scripts/test_pala_installer.py`, `scripts/test_pala_tools.py`, `PLAN.md`,
+  `STATUS.md`, `PROGRESS.md`, `DEBUGGING.md`.
+- **Bitti sayılır:** Installed `pala_installer.py --help` ve
+  `pala_state.py instructions` exit 0; `pala_state context` M44-T1'i gösterir;
+  source verify, yeni portable clean extract, gerçek local Update Doctor ve
+  installed verify `passed`; eski M43 kanıtı yeni kanıt diye kullanılmaz.
+- **Bağımlılık:** M43-T8.
+- **Kanıt:** İki dar unittest; `pala_state context`; source verify; portable
+  clean extract; gerçek local Update + Doctor; installed verify.
+
+- [x] M44-T1: Installed CLI ve stale-context hotfix'i
+
+**Sonuç:** `passed` — iki dar sözleşme testi, `419` tam unittest (`1` skip),
+hard-security audit, source verify, portable clean extract, gerçek local Update
++ Doctor ve installed verify geçti. Session'sız context M44-T1'e uzlaştırıldı.
+
+## M45 — Yayın öncesi gerçek yükseltme uyumluluğu (2026-08-10)
+
+#### M45-T1 — Güncelleme sözleşmesi ve destek matrisi
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Otomatik güncellik kontrolü, yeni paketle yükseltme, doğrulanmış eski
+  Pala klasörü, değiştirilmiş kurulum ve isteğe bağlı uzman sınırlarını tek ve
+  test edilebilir kullanıcı sözleşmesinde tanımla.
+- **Dosyalar:** `docs/PALA_UPDATE_COMPATIBILITY.md`, `PROJECT.md`,
+  `scripts/test_plugin_experience.py`, `PLAN.md`, `STATUS.md`, `PROGRESS.md`.
+- **Bitti sayılır:** Belge `0.8.0`, `0.8.1`, yönetimsiz doğrulanmış legacy,
+  modified/foreign ve experts davranışını açıkça ayırır; sözleşme testi geçer.
+- **Bağımlılık:** M44-T1.
+- **Kanıt:** İlgili `test_plugin_experience` sözleşme testi.
+
+- [x] M45-T1: Güncelleme sözleşmesi ve destek matrisi
+
+**Sonuç:** `passed` — güncellik kontrolü/kurulum ayrımı, gerçek paket matrisi,
+legacy/modified/foreign koruması, experts opt-in ve yeni sohbet sınırı sözleşme
+testiyle sabitlendi.
+
+#### M45-T2 — 0.8.2 bakım sürümü kimliği
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** İçerik hotfix'ini eski `0.8.1` kullanıcılarının güncelleme denetiminde
+  görebileceği yeni `0.8.2` kimliğine taşı.
+- **Dosyalar:** `.codex-plugin/plugin.json`, `README.md`, `STATUS.md`,
+  `scripts/test_plugin_experience.py`, `scripts/test_pala_update.py`.
+- **Bitti sayılır:** Manifest/README/paket politikası `0.8.2` ile tutarlı;
+  `0.8.1 -> 0.8.2` update-available testi geçer.
+- **Bağımlılık:** M45-T1.
+- **Kanıt:** Update ve plugin-experience dar testleri.
+
+- [x] M45-T2: 0.8.2 bakım sürümü kimliği
+
+**Sonuç:** `passed` — manifest `0.8.2+codex.20260810070000`; README son
+yayımlanmış `0.8.1` ile yerel `0.8.2 not-run` adayını ayırıyor ve
+`0.8.1 -> 0.8.2` update-available testi geçiyor.
+
+#### M45-T3 — Gerçek eski paket yükseltme matrisi
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Gerçek yayımlanmış `0.8.0` ve `0.8.1` paketlerinden yeni adaya
+  yükseltmeyi temiz geçici profillerde kanıtla.
+- **Dosyalar:** `scripts/pala_upgrade_matrix.py`,
+  `scripts/test_pala_upgrade_matrix.py`, `scripts/pala_installer_core.py`,
+  `scripts/test_pala_installer.py`, `artifacts/upgrade-compat/`, `DEBUGGING.md`,
+  `STATUS.md`, `PROGRESS.md`.
+- **Bitti sayılır:** `0.8.0 -> 0.8.2`, `0.8.1 -> 0.8.2` ve doğrulanmış legacy
+  matris satırları kullanıcı verisini koruyarak `passed`; kaynak asset kimliği
+  ve SHA-256 secretsız kanıtta yer alır.
+- **Bağımlılık:** M45-T2.
+- **Kanıt:** Matris unittest'i ve gerçek paket matrix komutu.
+
+- [x] M45-T3: Gerçek eski paket yükseltme matrisi
+
+**Sonuç:** `passed` — GitHub `v0.8.0` SHA-256
+`3EA17A1CEFF7DEEBF906D03184D9B9F09F800B4B64B4AD0D880AD30C22A6916E`
+ve `v0.8.1` SHA-256
+`69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53`
+ile managed `0.8.0`, verified legacy `0.8.0` ve managed `0.8.1` satırları
+`0.8.2`ye yükseldi; state marker korundu ve required missing boş kaldı.
+
+#### M45-T4 — Yeni bileşen ve Codex cache aktarımı
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Eski kurulumdan sonra yeni zorunlu runtime/skill/hook dosyalarının
+  ve Codex cache içeriğinin güncel adayla aynı olduğunu doğrula; experts sınırını koru.
+- **Dosyalar:** `scripts/test_pala_installer.py`,
+  `scripts/test_pala_expert_installer.py`, `STATUS.md`, `PROGRESS.md`.
+- **Bitti sayılır:** Yeni required siblings ve skill/hook aktarımı, aynı sürüm
+  cache drift yenilemesi ve experts opt-in davranışı testte `passed`.
+- **Bağımlılık:** M45-T3.
+- **Kanıt:** Installer ve expert-installer dar testleri.
+
+- [x] M45-T4: Yeni bileşen ve Codex cache aktarımı
+
+**Sonuç:** `passed` — yeni runtime, skill ve hook içerikleri eski kurulumdan
+sonra adayla byte-for-byte eşleşti; bundle/cache fingerprint yenilemesi,
+required-sibling fail-fast ve experts açık opt-in sınırı yedi dar testle geçti.
+
+#### M45-T5 — Arıza ve rollback matrisi
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Değiştirilmiş/yabancı kurulum, eksik paket, Codex CLI hatası ve
+  aktivasyon arızasında kullanıcı verisi ile eski çalışan sürümü koru.
+- **Dosyalar:** `scripts/test_pala_installer.py`, `DEBUGGING.md`, `STATUS.md`,
+  `PROGRESS.md`.
+- **Bitti sayılır:** Dört arıza sınıfı doğru nedenle fail-closed olur ve rollback
+  fingerprint'i eski çalışan paketle aynıdır.
+- **Bağımlılık:** M45-T4.
+- **Kanıt:** Installer rollback/preservation testleri.
+
+- [x] M45-T5: Arıza ve rollback matrisi
+
+**Sonuç:** `passed` — modified, user-added, foreign, missing-runtime,
+activation-state ve Codex CLI arıza yolları ile portable rollback döngüsü yedi
+testte eski çalışan fingerprint'i ve kullanıcı malzemesini korudu.
+
+#### M45-T6 — 0.8.2 yerel release kapısı
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Tam kaynak, güvenlik, portable, installed ve upgrade-matrix
+  kanıtlarıyla yayıma hazır fakat henüz yayımlanmamış final paketi üret.
+- **Dosyalar:** `dist/pala-project-studio-0.8.2-final.zip`, `STATUS.md`,
+  `PROGRESS.md`, `PLAN.md`, `DEBUGGING.md`, `.codex/pala-workflow.json`.
+- **Bitti sayılır:** Release-tier kapılar `passed`; final ZIP yeniden üretilebilir,
+  SHA-256 kaydedilmiş ve gerçek local Update + Doctor `passed`; GitHub mutasyonu yok.
+- **Bağımlılık:** M45-T5.
+- **Kanıt:** Full unittest, code audit, source/portable/installed verify, gerçek
+  upgrade matrix, local Update + Doctor, artifact SHA-256.
+
+- [x] M45-T6: 0.8.2 yerel release kapısı
+
+**Sonuç:** `passed` — `427` test (`1` kontrollü skip), release-tier kalite
+kapısı, code audit, source/portable/installed verify, plugin/skill validatorları,
+gerçek upgrade matrix ve local Update + Doctor geçti. Final paket `168` entry,
+`386154` byte; SHA-256
+`5C95EC50611D1FE06B43D7DA421A7934465D88BC2F19B9BD49AECC1EF9C10350`.
+Commit, push, tag ve GitHub release `not-run`.
+
+## M46 — Bellek doğruluğu ve Scorecard görünürlüğü
+
+#### M46-T1 — Tamamlanan ticket uzlaştırması ve host sözleşmesi
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Tamamlanan ticket'ı legacy aktif bellekten temizle; cold packet ve
+  status yüzeyinde dış owner eylemini aktif geliştirme işi olarak gösterme.
+  Codex Hooks `additionalContextLimit` semantiğini güncel resmî davranışa
+  hizala ve Scorecard'ı yayın kapısı olmayan gözlem workflow'u olarak ekle.
+- **Dosyalar:** `scripts/pala_state_cli.py`, `scripts/pala_state_core.py`,
+  `scripts/pala_hook.py`, `scripts/pala_p0_smoke.py`, ilgili contract testleri,
+  `docs/CODEX_SCOPE_AND_LIMITS.md`, `docs/CODEX_PLUGIN_CHECKLIST.md`,
+  `.github/workflows/scorecards.yml`, `STATUS.md`, `PROGRESS.md`, `DEBUGGING.md`.
+- **Bitti sayılır:** Complete aynı v2/v3 ticket'ı fail-closed temizler; farklı,
+  dirty veya sahipliği uyuşmayan state korunur; host eşiği ile Pala'nın char/token
+  bütçeleri ayrı sözleşmelerdir; Scorecard haftalık/manual, SHA-pinned ve
+  non-gatingdir; bellek matrisinin tüm senaryoları testte geçer.
+- **Bağımlılık:** M45-T6.
+- **Kanıt:** Dar state/host-fit/P0/UX testleri, tam unittest discovery,
+  `verify.py --mode source`, self-audit ve P0 smoke. GitHub workflow çalışması
+  push sonrasında `not-run` kalır.
+
+- [x] M46-T1: Tamamlanan ticket uzlaştırması ve host sözleşmesi
+
+**Sonuç:** `passed` — aynı v2/v3 ticket clean olduğunda active state temizlenir;
+farklı/dirty/ownership uyuşmazlığı korunur. Host spill eşiği ile Pala'nın char ve
+yaklaşık-token bütçeleri ayrıdır. Scorecard weekly/manual, SHA-pinned ve non-gating;
+state matrix, P0, full unittest, source verify ve self-audit geçti. Uzak Scorecard
+çalışması, commit/push olmadığı için `not-run`.
+
+## R6 — Safe Runtime Authority Integration (2026-08-11)
+
+Canonical yaşayan plan:
+`docs/plans/active/PALA-0.9.0-R6-runtime-integration.md`.
+
+#### R6-M0 — Safe mutable runtime root
+
+- **Sahip ajan:** Codex agent
+- **Amaç:** Canonical task/lease/Quality/generated runtime state'ini protected
+  `.git/.codex` dışındaki, tüm worktree'lerin paylaştığı single-host köke taşı.
+- **Dosyalar:** `scripts/pala_authority.py`, `scripts/pala_store.py`,
+  `scripts/pala_quality.py`, `scripts/pala_state_core.py`, `scripts/pala_report.py`,
+  `scripts/pala_cold_packet.py`, `scripts/test_pala_runtime_authority.py`.
+- **Bitti sayılır:** İki gerçek worktree aynı external authority root'u kullanır;
+  ikinci owner claim edemez; detached HEAD kimliği bozmaz; legacy migration
+  atomic/idempotent/ownership-aware olur; restricted Codex smoke `passed`.
+- **Bağımlılık:** R5/M49 kanıtlı baseline.
+- **Kanıt:** Kırmızı/yeşil focused test, diff review, affected integration tests,
+  safe workspace-write smoke.
+
+- [x] R6-M0: Safe mutable runtime root
+
+- [x] R6-M1: WorkflowStore ↔ TaskContract authority bridge
+
+**Durum (2026-08-11):** `passed` — explicit `begin --acceptance` girdileri
+TaskContract içinde structured `not-run` kriterler olarak kalıcılaşır. WorkflowStore
+completion yalnız bu contract'ı kullanır; acceptance'sız veya salt legacy pass
+`verification_required` kalır. Nested TaskContract lease checkpoint ile outer
+lease birlikte serbest bırakılır. 196 affected test + `git diff --check` `passed`.
+
+- [x] R6-M2: TaskContract ↔ Quality Engine bridge
+
+**Durum (2026-08-11):** `passed` — Quality Engine ledger'ı tek evidence authority
+olarak kullanılır. Acceptance `quality_check_ids` required/current `passed` ve
+exit-code `0` check'lere eşlenmeden DONE olmaz; `complete --quality-ticket` bu
+mapping'i zorunlu çalıştırır. 196 affected test + `git diff --check` `passed`.
+
+**Durum (2026-08-11):** `passed` — external runtime layout, worktree identity,
+lease, Quality, event, generated read-model ve kayıpsız/idempotent migration
+regressionları 18 focused + 188 affected integration testinde `passed`. Codex CLI
+0.147.0 invocation-local direct filesystem-map profili runtime köküne yazdı;
+`.git/.codex` sınır yazıları `UnauthorizedAccess` ile reddedildi. Global config
+değişikliği veya sandbox zayıflatması yapılmadı. M1-M6 `passed`.
+
+- [x] R6-M3: Fail-closed legacy migration
+
+**Durum (2026-08-11):** `passed` — structured acceptance olmayan legacy
+completed/done kaynakları değişmeden kalır; canonical copy typed conflict ile
+`needs_decision` olur. 19 focused + 197 affected integration test `passed`.
+
+- [x] R6-M4: Dependency / scope / retry / recovery
+
+**Durum (2026-08-11):** `passed` — canonical dependency ve scope kontrolleri,
+retry budget ve dirty/orphan recovery completion yolunda fail-closed. 88 focused
++ 199 affected integration test `passed`.
+
+- [x] R6-M5: Handoff / knowledge / generated projections
+
+**Durum (2026-08-11):** `passed` — handoff ve read-only consumers tek active
+TaskContract fallback kullanır; belirsizlik fail-closed kalır. 27 focused + 202
+affected integration test `passed`.
+
+- [x] R6-M6: AGENTS / skill alignment
+
+**Durum (2026-08-11):** `passed` — canonical report/context → claim → Quality →
+acceptance → DONE zinciri ve generated read-model sınırı AGENTS/skill tarafından
+belirtilir. 36 focused + 203 affected integration test; `git diff --check`
+`passed`.
+
+- [x] R6-M7: GitHub read-only regression hardening
+
+**Durum (2026-08-11):** `passed` — read-only policy complete argv şekline göre
+değerlendirilir; `gh api` method/body ve Git branch/remote mutation şekilleri
+reddedilir. 4 focused + 141 affected integration test; `git diff --check`
+`passed`.
+
+- [x] R6-M8: Release / knowledge hygiene
+
+**Durum (2026-08-11):** `passed` — `0.9.0` local candidate kimliği current
+manifest/README/STATUS'ta tutarlı; `v0.8.1` tarihsel kalır. Source full gate:
+485 test (1 controlled skip), reproducible ZIP SHA-256
+`D048B6ED3E4453CF212037E9F514D1DA3D6FE146FED98B5EBC9CDFBD93FB8573`;
+portable ve installed-profile gates `passed`. Remote release mutation
+`not-run`. Machine-local Pala validation environment ile PyYAML 6.0.3 kuruldu;
+system plugin/skill validators `passed`, global Python değiştirilmedi.
+
+- [x] R6-M8-PACKAGE: PyYAML-enabled local package validation
+
+**Durum (2026-08-11):** `passed` — source full gate, portable clean extract,
+installed profile, system plugin validator ve system skill validator
+machine-local PyYAML 6.0.3 environment ile doğrulandı. Remote publish
+`not-run`.
+
+## M47 — Quality Hardening
+
+Canonical card details: `docs/plans/active/PALA-0.9.0-R6-runtime-integration.md`.
+
+**Durum:** passed (2026-08-11). Amaç, mevcut stdlib + `unittest` + installer/portable
+sözleşmesini koruyarak geliştirici kalite ve kritik çekirdek doğrulanabilirliğini
+artırmaktır. Pydantic/Loguru production dependency değildir; global config,
+hook otomasyonu ve remote Git işlemleri kapsam dışıdır.
+
+- [x] M47-T1: Ruff baseline ve güvenli kapsam
+- [x] M47-T2: Coverage.py baseline
+- [x] M47-T3: Kritik çekirdek Mypy kademesi
+- [x] M47-T4: uv dev environment uyumluluğu
+- [x] M47-T5: Pytest unittest uyumluluk kararı
+- [x] M47-T6: Bandit + pip-audit release security gate
+
+Sonuç: 488 canonical unittest (1 controlled skip), Coverage 75%, strict Mypy
+critical subset, M47 changed-surface Ruff ratchet, Bandit High=0 ve pip-audit
+clean. Ayrıntılı kanıt ve bilinçli legacy backlog kararı canonical ExecPlan'da.
+
+İlk iş `M47-T1`'dir: önce failing/baseline evidence, sonra minimal config,
+dar doğrulama ve milestone sonunda full local verification. Araçlar mevcut
+packaging/portable etkisi kanıtlanmadan kurulmaz.
+## M61–M68 — Sealed local product completion (owner-approved)
+
+### M61-T2 — Donor governance and language contract
+
+- **Sahip ajan:** Codex `/root`
+- **Amaç:** Pin donor provenance, preserve the fresh local RC baseline, and
+  establish English-canonical plus ASCII Turkish localization without changing
+  TaskContract, WorkflowStore, or Quality Engine authority.
+- **Dosyalar:** `docs/plans/active/PALA-1.0-sealed-local-final.md`,
+  `THIRD_PARTY_NOTICES.md`, `artifacts/governance/third-party-inventory.json`,
+  `locales/en.json`, `locales/tr-ascii.json`, `scripts/pala_governance.py`,
+  `scripts/test_pala_governance.py`, `scripts/build_portable.py`.
+- **Bitti sayılır:** Fresh baseline, donor pin/license inventory, no global
+  installation, English canonical surfaces, and ASCII localization validator
+  have fresh evidence labels.
+- **Bağımlılık:** `M60-T1` canonical `DONE`.
+- **Kanıt:** `py -3 scripts/verify.py`; `py -3 -m unittest
+  scripts.test_pala_governance -v`; `git diff --check`.
+
+`M61-T1` historical install-acceptance card and evidence remain unchanged.
+
+### M62-T1 — DesignAdvisor and canonical design tokens
+
+- **Sahip ajan:** Codex `/root`
+- **Amaç:** Advisory-only DesignAdvisor contract, DTCG-compatible primitive /
+  semantic / component tokens, and a deterministic token drift validator.
+- **Dosyalar:** `scripts/pala_design.py`, `scripts/test_pala_design.py`,
+  `design/tokens.json`, `scripts/pala_tokens.py`, `scripts/test_pala_tokens.py`.
+- **Bitti sayılır:** Recommendations are always `advisory`; no API can write
+  TaskContract, Quality, lifecycle, or acceptance state; token layers validate;
+  accessibility constraints override advisory style; provenance remains donor
+  inventory-backed.
+- **Bağımlılık:** `M61-T2` checkpointed with passed quality ledger.
+- **Kanıt:** `py -3 -m unittest scripts.test_pala_design scripts.test_pala_tokens -v`;
+  `py -3 scripts/pala_design.py --validate`.
+
+### M63-T1 — Read-only Control Center projection
+
+- **Sahip ajan:** Codex `/root`
+- **Amaç:** Extend the existing owner cockpit with an owner-first static
+  Control Center while preserving read-only canonical authority.
+- **Dosyalar:** `scripts/pala_owner_cockpit.py`,
+  `scripts/test_pala_control_center.py`, `.pala/quality.json`.
+- **Bitti sayılır:** Home, Projects, Current Work, Known Problems, Quality,
+  Policies, Release, History, and Advanced sections render; user text is
+  escaped; keyboard focus, reduced motion, and narrow layouts remain usable.
+- **Bağımlılık:** `M62-T1` checkpointed with passed quality ledger.
+- **Kanıt:** `py -3 -m unittest scripts.test_pala_control_center -v`;
+  `npm run test:e2e`.
+-
+### M64-T1 — Shared Failure Intelligence
+
+- **Sahip ajan:** Codex `/root`
+- **Amaç:** Extend the existing local SQLite tool-attempt persistence with
+  normalized, redacted failure fingerprints and evidence-gated resolution
+  states without creating a second authority or retry loop.
+- **Dosyalar:** `scripts/pala_failure_intelligence.py`,
+  `scripts/test_pala_failure_intelligence.py`, `.pala/quality.json`.
+- **Bitti sayılır:** Secrets and user paths are redacted before persistence;
+  unrelated failures normalize to stable fingerprints; verified resolutions
+  require passed exit-0 evidence; stale knowledge and retry budgets fail
+  closed; concurrent local writes remain safe.
+- **Bağımlılık:** `M63-T1` checkpointed with passed quality ledger.
+- **Kanıt:** `py -3 -m unittest scripts.test_pala_failure_intelligence -v`;
+  full source verification at the M64 checkpoint.
+-
+### M65-T1 — Versioned offline policy library
+
+- **Sahip ajan:** Codex `/root`
+- **Amaç:** Add an offline-first, versioned policy pack with explicit source
+  freshness, profiles, enforcement, evidence requirements, and honest unknown
+  handling.
+- **Dosyalar:** `policies/*.json`, `scripts/pala_policy.py`,
+  `scripts/test_pala_policy.py`, `.pala/quality.json`.
+- **Bitti sayılır:** Rules carry source/version/freshness metadata; Python,
+  Web, and Release profiles map deterministically; stale or missing sources
+  remain `configured-not-verified`; policy output never becomes TaskContract
+  or Quality Engine authority.
+- **Bağımlılık:** `M64-T1` checkpointed with passed quality ledger.
+- **Kanıt:** `py -3 -m unittest scripts.test_pala_policy -v` and the M65
+  source verification gate.
+-
+### M66-T1 — UX, accessibility, responsive and visual gates
+
+- **Sahip ajan:** Codex `/root`
+- **Amaç:** Cover the static Control Center with deterministic accessibility,
+  responsive viewport, bounded-content, and visual-digest checks.
+- **Dosyalar:** `scripts/pala_ux_gates.py`, `scripts/test_pala_ux_gates.py`,
+  `.pala/quality.json`.
+- **Bitti sayılır:** Focus, reduced motion, narrow layout, bounded text, and
+  three viewport contracts pass without a new frontend runtime or remote write.
+- **Bağımlılık:** `M65-T1` checkpointed with passed quality ledger.
+- **Kanıt:** `py -3 -m unittest scripts.test_pala_ux_gates -v`;
+  `npm run test:e2e`.
+-
+### M67-T1 — ReleaseTruth and remote preflight
+
+- **Sahip ajan:** Codex `/root`
+- **Amaç:** Provide read-only release identity, publication matrix, drift
+  lint, and fail-closed remote preflight without publishing or deploying.
+- **Dosyalar:** `scripts/pala_release_truth.py`,
+  `scripts/test_pala_release_truth.py`, `artifacts/release/*.json`,
+  `.pala/quality.json`.
+- **Bitti sayılır:** Local identity comes from `product-identity.json`; public
+  claims are marked pending/not-run; drift and unknown permissions fail closed;
+  remote writes remain outside the implementation.
+- **Bağımlılık:** `M66-T1` checkpointed with passed quality ledger.
+- **Kanıt:** `py -3 -m unittest scripts.test_pala_release_truth -v`;
+  source verification.

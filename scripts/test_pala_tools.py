@@ -3,15 +3,15 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import io
-import hashlib
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
-import sys
 from argparse import Namespace
 from pathlib import Path
 from unittest.mock import patch
@@ -86,12 +86,65 @@ def load_module(name: str, filename: str):
     return module
 
 
+pala_state_git = load_module("pala_state_git", "pala_state_git.py")
 pala_state = load_module("pala_state", "pala_state.py")
+pala_state_core = sys.modules["pala_state_core"]
+pala_state_documents = load_module(
+    "pala_state_documents", "pala_state_documents.py"
+)
 pala_store = load_module("pala_store", "pala_store.py")
 pala_hook = load_module("pala_hook", "pala_hook.py")
+pala_memory = load_module("pala_memory", "pala_memory.py")
 
 
 class PalaStateTests(unittest.TestCase):
+    def test_git_runner_is_shell_free_and_time_bounded(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            completed = subprocess.CompletedProcess(
+                args=["git"], returncode=0, stdout="value\n"
+            )
+            with (
+                patch.object(pala_state_git.shutil, "which", return_value="C:/tools/git.exe"),
+                patch.object(pala_state_git.subprocess, "run", return_value=completed) as runner,
+            ):
+                result = pala_state._run_git_process(
+                    root, ("rev-parse", "HEAD"), text=True
+                )
+
+            self.assertIs(result, completed)
+            self.assertEqual(runner.call_count, 1)
+            call = runner.call_args
+            self.assertEqual(call.args[0], ["C:/tools/git.exe", "rev-parse", "HEAD"])
+            self.assertFalse(call.kwargs["shell"])
+            self.assertEqual(call.kwargs["timeout"], pala_state.GIT_TIMEOUT_SECONDS)
+            self.assertIs(pala_state._run_git_process, pala_state_git._run_git_process)
+
+    def test_git_timeout_or_missing_binary_keeps_state_commands_conservative(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with (
+                patch.object(pala_state_git.shutil, "which", return_value="C:/tools/git.exe"),
+                patch.object(
+                    pala_state_git.subprocess,
+                    "run",
+                    side_effect=subprocess.TimeoutExpired(["git"], 5),
+                ),
+            ):
+                self.assertEqual(pala_state.git_root(root), root.resolve())
+                self.assertIsNone(pala_state.run_git(root, "rev-parse", "HEAD"))
+                self.assertIsNone(pala_state.run_git_bytes(root, "status"))
+                self.assertFalse(pala_state.git_is_ancestor(root, "before", "after"))
+
+            with patch.object(pala_state_git.shutil, "which", return_value=None), patch.object(
+                pala_state_git.subprocess, "run"
+            ) as runner:
+                self.assertEqual(pala_state.git_root(root), root.resolve())
+                self.assertIsNone(pala_state.run_git(root, "rev-parse", "HEAD"))
+                self.assertIsNone(pala_state.run_git_bytes(root, "status"))
+                self.assertFalse(pala_state.git_is_ancestor(root, "before", "after"))
+            runner.assert_not_called()
+
     def test_rtk_rewrites_only_simple_read_only_commands(self) -> None:
         rtk = load_module("pala_rtk", "pala_rtk.py")
         with tempfile.TemporaryDirectory() as temp:
@@ -210,7 +263,7 @@ class PalaStateTests(unittest.TestCase):
     def test_ticket_store_complete_requires_passed_evidence_and_no_blockers(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             store = pala_store.WorkflowStore(Path(temp))
-            store.claim("PALA-043", "Complete safely", "session-alpha")
+            store.claim("PALA-043", "Complete safely", "session-alpha", acceptance=["verification passes"])
 
             refused = store.complete("PALA-043", "session-alpha")
             store.record_verification(
@@ -219,9 +272,62 @@ class PalaStateTests(unittest.TestCase):
             completed = store.complete("PALA-043", "session-alpha")
 
             self.assertEqual(refused.status, "verification_required")
-            self.assertEqual(completed.status, "completed")
-            self.assertEqual(completed.record["lifecycle"], "completed")
-            self.assertFalse(completed.record["dirty"])
+            self.assertEqual(completed.status, "verification_required")
+            self.assertEqual(completed.record["lifecycle"], "active")
+            self.assertTrue(completed.record["dirty"])
+
+    def test_complete_clears_only_matching_clean_legacy_active_ticket(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            legacy_path = root / ".codex" / "pala-workflow.json"
+            legacy_path.parent.mkdir()
+            legacy = {
+                "schema_version": 2,
+                "active_ticket": "PALA-046",
+                "goal": "Finish reconciliation",
+                "dirty": False,
+                "next_action": "owner: commit/push/tag/release",
+                "verification": ["ticket=passed"],
+            }
+            legacy_path.write_text(json.dumps(legacy), encoding="utf-8")
+            store = pala_store.WorkflowStore(root)
+            store.claim("PALA-046", "Finish reconciliation", "session-alpha", acceptance=["verification passes"])
+            store.record_verification(
+                "PALA-046", "session-alpha", "passed", "py -3 scripts/verify.py"
+            )
+
+            completed = pala_state.complete_work(root, "PALA-046", "session-alpha")
+            reconciled = json.loads(legacy_path.read_text(encoding="utf-8"))
+
+            self.assertEqual(completed.status, "verification_required")
+            self.assertEqual(reconciled, legacy)
+            self.assertEqual(reconciled["next_action"], "owner: commit/push/tag/release")
+            self.assertEqual(reconciled["verification"], ["ticket=passed"])
+
+    def test_complete_preserves_other_or_dirty_legacy_workflow(self) -> None:
+        for legacy_ticket, dirty in (("PALA-OTHER", False), ("PALA-046", True)):
+            with self.subTest(legacy_ticket=legacy_ticket, dirty=dirty), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                legacy_path = root / ".codex" / "pala-workflow.json"
+                legacy_path.parent.mkdir()
+                legacy = {
+                    "schema_version": 2,
+                    "active_ticket": legacy_ticket,
+                    "goal": "Leave untouched",
+                    "dirty": dirty,
+                    "next_action": "continue safely",
+                }
+                legacy_path.write_text(json.dumps(legacy), encoding="utf-8")
+                store = pala_store.WorkflowStore(root)
+                store.claim("PALA-046", "Finish reconciliation", "session-alpha", acceptance=["verification passes"])
+                store.record_verification(
+                    "PALA-046", "session-alpha", "passed", "py -3 scripts/verify.py"
+                )
+
+                completed = pala_state.complete_work(root, "PALA-046", "session-alpha")
+
+                self.assertEqual(completed.status, "verification_required")
+                self.assertEqual(json.loads(legacy_path.read_text(encoding="utf-8")), legacy)
 
     def test_ticket_store_recovery_does_not_take_over_dirty_record(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -338,6 +444,13 @@ class PalaStateTests(unittest.TestCase):
         )
 
         self.assertEqual(args.session_key, "abc123")
+
+    def test_begin_parser_accepts_repeatable_acceptance(self) -> None:
+        args = pala_state.parser().parse_args(
+            ["begin", "--ticket", "PALA-043", "--goal", "Session ownership", "--acceptance", "tests pass", "--acceptance", "reviewed"]
+        )
+
+        self.assertEqual(args.acceptance, ["tests pass", "reviewed"])
 
     def test_session_context_reads_only_its_owned_ticket(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -495,6 +608,12 @@ class PalaStateTests(unittest.TestCase):
             )
             self.assertTrue(report["within_budget"])
 
+    def test_configured_instruction_report_is_callable(self) -> None:
+        report = pala_state_documents.configured_instruction_report(
+            SCRIPT_DIR.parent, SCRIPT_DIR.parent
+        )
+        self.assertIn("config", report)
+
     def test_explicit_workflow_checkpoint_controls_dirty_state(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -516,6 +635,87 @@ class PalaStateTests(unittest.TestCase):
             self.assertEqual(checkpoint["verification"], ["pytest: passed"])
             self.assertEqual(checkpoint["verification_tier"], "ticket")
             self.assertIn("checkpoint_basis", checkpoint)
+
+    def test_checkpoint_matching_status_successor_is_not_a_memory_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            status_path = root / "STATUS.md"
+            status_path.write_text("# Status\n\n- Next: M43-T3 continue\n", encoding="utf-8")
+            manifest = {
+                "schema_version": 1,
+                "managed_by": "pala-project-finisher",
+                "documents": {"status": "STATUS.md"},
+            }
+            (root / pala_state.MANIFEST).write_text(json.dumps(manifest), encoding="utf-8")
+            pala_state.begin_work(root, "M43-T2", "Verify baseline")
+
+            pala_state.checkpoint_work(
+                root,
+                next_action="M43-T3 continue",
+                verification=["unittest=passed"],
+                blockers=[],
+                tier="ticket",
+            )
+
+            checkpoint = pala_state.load_workflow(root)
+            self.assertFalse(checkpoint["needs_reconcile"])
+            self.assertNotIn("## Memory mismatch", status_path.read_text(encoding="utf-8"))
+
+    def test_session_checkpoint_also_closes_matching_v2_workflow(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            pala_state.begin_work(root, "M43-T4", "Unify checkpoint state")
+            with patch.object(
+                sys,
+                "argv",
+                [
+                    "pala_state.py",
+                    "checkpoint",
+                    "--cwd",
+                    str(root),
+                    "--ticket",
+                    "M43-T4",
+                    "--session-key",
+                    "pala-local",
+                    "--next-action",
+                    "M43-T5 continue",
+                    "--verification",
+                    "unit=passed",
+                ],
+            ):
+                self.assertEqual(pala_state.main(), 0)
+
+            workflow = pala_state.load_workflow(root)
+            self.assertFalse(workflow["dirty"])
+            self.assertEqual(workflow["next_action"], "M43-T5 continue")
+
+    def test_checkpoint_different_status_successor_remains_a_memory_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / ".codex").mkdir()
+            status_path = root / "STATUS.md"
+            status_path.write_text("# Status\n\n- Next: M43-T4 continue\n", encoding="utf-8")
+            manifest = {
+                "schema_version": 1,
+                "managed_by": "pala-project-finisher",
+                "documents": {"status": "STATUS.md"},
+            }
+            (root / pala_state.MANIFEST).write_text(json.dumps(manifest), encoding="utf-8")
+            pala_state.begin_work(root, "M43-T2", "Verify baseline")
+
+            pala_state.checkpoint_work(
+                root,
+                next_action="M43-T3 continue",
+                verification=["unittest=passed"],
+                blockers=[],
+                tier="ticket",
+            )
+
+            checkpoint = pala_state.load_workflow(root)
+            self.assertTrue(checkpoint["needs_reconcile"])
+            self.assertIn("## Memory mismatch", status_path.read_text(encoding="utf-8"))
 
     def test_checkpoint_detects_registered_document_drift(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -788,18 +988,6 @@ class PalaStateTests(unittest.TestCase):
             self.assertEqual(
                 workflow_only["checkpoint_basis"]["git"]["changed_count"], 0
             )
-            subprocess.run(
-                ["git", "add", str(pala_state.WORKFLOW)],
-                cwd=root,
-                check=True,
-                capture_output=True,
-            )
-            subprocess.run(
-                [*commit, "-m", "checkpoint metadata"],
-                cwd=root,
-                check=True,
-                capture_output=True,
-            )
             metadata_report = pala_state.reconciliation_report(
                 root, manifest, workflow_only
             )
@@ -887,6 +1075,67 @@ class PalaStateTests(unittest.TestCase):
             result = pala_state.discover(root)
             self.assertIn("backend-engineering", result["profiles"])
             self.assertNotIn("frontend-engineering", result["profiles"])
+
+
+class MemoryEvaluationMatrixTests(unittest.TestCase):
+    """Named reliability fixtures; they measure state transitions, never speed."""
+
+    def test_broken_plan_ticket_alignment_is_detected(self) -> None:
+        report = pala_memory.ticket_coherence_report(
+            {"active_ticket": "M46-T1", "next_action": "start M47-T1"},
+            status_text="Next: M47-T1",
+            plan_text="#### M47-T1 - unrelated work",
+        )
+
+        self.assertTrue(report["mismatch"])
+        self.assertFalse(report["ok"])
+
+    def test_stale_git_snapshot_requires_reconciliation(self) -> None:
+        workflow = {
+            "schema_version": 2,
+            "active_ticket": "M46-T1",
+            "dirty": False,
+            "needs_reconcile": False,
+            "checkpoint_basis": {
+                "documents": {},
+                "git": {"head": "before", "worktree_sha256": "same"},
+            },
+        }
+        with patch.object(
+            pala_state_core,
+            "git_checkpoint",
+            return_value={"head": "after", "worktree_sha256": "same"},
+        ), patch.object(pala_state_core, "checkpoint_commit_materialized", return_value=False):
+            report = pala_state.reconciliation_report(Path("."), {"documents": {}}, workflow)
+
+        self.assertTrue(report["needed"])
+        self.assertIn("Git HEAD changed since checkpoint", report["reasons"])
+
+    def test_completed_ticket_stays_inactive_after_resume_and_compact(self) -> None:
+        workflow = {
+            "active_ticket": None,
+            "goal": None,
+            "dirty": False,
+            "next_action": "owner: commit/push/tag/release",
+            "blockers": [],
+        }
+        for source in ("resume", "compact"):
+            with self.subTest(source=source):
+                message = pala_hook.session_context(
+                    {"status": "STATUS.md", "plan": "PLAN.md"},
+                    workflow,
+                    compacted=source == "compact",
+                    source=source,
+                )["hookSpecificOutput"]["additionalContext"]
+                self.assertIn("active=none", message)
+                self.assertNotIn("active=M46-T1", message)
+
+    def test_hook_trust_fixture_stays_human_verified(self) -> None:
+        checklist = (SCRIPT_DIR.parent / "docs" / "CODEX_PLUGIN_CHECKLIST.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("/hooks", checklist)
+        self.assertIn("configured-not-verified", checklist)
 
 
 class PalaHookTests(unittest.TestCase):
@@ -1430,6 +1679,13 @@ class PalaViewA11yTests(unittest.TestCase):
         self.assertIn("@media (max-width: 720px)", html)
         self.assertIn("outline: 3px solid", html)
         self.assertNotIn("purple", html.casefold())
+
+    def test_status_context_readiness_is_not_presented_as_project_completion(self) -> None:
+        html = self._sample_html()
+
+        self.assertIn("Çalışma bağlamı: 7/7 hazır", html)
+        self.assertIn("Bu, proje ilerlemesi veya teslim kararı değildir.", html)
+        self.assertNotIn(">7/7 hazir<", html)
         self.assertNotIn("linear-gradient", html.casefold())
         # SFNSP 2026: skip target does not need tabindex=-1
         self.assertNotIn('tabindex="-1"', html)
@@ -1475,6 +1731,95 @@ class PalaViewA11yTests(unittest.TestCase):
         self.assertIn("run unit:test", html)
         self.assertNotIn("speed", html.casefold())
         self.assertNotIn("%", html.split("Karar sinyalleri", 1)[-1][:800])
+
+    def test_delivery_card_distinguishes_ticket_from_release_and_hides_paths(self) -> None:
+        html = self._sample_html(
+            delivery={
+                "status": "passed",
+                "label": "Ticket hazır",
+                "tier": "ticket",
+                "detail": "Zorunlu proje-yerel kapılar bu tier için kanıtlı geçti.",
+            },
+            quality={
+                "status": "passed",
+                "ticket": "T1",
+                "risk": {"level": "low", "reasons": []},
+                "coverage": {"passed": 1, "required": 1},
+                "required_checks": [
+                    {"id": "integration:source-verify", "status": "passed"}
+                ],
+                "last_problem": "",
+                "next_action": "",
+            },
+        )
+        self.assertIn('id="pala-delivery-decision"', html)
+        self.assertEqual(html.count('id="pala-delivery-decision"'), 1)
+        self.assertIn('id="pala-delivery-quality"', html)
+        self.assertIn("Ticket hazır", html)
+        self.assertIn("integration:source-verify", html)
+        self.assertIn("Zorunlu kalite kapıları", html)
+        self.assertIn("Yerel yol gizli", html)
+        self.assertIn('class="private-detail"', html)
+        self.assertIn('aria-controls="panel-overview"', html)
+        self.assertIn(":focus-visible", html)
+
+    def test_status_suppresses_temporary_catalog_and_timeline_noise(self) -> None:
+        html = self._sample_html(
+            projects=[
+                {"name": "tmpab12cd", "updated_at": "2026-08-08"},
+                {"name": "kalici-proje", "updated_at": "2026-08-08"},
+            ],
+            events=[
+                {"kind": "begin", "project_name": "tmpab12cd", "detail": "test"},
+                {"kind": "begin", "project_name": "kalici-proje", "detail": "real"},
+            ],
+        )
+        self.assertNotIn("tmpab12cd", html)
+        self.assertIn("kalici-proje", html)
+
+    def test_delivery_decision_never_promotes_ticket_to_release(self) -> None:
+        import pala_report
+
+        passed = {"status": "passed", "ticket": "T1", "last_problem": ""}
+        ticket = pala_report.delivery_decision(
+            {"verification_tier": "ticket"},
+            {"active": "T1", "mismatch": False},
+            passed,
+        )
+        release = pala_report.delivery_decision(
+            {"verification_tier": "release"},
+            {"active": "T1", "mismatch": False},
+            passed,
+        )
+        blocked = pala_report.delivery_decision(
+            {"verification_tier": "release"},
+            {"active": "T1", "mismatch": True},
+            passed,
+        )
+        self.assertEqual(ticket["label"], "Ticket hazır")
+        self.assertEqual(release["label"], "Sürüme hazır")
+        self.assertEqual(blocked["status"], "blocked")
+
+    def test_view_sections_are_owned_separately_and_renderer_stays_reviewable(self) -> None:
+        sections = SCRIPT_DIR / "pala_view_sections.py"
+        self.assertTrue(sections.is_file())
+        section_source = sections.read_text(encoding="utf-8")
+        self.assertIn("def delivery_card(", section_source)
+        self.assertIn("def section_overview(", section_source)
+        renderer_lines = (SCRIPT_DIR / "pala_view.py").read_text(
+            encoding="utf-8"
+        ).splitlines()
+        self.assertLessEqual(len(renderer_lines), 800)
+
+    def test_view_sections_avoid_python_312_only_f_string_expressions(self) -> None:
+        section_source = (SCRIPT_DIR / "pala_view_sections.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotRegex(
+            section_source,
+            r"f[\"'][^\n]*\{[^}\n]*\\[^}\n]*\}",
+            "Python 3.10 rejects backslashes inside f-string expressions",
+        )
 
     def test_timeline_distinguishes_debug_attempt_and_checkpoint(self) -> None:
         html = self._sample_html()

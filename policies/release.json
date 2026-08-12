@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "pack_id": "release",
+  "pack_version": "1.0.0",
+  "profile": "Release",
+  "publication": "local-only",
+  "remote_publish": "not-run",
+  "source": {
+    "authority": "Pala local release contract",
+    "version": "1.0.0",
+    "status": "verified-local",
+    "checked_at": "2026-08-12T00:00:00Z",
+    "freshness_days": 365,
+    "refs": ["local://product-identity.json", "local://scripts/verify.py"]
+  },
+  "rules": [
+    {
+      "id": "release.reproducible",
+      "title": "Build the local artifact reproducibly",
+      "category": "delivery",
+      "severity": "critical",
+      "profiles": ["Release"],
+      "enforcement": "required",
+      "evidence_required": true,
+      "unknown": "configured-not-verified",
+      "message": "Two clean local builds must have identical hashes before sealing."
+    },
+    {
+      "id": "release.remote-boundary",
+      "title": "Keep remote publication separate",
+      "category": "delivery",
+      "severity": "critical",
+      "profiles": ["Release"],
+      "enforcement": "advisory",
+      "evidence_required": true,
+      "unknown": "configured-not-verified",
+      "message": "Remote publication and deployment remain not-run without explicit authority."
+    }
+  ]
+}

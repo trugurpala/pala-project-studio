@@ -325,7 +325,14 @@ def active_blocks(
     """Recent failure memories that should suppress blind retries."""
     import pala_db
 
-    rows = pala_db.list_tool_attempts(limit=limit, path=path)
+    try:
+        rows = pala_db.list_tool_attempts(limit=limit, path=path)
+    except Exception as exc:
+        # Context/SessionStart is observational; a locked or unavailable
+        # optional SQLite store must never abort the lifecycle command.
+        if exc.__class__.__module__ == "sqlite3":
+            return []
+        raise
     return [
         {
             "failure_class": row.get("failure_class"),

@@ -1,0 +1,30 @@
+{
+  "provider": "observed-local-fixture",
+  "capabilities": {
+    "linux": {
+      "source": "user intent",
+      "observed": "Linux hosting declared",
+      "evidence": "FACT-linux",
+      "confidence": "declared",
+      "status": "VERIFIED"
+    },
+    "cpanel": {
+      "source": "user intent",
+      "observed": "cPanel hosting declared",
+      "evidence": "FACT-cpanel",
+      "confidence": "declared",
+      "status": "VERIFIED"
+    },
+    "php": {
+      "source": "user intent",
+      "observed": "PHP version not supplied",
+      "evidence": "UNKNOWN-php",
+      "confidence": "unknown",
+      "status": "UNKNOWN"
+    }
+  },
+  "architecture_candidates": {
+    "generic-linux-cpanel": ["linux", "cpanel"]
+  },
+  "architecture_requirements": ["linux", "cpanel"]
+}

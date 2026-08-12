@@ -311,7 +311,9 @@ class MemoryContractTests(unittest.TestCase):
                 root,
                 update={"status": "current", "installed_version": "0.7.0"},
             )
-            self.assertRegex(markup, r"\d+/7 hazir")
+            self.assertRegex(markup, r"Çalışma bağlamı: \d+/7 hazır")
+            self.assertIn("Bu, proje ilerlemesi veya teslim kararı değildir.", markup)
+            self.assertNotRegex(markup, r">\d+/7 hazir<")
             self.assertIn("Şimdi:", markup)
             self.assertIn("F2-T2", markup)
 
