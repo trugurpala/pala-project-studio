@@ -9,13 +9,13 @@ a verified package without inventing capabilities or silently publishing work.
 
 Current product version: **1.0.0**
 Plugin version: **1.0.0**
-Release channel: **public release pending remote reconciliation**
+Release channel: **public release**
 Portable asset: `pala-project-studio-1.0.0.zip`
-Remote publication status: `not-run` until the approved GitHub workflow and
-remote read-back complete. Last published release: [v0.8.1](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.1),
-asset `pala-project-studio-0.8.1-final.zip`.
+Remote release: [v1.0.0](https://github.com/trugurpala/pala-project-studio/releases/tag/v1.0.0),
+with the [latest 1.0.0 asset](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-1.0.0.zip).
 
 ![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
+[![Release](https://img.shields.io/badge/release-v1.0.0-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v1.0.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-index-0A66C2)](docs/README.md)
 

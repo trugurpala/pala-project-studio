@@ -5,8 +5,8 @@
   "plugin_version": "1.0.0",
   "python_package_version": "1.0.0",
   "artifact_name": "pala-project-studio-1.0.0.zip",
-  "release_status": "PUBLIC RELEASE PENDING",
-  "remote_publish": "not-run",
+  "release_status": "PUBLIC RELEASED",
+  "remote_publish": "passed",
   "real_remote_deploy": "not-run",
-  "last_published_version": "0.8.1"
+  "last_published_version": "1.0.0"
 }
