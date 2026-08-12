@@ -17,7 +17,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 PACKAGER = SCRIPTS / "build_portable.py"
-CONTRACT_TEST_TIMEOUT_SECONDS = 120
+# Windows hosted runners can be slower than the local Python environment for
+# the full contract suite; retain a bounded fail-closed timeout with headroom.
+CONTRACT_TEST_TIMEOUT_SECONDS = 240
 
 
 def announce(message: str) -> None:
