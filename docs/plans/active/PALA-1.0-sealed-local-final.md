@@ -94,11 +94,11 @@ Tickets are locked in this order:
 | M69-T5 | Publication matrix and drift = 0 | completed (`passed`) |
 | M69-T6 | Portable release slimming | completed (`passed`) |
 | M69-T7 | Fresh final local quality | completed (`passed`) |
-| M69-T8 | Release branch, commit, push, PR, CI | pending |
-| M69-T9 | Merge and tag | pending |
-| M69-T10 | Draft/publish GitHub Release and assets | pending |
-| M69-T11 | Remote read-back and reconciliation | pending |
-| M69-T12 | Public release seal | pending |
+| M69-T8 | Release branch, commit, push, PR, CI | completed (`passed`) |
+| M69-T9 | Merge and tag | completed (`passed`) |
+| M69-T10 | Draft/publish GitHub Release and assets | completed (`passed`) |
+| M69-T11 | Remote read-back and reconciliation | completed (`passed`) |
+| M69-T12 | Public release seal | completed (`passed`) |
 
 M69-T1 preflight: `artifacts/publication/github-preflight.json`. Remote is
 public, default branch is `main`, latest release is `v0.8.1`, Wiki/Pages are
