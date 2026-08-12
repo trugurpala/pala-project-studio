@@ -39,6 +39,7 @@ REQUIRED_ROOT_FILES = (
     "skills/pala-project-finisher/SKILL.md",
     "scripts/pala_hook.py",
     "scripts/pala_demo.py",
+    "scripts/pala_code_audit.py",
     "scripts/pala_self_audit.py",
     "examples/demo-software-project/STATUS.md",
 )
@@ -70,7 +71,7 @@ def audit_presence(root: Path) -> dict[str, str]:
         return _check("presence", "failed", "skill missing presence opener")
     if session.get("statusMessage") != "Pala yanınızda":
         return _check("presence", "failed", "SessionStart statusMessage mismatch")
-    if int(session.get("additionalContextLimit") or 0) != pala_hook.SESSION_CONTEXT_CHAR_LIMIT:
+    if int(session.get("additionalContextLimit") or 0) != pala_hook.ADDITIONAL_CONTEXT_SPILL_TOKEN_THRESHOLD:
         return _check("presence", "failed", "additionalContextLimit mismatch")
     message = pala_hook.session_context(
         {"status": "STATUS.md", "plan": "PLAN.md"},
@@ -95,9 +96,13 @@ def audit_hook_safety(root: Path) -> dict[str, str]:
     for banned in ("urllib", "requests.", "subprocess.run([\"pytest\"", "git push", "npm install"):
         if banned.casefold() in lowered:
             return _check("hook_safety", "failed", f"forbidden pattern: {banned}")
-    if "SessionStart" not in text or "additionalContext" not in text:
-        return _check("hook_safety", "failed", "SessionStart contract missing")
     hooks_json = json.loads((root / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+    session_start = hooks_json.get("hooks", {}).get("SessionStart", [{}])[0]
+    session_hooks = session_start.get("hooks", []) if isinstance(session_start, dict) else []
+    if not isinstance(session_hooks, list) or not session_hooks:
+        return _check("hook_safety", "failed", "SessionStart contract missing")
+    if int(session_hooks[0].get("additionalContextLimit") or 0) <= 0:
+        return _check("hook_safety", "failed", "SessionStart additionalContextLimit missing")
     session_end = hooks_json.get("hooks", {}).get("SessionEnd", [{}])[0].get("hooks", [{}])[0]
     try:
         session_end_timeout = int(session_end.get("timeout") or 0)
@@ -211,8 +216,14 @@ def audit_manifest(root: Path) -> dict[str, str]:
         (root / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
     )
     version = str(manifest.get("version") or "")
-    if not version.startswith("0.8."):
-        return _check("manifest", "failed", f"expected 0.8.x cachebuster, got {version}")
+    identity = json.loads((root / "product-identity.json").read_text(encoding="utf-8"))
+    expected = str(identity.get("plugin_version") or "")
+    if not expected or version != expected:
+        return _check(
+            "manifest",
+            "failed",
+            f"identity expects {expected or '<missing>'}, got {version or '<missing>'}",
+        )
     market = json.loads(
         (root / ".agents" / "plugins" / "marketplace.json").read_text(encoding="utf-8")
     )

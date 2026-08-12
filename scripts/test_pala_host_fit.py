@@ -15,13 +15,15 @@ import pala_tokens
 
 
 class SessionStartHostFitTests(unittest.TestCase):
-    def test_hooks_json_matches_char_limit(self) -> None:
+    def test_host_spill_threshold_is_distinct_from_pala_char_budget(self) -> None:
         hooks = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
         session = hooks["hooks"]["SessionStart"][0]["hooks"][0]
         self.assertEqual(
             int(session["additionalContextLimit"]),
-            pala_hook.SESSION_CONTEXT_CHAR_LIMIT,
+            pala_hook.ADDITIONAL_CONTEXT_SPILL_TOKEN_THRESHOLD,
         )
+        self.assertEqual(pala_hook.SESSION_CONTEXT_CHAR_LIMIT, 1800)
+        self.assertEqual(pala_hook.SESSION_CONTEXT_TOKEN_BUDGET, 900)
 
     def test_session_start_matcher_covers_restore_sources(self) -> None:
         hooks = json.loads((ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
@@ -36,9 +38,12 @@ class SessionStartHostFitTests(unittest.TestCase):
         self.assertLessEqual(int(session_end["timeout"]), 3)
         self.assertEqual(int(session_end["timeout"]), 3)
 
-    def test_token_budget_under_host_hard_cap(self) -> None:
+    def test_pala_token_budget_is_a_conservative_product_budget(self) -> None:
         self.assertLessEqual(pala_hook.SESSION_CONTEXT_TOKEN_BUDGET, 900)
-        self.assertLess(pala_hook.SESSION_CONTEXT_TOKEN_BUDGET, 1000)
+        self.assertLess(
+            pala_hook.SESSION_CONTEXT_TOKEN_BUDGET,
+            pala_hook.ADDITIONAL_CONTEXT_SPILL_TOKEN_THRESHOLD,
+        )
 
     def test_session_context_prefers_cold_packet_and_stays_in_budget(self) -> None:
         cold = "COLD\nnext=M30-T1\nstale-context=false\n" + ("x" * 1200)

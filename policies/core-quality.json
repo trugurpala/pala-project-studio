@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "pack_id": "core-quality",
+  "pack_version": "1.0.0",
+  "profile": "Python",
+  "source": {
+    "authority": "Pala local contract",
+    "version": "1.0.0",
+    "status": "verified-local",
+    "checked_at": "2026-08-12T00:00:00Z",
+    "freshness_days": 365,
+    "refs": ["local://AGENTS.md", "local://.pala/quality.json"]
+  },
+  "rules": [
+    {
+      "id": "python.tests",
+      "title": "Run the canonical Python test gate",
+      "category": "quality",
+      "severity": "high",
+      "profiles": ["Python", "Release"],
+      "enforcement": "required",
+      "evidence_required": true,
+      "unknown": "configured-not-verified",
+      "message": "Do not call the ticket complete without the current canonical test evidence."
+    },
+    {
+      "id": "python.no-secrets",
+      "title": "Keep secrets out of source and artifacts",
+      "category": "security",
+      "severity": "critical",
+      "profiles": ["Python", "Web", "Release"],
+      "enforcement": "required",
+      "evidence_required": true,
+      "unknown": "configured-not-verified",
+      "message": "Redact secrets before persistence, packaging, or evidence output."
+    }
+  ]
+}

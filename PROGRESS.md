@@ -3,6 +3,128 @@
 Milestone log. Append completed outcomes with evidence labels
 (passed | not-run | blocked | configured-not-verified).
 
+## M60 — Final evidence integrity P0 closure (2026-08-11)
+
+- M60-T1 `passed`: public `complete` artık caller command/exit sonucunu
+  authoritative kabul etmiyor. Current approved argv shell-free, canonical cwd
+  ve bounded timeout ile çalışıyor; actual exit, stdout/stderr SHA-256 + byte
+  count ve verification basis ledger’a `pala-quality-runner` authority ile
+  yazılıyor. Missing/non-zero/timeout/command drift DONE üretemiyor.
+- Regresyon `passed`: 5 process-boundary + 5 direct runner forgery case;
+  Windows `npm.CMD` shim çözümü shell açmadan ayrıca geçti. Fresh canonical 536
+  test (1 skip), Pytest 535 passed (1 skip, 44 subtests), coverage 75%,
+  Playwright 1/1, critical Mypy, touched Ruff, Bandit High=0, pip-audit=0,
+  source/portable/installed/Doctor/plugin/skill validators `passed`.
+- Artifact `passed`: exact ZIP 205 entry, SHA-256
+  `3424FB0AAE6EEFBEBE937A6EB0D065705844E846737C15A4C3301E518DDE5D54`;
+  schema-v2 manifest 64 alan. Release ledger 10/10 trusted passed; acceptance
+  10 evidence ref ile mapped; TaskContract `DONE`, WorkflowStore `completed`.
+  Push/PR/merge/tag/release/remote deploy `not-run`.
+
+## M46 — Bellek doğruluğu ve Scorecard görünürlüğü (2026-08-10)
+
+- M46-T1 `passed`: v3 `complete`, aynı ticket'ın clean legacy v2 active state'ini
+  temizliyor; dış owner action/evidence korunuyor. Farklı ticket, dirty state ve
+  ownership mismatch değiştirilmiyor. Context/cold packet completed ticket'ı
+  `active=none` gösteriyor; stale Git, plan uyumsuzluğu, untrusted hook ve
+  compact/resume matrix fixture'ları geçiyor.
+- Host sözleşmesi `passed`: `additionalContextLimit=1800` host spill eşiği;
+  Pala char=1800 ve approx-token=900 ayrı ürün bütçeleri. Varsayılan host
+  eşiğinin yaklaşık 2500 token olduğu dokümante edildi; host middle-truncate
+  iddiası kaldırıldı.
+- Scorecard workflow `configured-not-verified`: weekly/manual, read-all + yalnız
+  analiz job'ında `security-events`/`id-token` write, SHA-pinned actionlar ve
+  SARIF upload source contract'ta `passed`; uzaktaki ilk çalışma `not-run`.
+- Kanıt: dar paket 109 test `passed`; P0 smoke `passed`; full unittest discovery,
+  `verify.py --mode source` ve self-audit `passed`. Commit/push/PR/release/deploy
+  `not-run`; branch protection owner kapsamındadır.
+
+## M45 — Yayın öncesi gerçek yükseltme uyumluluğu (2026-08-10)
+
+- M45-T6 `passed`: `427` test (`1` kontrollü skip), code audit,
+  source/portable/installed verify, plugin/skill validatorları, gerçek üç satırlı
+  upgrade matrix ve local Update + Doctor geçti. `168` entry / `386154` byte
+  final ZIP SHA-256:
+  `5C95EC50611D1FE06B43D7DA421A7934465D88BC2F19B9BD49AECC1EF9C10350`.
+  Kurulu sürüm `0.8.2+codex.20260810070000`; commit/push/tag/release `not-run`.
+- M45-T5 `passed`: modified/user-added/foreign kurulum, eksik runtime, state
+  aktivasyonu, Codex CLI arızası ve portable rollback döngüsü yedi testte
+  fail-closed oldu; eski çalışan fingerprint ve kullanıcı malzemesi korundu.
+- M45-T4 `passed`: eski kurulumdan sonra yeni runtime/skill/hook byte'ları
+  adayla eşleşti; required sibling fail-fast, aynı-sürüm Codex cache drift
+  yenilemesi ve experts yalnız `-InstallExperts` opt-in sınırı yedi testte geçti.
+- M45-T3 `passed`: gerçek GitHub `v0.8.0`/`v0.8.1` asset'leri SHA-256
+  pinleriyle indirildi. Managed `0.8.0`, verified legacy `0.8.0` ve managed
+  `0.8.1` temiz geçici profillerde `0.8.2`ye yükseldi; state marker korundu,
+  required missing boş. Gerçek-eski legacy'nin gelecek runtime helper'larını
+  taşımasını bekleyen kabul hatası incident ile düzeltildi.
+- M45-T2 `passed`: manifest `0.8.2+codex.20260810070000` oldu; README
+  yayımlanmış `0.8.1` ile yerel `0.8.2 not-run` adayını ayırıyor ve
+  `0.8.1 -> 0.8.2` güncelleme karşılaştırması dört dar testle geçti.
+- M45-T1 `passed`: owner'ın onayladığı gerçek `0.8.0/0.8.1 -> 0.8.2`
+  yükseltme hedefi için güncellik kontrolü/kurulum ayrımı, doğrulanmış legacy,
+  modified/foreign koruması, experts opt-in ve yeni sohbet sınırı
+  `docs/PALA_UPDATE_COMPATIBILITY.md` ile sözleşme testine bağlandı.
+
+## M44 — Runtime girişleri ve yeni oturum sürekliliği (2026-08-10)
+
+- M44-T1 `passed`: installed `instructions` ve installer CLI çağrılarındaki eksik
+  importlar iki dar sözleşme testiyle yakalanıp düzeltildi; session'sız workflow
+  eski M43-T5'ten M44-T1'e uzlaştırıldı. `419` test (`1` skip), hard-security
+  audit, source verify, portable clean extract, gerçek local Update + Doctor ve
+  installed verify `passed`. Artifact SHA-256:
+  `0C3BA6738A95044BFC99173205F4A118E16168CDC460FA34042A97F54FE32B3F`.
+
+## M43 — Tek ana plan başlangıcı (2026-08-09)
+
+- Tarihsel `M31-T1` checkpoint'inin canlı `main` HEAD'i, 39 değişen yol ve
+  M33–M42 kayıtlarıyla uyuşmadığı salt-okunur context'te doğrulandı.
+- M43-T1…T8 bağımlılık sırası `PLAN.md`ye kilitlendi; bilinen 11 audit
+  adayının sahipliği state, installer, session/packet, view ve process
+  sınırlarına dağıtıldı.
+- Plan kaydı: `passed` — `py -3 scripts/pala_state.py validate --cwd .`;
+  self-audit agent-task sözleşmesi `passed` (47 kart).
+- M43-T1 workflow uzlaştırması: `passed` — stale M31 v2/v3 kaydı kanıtı
+  silinmeden `superseded_by=M43-T1` ile checkpointed oldu; yeni M43 workflow
+  `active_ticket=M43-T1` ve reconciliation `false` ile başladı.
+- M43-T2 kaynak baseline: `passed` — açık Python discovery ve source verify
+  exit 0; quality ledger 2/2 zorunlu kapı `passed`. Static hard-security 0;
+  11 bakım adayı `attention_required` ve M43-T3…T7'ye taşındı.
+- M43-T3 süreç/smoke sınırı: `passed` — timeout'suz dış süreç kalmadı; P0
+  orchestration review eşiğinin altına ayrıldı. 409 test (1 skipped), source
+  verify ve quality ledger 2/2 `passed`; 10 advisory bakım adayı sıradaki
+  sahipli ticket'larda kaldı.
+- M43-T4 state/CLI sahipliği: `passed` — facade + core/document/CLI ayrımı
+  state modül adayını kaldırdı; session checkpoint v2+v3 drift'i kapandı. 410
+  test (1 skipped), source verify ve quality ledger 2/2 `passed`.
+- M43-T5 installer integrity/transaction sahipliği: `passed` — facade, shared
+  state, integrity, core ve transaction sınırlarıyla installer modül boyutu
+  adayı kalktı. Eksik runtime sibling'ı staging öncesi fail-closed; existing
+  added/changed/symlink/bytecode ve rollback sözleşmeleri korundu. 412 test
+  (1 skipped), source verify ve quality ledger 2/2 `passed`; reproducible ZIP
+  SHA-256 `199F2AC771FB5913822D9673A70A2A24FCCACC8996AB44328296C7C6F790B59A`.
+- M43-T6 session/cold-packet/hook sahipliği: `passed` — cold packet assembly ve
+  SessionStart context owner'ları facade'lerden ayrıldı; public API, tek Git
+  snapshot, context bütçesi ve hook'un test/build/ağ başlatmama sözleşmesi
+  korundu. Packet/hook sibling eksikliği staging öncesi fail-closed. 415 test
+  (1 skipped), source verify ve milestone quality ledger 3/3 `passed`;
+  reproducible ZIP SHA-256
+  `7E5395297730F3119DD4F10208E48E058533CE0C3F4ED219DF9F627DFAFA3F57`.
+- M43-T7 Status görünümü/CSS sahipliği: `passed` — public render facade'de
+  kaldı; CSS küçük style bölümlerine, document orchestration ayrı layout
+  sahibine ayrıldı. Privacy, keyboard, delivery decision, localStorage-only ve
+  no-progress-claim HTML sözleşmeleri korundu; eksik style/layout sibling'i
+  install öncesi fail-closed. 417 test (1 skipped), source verify ve milestone
+  quality ledger 3/3 `passed`; reproducible ZIP SHA-256
+  `C07EC20C5D163B67B6946AE0224F89A9DEA6FDED2B257A8D3FF459DEDA2087AB`.
+- M43-T8 milestone paketi ve owner teslimi: `passed` — 417 test (1 skipped),
+  source verify, 166-entry portable clean extract ve installer ile üretilen
+  geçici kurulum kopyasının runtime self-audit'i geçti. Üç zorunlu quality
+  kapısı 3/3 `passed`; source ve portable ZIP SHA-256'ları eşleşti (nihai
+  checksum teslim çıktısında). Hard-security audit `passed`; iki advisory bakım adayı state/installer
+  sahiplerinde kaldı. Commit/push/PR/tag/release/deploy/remote publish
+  `not-run`, `/hooks` UI trust `configured-not-verified`.
+
 ## M19 — Güvenli açık kaynak katkı akışı
 
 - PALA-052 kaynak teslimi `main`de (PR #6 merge `2a8ad32`).
@@ -343,3 +465,120 @@ Phase 0 + Phase 1 uygulandı; yayın yok.
 - Push/PR/tag/release: **not run** (owner).
 - Hooks UI: `configured-not-verified`. Soft A/B fixed: yok.
 
+## M33 — Control Panel Modularity + Quality Ratchet (2026-08-09)
+
+- `pala_view.py` 672 satıra indi; delivery/section markup'ı
+  `scripts/pala_view_sections.py` sahibine ayrıldı.
+- HTML sözleşmesi (decision, required gates, privacy, keyboard, temp kayıt
+  suppression) + static audit contract: `passed` (15 test).
+- Source verify + ara portable clean-extract + ara ZIP Repair/installed verify:
+  `passed`.
+- Hard-security finding: `passed` (0); kalan büyük modüller / timeout adayları
+  ayrı ticket kapsamıdır, bu sonuçta gizlenmedi.
+- Push / PR / tag / release / deploy: `not-run`; `/hooks` trust:
+  `configured-not-verified`.
+- Quality ledger: genel `unittest discover` ile 0-test yanlış-pozitifi
+  reddedildi; açık `scripts` discovery + yeni source verify ile 2/2 `passed`.
+
+## M34 — Core install truthfulness (2026-08-09)
+
+- Çekirdek Repair başarılı olsa da uzman worker exit 1 döndürebiliyordu:
+  `InstallExperts` açık opt-in oldu ve worker sonucu çekirdek exit code'undan
+  ayrıldı.
+- PowerShell parse + 16 expert installer contract testi: `passed`; Doctor
+  `experts_ready` artık yalnız gerçek yönetilen worker'lar doğrulandıysa true.
+- Gerçek varsayılan Repair: `passed` (exit 0; `healthy=True`, `plugin=ready`;
+  ağdan expert/model indirme yok).
+- Explicit expert install: `not-run` (ayrı kullanıcı isteği ve ağ yetkisi).
+
+## M35 — Quality discovery boundary (2026-08-09)
+
+- `pala_quality_discovery.py` owns package/CI, changed-surface, Git and
+  Python/UI discovery; `pala_quality.py` remains the public planning, ledger,
+  gate and CLI owner.
+- Three unbounded Git calls became one fixed-argv, `shell=False`, five-second
+  helper. Missing/timed-out Git is safely treated as unavailable observation;
+  it never starts a project command.
+- Focused quality/code-audit suite: `passed` (31 tests); hard security: 0.
+- Source verify: `passed`; portable clean-extract, Repair and installed
+  verification: `passed` (r9 SHA-256 `D9CB7103…D47FDA`).
+
+## M36 — Modified install tree safety (2026-08-09)
+
+- Exact manifest mismatch now produces `plugin=modified`, including a changed
+  Pala-owned file, user-added file, symlink, or bytecode outside `__pycache__`.
+- Doctor becomes non-healthy and Repair/Update return `modified`, `changed=false`
+  before a bundle replacement or Codex mutation.
+- Installer contract suite: `passed` (49 tests; one Windows symlink case skipped
+  when the profile lacks symlink privilege); source, portable clean-extract,
+  Repair and installed gates: `passed` (r10 SHA-256 `D81C797B…0A325F`).
+
+## M37 — State Git timeout boundary (2026-08-09)
+
+- `git_root`, text/binary Git reads and ancestry check share one resolved,
+  fixed-argv, `shell=False`, five-second process helper.
+- Missing or timed-out Git returns the former conservative values (`cwd`,
+  `None`, `False`) instead of stalling Pala state/hook discovery.
+- Focused state/audit contracts: `passed`; source, portable clean-extract,
+  Repair and installed gates: `passed` (r11 SHA-256 `E5D019FC…8D1095`).
+
+## M38 — Salt-okunur observation boundary (2026-08-09)
+
+- `pala_cold_packet_git.py` owns bounded local Git observation; the packet core
+  remains below the 800-line review threshold and retains policy, context-budget,
+  and lifecycle ownership.
+- Git, `uv tool dir --bin`, and origin-URL reads use resolved argv,
+  `shell=False`, a five-second timeout, and an unknown/unavailable fallback.
+- A timed-out `git status` becomes `dirty=null` with partial freshness. It cannot
+  look like a clean worktree, and a cold packet reuses one snapshot rather than
+  issuing a divergent second Git probe.
+- Focused observation/code-audit suite: `passed`. Release verification, P0
+  smoke, cold-start timing, and optional graph execution remain separate timeout
+  contracts; they are not hidden as green work.
+- Portable package: r12 SHA-256 `BD8FDEBA…115C30` (152 entries); clean extract,
+  real Repair, installed runtime verification, and Doctor core all `passed`.
+
+## M39 — State Git/checkpoint ownership (2026-08-09)
+
+- `pala_state_git.py` now owns local Git/checkpoint observation while
+  `pala_state.py` re-exports its public helpers and retains workflow/document
+  policy, SQLite lifecycle, and CLI behavior.
+- The extraction preserves fixed argv, `shell=False`, five-second timeout,
+  NUL-safe path parsing, exact metadata-noise filtering, and conservative
+  missing/timeout fallback.
+- `scripts/pala_state_git.py` is a required installer file; a missing sibling
+  fails bundle validation before installation, and the portable member contract
+  proves it is shipped.
+- Focused state/installer/audit contracts: `passed` (157 tests; 1 skipped).
+- Static audit: hard-security `passed` (0); state remains 1539 lines and is
+  deliberately visible as maintainability `attention_required`, not green.
+
+## M40 — Installer external Codex bridge (2026-08-09)
+
+- `pala_installer_codex.py` owns Codex executable discovery, fixed JSON argv,
+  marketplace/cache inspection, legacy migration, and Codex add/remove rollback.
+- Core wrappers preserve the public installer API and load the exact sibling
+  bridge through a path-derived module key, so portable/installed/source copies
+  cannot share a stale helper module through `sys.modules`.
+- The external CLI call explicitly uses `shell=False` and the prior 30-second
+  timeout; no network, expert install, or deployment behavior was introduced.
+- Bundle validation requires the helper before installation; portable package
+  membership and missing-helper rejection are covered by the installer tests.
+- Focused installer/state/runtime tests: `passed` (173 tests; 1 skipped).
+- Static audit: hard-security `passed` (0); installer core is 1220 lines and
+  remains maintainability `attention_required`, never falsely presented green.
+
+## M42 — Quality policy ownership (2026-08-09)
+
+- `pala_quality_policy.py` now owns deterministic contract/native/browser/
+  scanner/risk plan policy; `pala_quality.py` remains the public ledger/gate/CLI
+  facade and re-exports `build_quality_plan`.
+- Ordered plan parity, public API identity, missing policy helper bundle reject,
+  and the complete quality/installer/audit focused suite: `passed`.
+- Status `n/n` is now labelled working-context readiness with an explicit
+  non-completion/non-delivery note; its HTML contract test: `passed`.
+- Static audit: hard-security `passed` (0); the former quality-plan large
+  function candidate is gone. Remaining state/installer/timeout candidates are
+  still `attention_required`, not hidden.
+- Source verify, portable clean extract, safe Repair and installed runtime
+  verification: `passed`; Doctor core is `healthy=True`, `plugin=ready`.

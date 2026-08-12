@@ -14,6 +14,7 @@ from typing import Callable
 from urllib.parse import urlparse
 
 from pala_redaction import redact_remote_url, redact_text
+from pala_installer_shared import emit_json, emit_text
 
 SCHEMA_VERSION = 1
 REGISTRY_NAME = "provision-registry.json"
@@ -358,6 +359,10 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = list(argv if argv is not None else sys.argv[1:])
+    if "--help" in argv or "-h" in argv:
+        emit_text(parser().format_help())
+        return 0
     args = parser().parse_args(argv)
     try:
         report = provision(
@@ -370,10 +375,10 @@ def main(argv: list[str] | None = None) -> int:
             registry_path=Path(args.registry) if args.registry else None,
         )
     except ValueError as exc:
-        print(f"Hata: {exc}", file=sys.stderr)
+        emit_text(f"Hata: {exc}\n", stream=sys.stderr)
         return 2
-    print(turkish_summary(report), end="")
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    emit_text(turkish_summary(report))
+    emit_json(report)
     if not report.get("git_ok") and not report.get("dry_run"):
         return 1
     return 0

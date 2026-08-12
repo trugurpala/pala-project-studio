@@ -1,0 +1,39 @@
+{
+  "product_spec": {
+    "project_id": "water-tracker",
+    "title": "Water Tracker",
+    "goal": "Deliver a verified water tracking product",
+    "user_outcome": "Users record and review water intake",
+    "product_type": "web_application",
+    "target_users": ["registered user"],
+    "declared_facts": ["Natro", "cPanel", "Linux", "water tracking"],
+    "unknowns": ["php", "mysql", "node", "python", "ssh", "sftp", "cron", "ssl"],
+    "constraints": ["local-first delivery planning"],
+    "non_goals": ["real remote deployment"],
+    "environment_requirements": ["web runtime", "persistent store"],
+    "architecture_decision_ref": "ADR-water-tracker",
+    "acceptance": ["intake persists across login"],
+    "milestones": ["plan", "build", "verify", "package"],
+    "delivery_target": "generic-linux-cpanel",
+    "project_status": "DISCOVERING"
+  },
+  "acceptance_matrix": [
+    {"id": "AC-01", "criterion": "intake persists", "evidence": "browser journey"}
+  ],
+  "environment_requirements": [
+    {"id": "ENV-01", "capability": "web_runtime", "status": "UNKNOWN"}
+  ],
+  "milestone_graph": {
+    "plan": {"dependencies": []},
+    "build": {"dependencies": ["plan"]},
+    "verify": {"dependencies": ["build"]},
+    "package": {"dependencies": ["verify"]}
+  },
+  "task_dag": {
+    "T-1": {
+      "goal": "Build and verify the water tracker vertical slice",
+      "dependencies": [],
+      "write_surface": ["app"]
+    }
+  }
+}

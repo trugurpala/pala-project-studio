@@ -13,7 +13,7 @@ Codex kaynaklarını yeniden oku.
 | Skill keşfi | Skill indeksi küçük tutulur; tam `SKILL.md` seçilince yüklenir. | Tek yönlendirici skill; gövde ince; ayrıntı `references/`. |
 | Proje talimatı | Birleşik `AGENTS.md` zinciri boyut sınırlıdır. | Değişen iş STATUS/PLAN/PROGRESS’te; `AGENTS.md` yalnız kalıcı kurallar. |
 | Hook çıktısı | Modelin gördüğü hook çıktısı ~2500 token sonra spill dosyasına taşabilir. | Hook kısa, yerel, secretsız; test/build/ağ yok. |
-| additionalContext | Her değer ~**1000 token** sert tavan; aşımda middle-truncate. | SessionStart **token+char** çift bütçe; cold packet öncelikli; presence + next action kenarda korunur. |
+| additionalContext | Handler başına ayarlanabilir yaklaşık token spill eşiği; varsayılan yaklaşık 2500 token. | Pala host eşiğinden bağımsız, daha düşük char ve yaklaşık-token ürün bütçeleri uygular. |
 | Oturum sıkıştırma | `PreCompact` + sonrası `SessionStart` olabilir. | Yalnız aktif ticket / reconcile / cold packet; tam plan veya test logu yok. |
 | Turn sonu | `Stop` `decision: block` otomatik devam istemi üretebilir. | Yalnız dirty aktif iş checkpoint; test/build başlatmaz. |
 | SessionEnd timeout | Varsayılan 1s; yapılandırılan değer **en fazla 3s**; aşım clamp + `/hooks` uyarısı. | `hooks.json` SessionEnd `timeout: 3`; handler yalnız yerel heartbeat (ağ/test yok). |
@@ -23,15 +23,15 @@ Kaynaklar: [Build skills](https://learn.chatgpt.com/docs/build-skills),
 [AGENTS.md talimatları](https://learn.chatgpt.com/docs/agent-configuration/agents-md),
 [Hooks](https://learn.chatgpt.com/docs/hooks),
 [Plugin mimarisi](https://developers.openai.com/plugins/concepts/plugins),
-Codex host `additionalContext` rendering (~1000-token hard cap).
+Codex Hooks `additionalContextLimit` (handler başına ayarlanabilir yaklaşık token spill eşiği).
 
 ## Codex unuttu → Pala ne zaman geri getirir?
 
 Host `SessionStart` kaynakları: `startup` | `resume` | `clear` | `compact`
 ([Hooks](https://developers.openai.com/codex/hooks)). Pala matcher’ı bu dördünü
 de kapsar. `PreCompact` diskte `needs_reconcile` işaretler; compact sonrası
-SessionStart cold packet + aktif ticket + next action enjekte eder (char 1800 +
-approx-token ≤900; host ~1000 tavan).
+SessionStart cold packet + aktif ticket + next action enjekte eder (Pala char 1800 +
+Pala approx-token ≤900; host spill eşiği 1800).
 
 **Yapamaz:** Turn içinde, host event olmadan “unutunca kendini getir”. Mid-turn
 forget için kullanıcı `durumu oku` / yeni sohbet / cold packet ister. Soft
@@ -71,16 +71,19 @@ packet), durum belgesi, planın yalnız aktif ticket bölümü, sonra gerekliyse
 ürün/karar/domain belgeleri. Uzun komut çıktısı sohbet yerine kısa kanıt
 özetiyle durum belgesine yazılır.
 
-SessionStart çift bütçe kullanır:
+SessionStart üç ayrı sözleşme kullanır:
 
-- **Karakter tavanı** (`SESSION_CONTEXT_CHAR_LIMIT` = 1800). `hooks.json`
-  içindeki `additionalContextLimit: 1800` bu Pala char-sync alanıdır; Codex
-  host’un “token spill eşiği” semantiğiyle aynı şey değildir.
-- **Yaklaşık token bütçesi** (`SESSION_CONTEXT_TOKEN_BUDGET` = 900), host
-  ~1000-token `additionalContext` sert tavanının altında.
+- **Host spill eşiği** (`ADDITIONAL_CONTEXT_SPILL_TOKEN_THRESHOLD` = 1800).
+  `hooks.json` içindeki `additionalContextLimit: 1800`, Codex'in handler başına
+  yaklaşık token spill eşiğidir; varsayılan host değeri yaklaşık 2500 tokendir.
+- **Karakter tavanı** (`SESSION_CONTEXT_CHAR_LIMIT` = 1800), Pala'nın kendi
+  ürettiği mesaj için ürün sınırıdır.
+- **Yaklaşık token bütçesi** (`SESSION_CONTEXT_TOKEN_BUDGET` = 900), Pala'nın
+  bilinçli olarak seçtiği daha korumacı ürün bütçesidir; host sert tavanı değildir.
 
-Uzun sağlık düzyazısı cold packet’in önüne geçmez; budama gerektiğinde middle
-kesilirken presence ve kuyruk (next action / gate) korunur.
+Uzun sağlık düzyazısı cold packet’in önüne geçmez; Pala'nın kendi budama
+stratejisi presence ve kuyruk (next action / gate) bilgisini korur. Bu, Codex
+hostunun middle-truncate yaptığına dair bir iddia değildir.
 
 “%60–80 hızlanma” gibi bir sayı ölçüm olmadan doğru kabul edilemez. Yüzde iddia
 edilecekse aynı makine, aynı başlangıç durumu, aynı iş, aynı komutlar ve birden

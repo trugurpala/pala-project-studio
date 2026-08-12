@@ -33,7 +33,24 @@ def _safe_part(value: str) -> str:
     return value
 
 
+def _safe_source_url(url: object) -> str:
+    if not isinstance(url, str) or not url.strip():
+        raise ValueError("expert source URL is required")
+    parsed = urlparse(url)
+    if (
+        parsed.scheme.casefold() != "https"
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError("expert source URL must be credential-free HTTPS")
+    return url
+
+
 def _fetch(url: str) -> bytes:
+    url = _safe_source_url(url)
     with urllib.request.urlopen(url, timeout=60) as response:
         return response.read()
 
@@ -111,7 +128,7 @@ def install_binary(
     """Fetch one immutable binary into Pala's own state root, or report its state."""
     name = _safe_part(name)
     version = _safe_part(spec.get("version", ""))
-    source_url = spec.get("source_url", "")
+    source_url = _safe_source_url(spec.get("source_url", ""))
     expected_hash = spec.get("sha256", "").casefold()
     if not source_url or len(expected_hash) != 64 or any(char not in "0123456789abcdef" for char in expected_hash):
         raise ValueError("expert spec requires a SHA-256 source artifact")

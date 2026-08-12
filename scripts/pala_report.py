@@ -22,6 +22,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import pala_view
+from pala_authority import shared_state_root
 
 REPORT_REL = Path(".codex/pala-status.html")
 FRESH_DAYS = 2
@@ -187,6 +188,7 @@ def quality_signal(root: Path, workflow: dict[str, object]) -> dict[str, object]
         "ticket": ticket,
         "risk": {"level": "unknown", "reasons": []},
         "coverage": {"passed": 0, "required": 0},
+        "required_checks": [],
         "last_problem": "quality ledger not initialized" if ticket else "no active ticket",
         "next_action": f"initialize quality ledger for {ticket}" if ticket else "begin a ticket",
     }
@@ -200,6 +202,15 @@ def quality_signal(root: Path, workflow: dict[str, object]) -> dict[str, object]
         report = pala_quality.quality_gate(root, ticket)
         risk = report.get("risk") if isinstance(report.get("risk"), dict) else {}
         coverage = report.get("coverage") if isinstance(report.get("coverage"), dict) else {}
+        checks = report.get("checks") if isinstance(report.get("checks"), list) else []
+        required_checks = [
+            {
+                "id": str(item.get("id") or "quality-check")[:120],
+                "status": str(item.get("status") or "not-run")[:40],
+            }
+            for item in checks
+            if isinstance(item, dict) and bool(item.get("required"))
+        ][:12]
         return {
             "available": True,
             "status": str(report.get("status") or "blocked"),
@@ -212,11 +223,66 @@ def quality_signal(root: Path, workflow: dict[str, object]) -> dict[str, object]
                 "passed": int(coverage.get("passed") or 0),
                 "required": int(coverage.get("required") or 0),
             },
+            "required_checks": required_checks,
             "last_problem": str(report.get("last_problem") or "yok")[:120],
             "next_action": str(report.get("next_action") or "")[:160],
         }
     except (ImportError, OSError, ValueError, json.JSONDecodeError):
         return {**empty, "status": "blocked", "last_problem": "quality ledger unreadable"}
+
+
+def delivery_decision(
+    workflow: dict[str, object] | None,
+    coherence: dict[str, object] | None,
+    quality: dict[str, object] | None,
+) -> dict[str, str]:
+    """Separate a passed ticket gate from an honest delivery/release claim."""
+    workflow = workflow if isinstance(workflow, dict) else {}
+    coherence = coherence if isinstance(coherence, dict) else {}
+    quality = quality if isinstance(quality, dict) else {}
+    ticket = str(quality.get("ticket") or coherence.get("active") or "").strip()
+    tier = str(workflow.get("verification_tier") or "not-run")
+    quality_status = str(quality.get("status") or "not-run")
+    if bool(coherence.get("mismatch")) or bool(workflow.get("needs_reconcile")):
+        return {
+            "status": "blocked",
+            "label": "Bloke",
+            "tier": tier,
+            "detail": "Aktif ticket ile sonraki iş uyumsuz; önce kaydı eşleştir.",
+        }
+    if not ticket:
+        return {
+            "status": "not-assessed",
+            "label": "Henüz değerlendirilmedi",
+            "tier": tier,
+            "detail": "Önce bir ticket başlat ve proje-yerel kalite planını oluştur.",
+        }
+    if quality_status != "passed":
+        return {
+            "status": "blocked" if quality_status in {"blocked", "failed"} else "not-assessed",
+            "label": "Bloke" if quality_status in {"blocked", "failed"} else "Henüz değerlendirilmedi",
+            "tier": tier,
+            "detail": str(quality.get("last_problem") or "Zorunlu kalite kanıtı eksik.")[:160],
+        }
+    labels = {
+        "ticket": "Ticket hazır",
+        "milestone": "Milestone hazır",
+        "release": "Sürüme hazır",
+    }
+    label = labels.get(tier)
+    if label is None:
+        return {
+            "status": "not-assessed",
+            "label": "Henüz değerlendirilmedi",
+            "tier": tier,
+            "detail": "Dar doğrulama geçti; ticket veya release kararı için uygun tier gerekir.",
+        }
+    return {
+        "status": "passed",
+        "label": label,
+        "tier": tier,
+        "detail": "Zorunlu proje-yerel kapılar bu tier için kanıtlı geçti.",
+    }
 
 
 def build_status_model(
@@ -281,6 +347,7 @@ def build_status_model(
         update, update_checked_at = _resolve_update(cache_path)
 
     quality = quality_signal(root, workflow)
+    delivery = delivery_decision(workflow, coherence, quality)
     next_action = (
         quality.get("next_action")
         if quality.get("status") == "blocked"
@@ -292,6 +359,18 @@ def build_status_model(
         store_path = str(db.resolve())
     except OSError:
         store_path = str(db)
+
+    owner_cockpit = ""
+    try:
+        from pala_owner_cockpit import render_owner_cockpit
+        from pala_product_cli import public_status
+
+        product = public_status(root)
+        snapshot = product.get("owner_cockpit")
+        if isinstance(snapshot, dict):
+            owner_cockpit = render_owner_cockpit(snapshot, fragment=True)
+    except (ImportError, OSError, ValueError, json.JSONDecodeError):
+        owner_cockpit = ""
 
     return {
         "root_name": root.name,
@@ -308,6 +387,7 @@ def build_status_model(
         "next_action": next_action,
         "last_gate": last_gate_signal(workflow, events),
         "quality": quality,
+        "delivery": delivery,
         "verification_tier": str(workflow.get("verification_tier") or "not-run"),
         "store_path": store_path,
         "hooks_trust": "configured-not-verified",
@@ -317,6 +397,7 @@ def build_status_model(
         "update": update,
         "update_checked_at": update_checked_at,
         "now": now,
+        "owner_cockpit_html": owner_cockpit,
     }
 
 
@@ -360,7 +441,12 @@ def write_report(
     update_checked_at: str | None = None,
     catalog_root: Path | None = None,
 ) -> Path:
-    target = out or (root / REPORT_REL)
+    authority_root = shared_state_root(root)
+    target = out or (
+        authority_root / "generated" / "pala-status.html"
+        if authority_root is not None
+        else root / REPORT_REL
+    )
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
         render_html(

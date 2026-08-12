@@ -14,6 +14,8 @@ from pathlib import Path
 SOURCE_FILE_THRESHOLD = 1000
 CHANGED_FILE_THRESHOLD = 50
 MODULE_ROOT_THRESHOLD = 4
+READ_ONLY_TIMEOUT_SECONDS = 5
+EXECUTION_TIMEOUT_SECONDS = 30
 
 def graph_eligible(
     source_files: int, changed_files: int, module_roots: int, *, use_graph: bool = True
@@ -35,12 +37,17 @@ def find_executable() -> str | None:
     uv = shutil.which("uv")
     if uv is None:
         return None
-    result = subprocess.run(
-        [uv, "tool", "dir", "--bin"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            [uv, "tool", "dir", "--bin"],
+            capture_output=True,
+            text=True,
+            check=False,
+            shell=False,
+            timeout=READ_ONLY_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
     if result.returncode != 0 or not result.stdout.strip():
         return None
     directory = Path(result.stdout.strip())
@@ -52,13 +59,21 @@ def find_executable() -> str | None:
 
 
 def git_root(cwd: Path) -> Path | None:
-    result = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    git_exe = shutil.which("git")
+    if git_exe is None:
+        return None
+    try:
+        result = subprocess.run(
+            [git_exe, "rev-parse", "--show-toplevel"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+            shell=False,
+            timeout=READ_ONLY_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
     return Path(result.stdout.strip()).resolve() if result.returncode == 0 else None
 
 
@@ -94,12 +109,17 @@ def run_graph(root: Path, action: str) -> int:
         command = [executable, action]
     environment = os.environ.copy()
     environment["PYTHONUTF8"] = "1"
-    return subprocess.run(
-        command,
-        cwd=root,
-        env=environment,
-        check=False,
-    ).returncode
+    try:
+        return subprocess.run(
+            command,
+            cwd=root,
+            env=environment,
+            check=False,
+            shell=False,
+            timeout=EXECUTION_TIMEOUT_SECONDS,
+        ).returncode
+    except subprocess.TimeoutExpired:
+        return 124
 
 
 def main() -> int:

@@ -17,6 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 PACKAGER = SCRIPTS / "build_portable.py"
+CONTRACT_TEST_TIMEOUT_SECONDS = 120
 
 
 def announce(message: str) -> None:
@@ -59,6 +60,31 @@ def validate_python_syntax(root: Path) -> None:
         compile(source, str(path), "exec")
 
 
+def load_code_audit():
+    spec = importlib.util.spec_from_file_location(
+        "pala_verify_code_audit", SCRIPTS / "pala_code_audit.py"
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("pala_code_audit.py could not be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def run_code_audit(root: Path, *, profile: str) -> None:
+    module = load_code_audit()
+    payload = module.run_audit(root, profile=profile)
+    if payload.get("status") != "passed":
+        security = payload.get("security")
+        findings = security.get("findings", []) if isinstance(security, dict) else []
+        rules = [
+            str(item.get("rule"))
+            for item in findings
+            if isinstance(item, dict) and item.get("rule")
+        ]
+        raise RuntimeError("code audit failed: " + (", ".join(rules) or "unknown"))
+
+
 def run_contract_tests(root: Path) -> None:
     command = [
         sys.executable,
@@ -71,7 +97,13 @@ def run_contract_tests(root: Path) -> None:
         "test_*.py",
         "-v",
     ]
-    subprocess.run(command, cwd=root, check=True)
+    subprocess.run(
+        command,
+        cwd=root,
+        check=True,
+        shell=False,
+        timeout=CONTRACT_TEST_TIMEOUT_SECONDS,
+    )
 
 
 def load_packager():
@@ -118,6 +150,24 @@ def run_self_audit(root: Path, *, profile: str = "source") -> None:
         raise RuntimeError(
             "self-audit failed: " + (", ".join(failed) if failed else "unknown")
         )
+
+
+def validate_knowledge_links(root: Path) -> None:
+    """Release-gate local Markdown links while reporting historical stale links."""
+    from pala_knowledge import lint_markdown_links
+
+    report = lint_markdown_links(root)
+    if report.get("status") != "passed":
+        missing = report.get("missing") or []
+        raise RuntimeError(f"knowledge link gate failed: {missing[:5]}")
+
+
+def validate_artifact_contract(root: Path, *, profile: str) -> None:
+    from pala_artifact import artifact_contract
+
+    report = artifact_contract(root, profile=profile)
+    if report.get("status") != "passed":
+        raise RuntimeError(f"artifact contract failed: {report.get('missing') or report.get('forbidden')}")
 
 
 def extract_portable_archive(archive_path: Path, destination: Path) -> Path:
@@ -173,6 +223,11 @@ def main(argv: list[str] | None = None) -> int:
             validate_json(root)
             announce("Kurulu paket Python sözdizimi kontrol ediliyor")
             validate_python_syntax(root)
+            announce("Runtime static code audit")
+            run_code_audit(root, profile="runtime")
+            announce("Installed knowledge link gate")
+            validate_knowledge_links(root)
+            validate_artifact_contract(root, profile="installed")
             announce("Runtime self-audit çalıştırılıyor")
             run_self_audit(root, profile="runtime")
             announce("PASSED: installed mode (runtime self-audit)")
@@ -186,6 +241,10 @@ def main(argv: list[str] | None = None) -> int:
                 portable_root = extract_portable_archive(root, Path(temp))
                 validate_json(portable_root)
                 validate_python_syntax(portable_root)
+                run_code_audit(portable_root, profile="runtime")
+                announce("Portable knowledge link gate")
+                validate_knowledge_links(portable_root)
+                validate_artifact_contract(portable_root, profile="portable")
                 run_self_audit(portable_root, profile="runtime")
             announce("PASSED: portable mode (clean extract + runtime self-audit)")
             return 0
@@ -194,13 +253,24 @@ def main(argv: list[str] | None = None) -> int:
         validate_json(root)
         announce("Python sözdizimi kontrol ediliyor")
         validate_python_syntax(root)
+        announce("Static code audit")
+        run_code_audit(root, profile="source")
+        announce("Source knowledge link gate")
+        validate_knowledge_links(root)
+        validate_artifact_contract(root, profile="source")
         announce("Sözleşme testleri çalıştırılıyor")
         run_contract_tests(root)
         announce("Taşınabilir paket iki kez üretiliyor")
         digest = validate_reproducible_package(root)
         announce("Fork/presence self-audit çalıştırılıyor")
         run_self_audit(root, profile="source")
-    except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
+    except (
+        OSError,
+        ValueError,
+        RuntimeError,
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+    ) as error:
         print(f"[pala] FAILED: {error}", file=sys.stderr)
         return 1
 

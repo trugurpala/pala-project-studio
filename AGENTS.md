@@ -2,7 +2,10 @@
 
 ## Amaç
 
-- Codex için küçük, güvenli ve token-verimli bir proje yürütme eklentisi geliştir.
+- PALA `1.0.0-local-rc` Provider-Independent Local Software Delivery OS'u
+  güvenli, yerel ve kanıta bağlı olarak tamamla.
+- Yeni üründe niyeti kalıcı ProductSpec ve canonical task akışına; mevcut
+  projede canonical context/task akışına bağla.
 - Eklenti bağlam penceresini veya kullanım kotasını artırdığını iddia etmez; yalnız gerekli bağlamı seçerek israfı azaltır.
 - Büyük ve uzun soluklu projelerde plan, durum, karar, doğrulama ve tek sonraki
   işi oturumlar arasında sürdürülebilir tut.
@@ -10,11 +13,14 @@
 ## Kaynak gerçek ve kapsam
 
 1. Kullanıcının güncel açık talimatı.
-2. `PROJECT.md` ve `DECISIONS.md`.
-3. Memory contract: `AGENTS.md` → CURRENT_STATUS → PROGRESS → plan → TOOLING_DECISIONS → DEBUGGING → git.
-4. Skill ve referans belgeleri.
+2. `product-identity.json`, `PROJECT.md` ve `DECISIONS.md`.
+3. TaskContract → WorkflowStore → Pala Quality Engine canonical runtime.
+4. Generated STATUS/cockpit/handoff, plan/progress/tooling/debugging ve git.
+5. Skill ve referans belgeleri.
 
-- Kalıcı kuralları `AGENTS.md`, değişen işi plan/status/progress içinde tut.
+- Kalıcı kuralları `AGENTS.md`, değişen işi canonical runtime ve ExecPlan
+  içinde tut. STATUS/cockpit/handoff yalnız generated read modeldir; elle ikinci
+  authority oluşturma.
 - Bilinen hatayı tekrarlamadan önce `DEBUGGING.md` oku; yeni arızada kök neden,
   belirtiler, fix criteria, kanıt komutları ve ilgili dosyaları `### INC-…`
   formatında kaydet (sır/token/transcript yok).
@@ -34,6 +40,16 @@
 
 ## Kalite ve güvenlik
 
+- Canonical completion zinciri: **TaskContract** task semantics ve `DONE`
+  eligibility sahibidir; **WorkflowStore** persistence/lease sahibidir; mevcut
+  **Pala Quality Engine** tek verification/evidence authority'dir. Explicit
+  `acceptance` maddeleri current Quality check ID'leri ve exit code `0` kanıtı
+  olmadan `DONE` olamaz.
+- Canonical uygulama sırası: `pala_report.py` / context → tek task card →
+  `pala_state.py begin --ticket` claim → Quality mapping → `acceptance` →
+  `DONE`.
+- Handoff, cold packet, STATUS ve diğer `generated` projection'lar read modeldir;
+  canonical authority değildir ve completion kararı üretemez.
 - Yeni davranışta önce sözleşme testi yaz ve doğru nedenle kırmızı sonucu gör.
 - Geliştirme döngüsünde dar testi; ticket sonunda ilgili kapıyı; milestone/release sonunda tam kapıyı çalıştır.
 - Bir kapı çalıştırılmadıysa `passed` yazma.
@@ -56,4 +72,5 @@
 - Skill doğrulama: sistem `skill-creator/scripts/quick_validate.py`
 - Plugin doğrulama: sistem `plugin-creator/scripts/validate_plugin.py`
 
-Her tamamlanan ticket sonrasında `STATUS.md`, `PLAN.md` ve Pala checkpoint kaydını gerçek kanıtla güncelle.
+Her tamamlanan ticket sonrasında canonical checkpoint ve ilgili ExecPlan'i
+gerçek kanıtla güncelle; STATUS/cockpit projection'ını canonical kayıttan yeniden üret.

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Water Tracker Fixture</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; background: #071927; color: #eef9ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 0; min-height: 100vh; background: radial-gradient(circle at top, #114d66, #071927 55%); }
+    main { width: min(100% - 2rem, 46rem); margin: 0 auto; padding: 3rem 0; }
+    header { margin-bottom: 1.5rem; }
+    h1 { margin: 0; font-size: clamp(2.2rem, 9vw, 4.5rem); letter-spacing: -.06em; }
+    .eyebrow { color: #7ee7ff; font-weight: 700; text-transform: uppercase; letter-spacing: .15em; }
+    .card { background: rgba(9, 36, 53, .92); border: 1px solid #26718a; border-radius: 1.5rem; padding: clamp(1rem, 5vw, 2rem); box-shadow: 0 1.5rem 4rem rgba(0,0,0,.25); }
+    form { display: grid; gap: 1rem; }
+    label { display: grid; gap: .45rem; font-weight: 700; }
+    input { width: 100%; border: 1px solid #3f7e92; border-radius: .8rem; padding: .9rem; color: #eef9ff; background: #06131d; font: inherit; }
+    button { border: 0; border-radius: .8rem; padding: .85rem 1rem; font: inherit; font-weight: 800; color: #03212a; background: #7ee7ff; cursor: pointer; }
+    button.secondary { color: #c8f4ff; background: transparent; border: 1px solid #3f7e92; margin-top: .75rem; }
+    .summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .metric { background: #0b2b3d; border-radius: 1rem; padding: 1rem; }
+    .metric strong { display: block; font-size: 1.7rem; }
+    ul { padding: 0; list-style: none; display: grid; gap: .7rem; }
+    li { display: flex; justify-content: space-between; padding: .85rem 1rem; border-radius: .8rem; background: #0b2b3d; }
+    [hidden] { display: none !important; }
+    @media (max-width: 32rem) { main { width: min(100% - 1rem, 46rem); padding: 1.2rem 0; } .summary { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">Local verification fixture</p>
+      <h1>Water Tracker</h1>
+      <p>Record a glass. Keep the habit visible.</p>
+    </header>
+
+    <section id="auth" class="card" aria-labelledby="auth-title">
+      <h2 id="auth-title">Welcome back</h2>
+      <form id="auth-form">
+        <label>Email <input id="email" name="email" type="email" autocomplete="username" required></label>
+        <label>Password <input id="password" name="password" type="password" autocomplete="current-password" required></label>
+        <button id="auth-submit" type="submit">Log in</button>
+      </form>
+      <button id="mode-toggle" class="secondary" type="button">Create account</button>
+    </section>
+
+    <section id="dashboard" class="card" aria-labelledby="today-title" hidden>
+      <h2 id="today-title">Today</h2>
+      <div class="summary">
+        <div class="metric"><span>Total</span><strong id="total">0 ml</strong></div>
+        <div class="metric"><span>Entries</span><strong id="count">0</strong></div>
+      </div>
+      <form id="water-form">
+        <label>Water amount (ml) <input id="amount" name="amount" type="number" min="1" max="5000" required></label>
+        <button type="submit">Add water</button>
+      </form>
+      <ul data-testid="entries" id="entries"></ul>
+      <button id="logout" class="secondary" type="button">Log out</button>
+    </section>
+  </main>
+  <script>
+    const auth = document.querySelector('#auth');
+    const dashboard = document.querySelector('#dashboard');
+    const authTitle = document.querySelector('#auth-title');
+    const authSubmit = document.querySelector('#auth-submit');
+    const modeToggle = document.querySelector('#mode-toggle');
+    const entries = document.querySelector('#entries');
+    let mode = 'login';
+    let activeUser = null;
+
+    const users = () => JSON.parse(localStorage.getItem('water-users') || '[]');
+    const userEntries = email => JSON.parse(localStorage.getItem(`water-entries:${email}`) || '[]');
+    const saveEntries = (email, values) => localStorage.setItem(`water-entries:${email}`, JSON.stringify(values));
+
+    function renderEntries() {
+      const values = userEntries(activeUser);
+      entries.replaceChildren(...values.map(value => {
+        const item = document.createElement('li');
+        item.textContent = `${value} ml`;
+        return item;
+      }));
+      document.querySelector('#total').textContent = `${values.reduce((sum, value) => sum + value, 0)} ml`;
+      document.querySelector('#count').textContent = String(values.length);
+    }
+
+    function showDashboard(email) {
+      activeUser = email;
+      auth.hidden = true;
+      dashboard.hidden = false;
+      renderEntries();
+    }
+
+    modeToggle.addEventListener('click', () => {
+      mode = mode === 'login' ? 'register' : 'login';
+      authTitle.textContent = mode === 'register' ? 'Create your account' : 'Welcome back';
+      authSubmit.textContent = mode === 'register' ? 'Register' : 'Log in';
+      modeToggle.textContent = mode === 'register' ? 'Use existing account' : 'Create account';
+    });
+
+    document.querySelector('#auth-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const email = document.querySelector('#email').value.trim().toLowerCase();
+      const known = users();
+      if (mode === 'register' && !known.includes(email)) {
+        localStorage.setItem('water-users', JSON.stringify([...known, email]));
+      }
+      if (mode === 'login' && !known.includes(email)) return;
+      showDashboard(email);
+    });
+
+    document.querySelector('#water-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const input = document.querySelector('#amount');
+      const amount = Number(input.value);
+      if (!Number.isFinite(amount) || amount <= 0) return;
+      saveEntries(activeUser, [...userEntries(activeUser), amount]);
+      input.value = '';
+      renderEntries();
+    });
+
+    document.querySelector('#logout').addEventListener('click', () => {
+      activeUser = null;
+      dashboard.hidden = true;
+      auth.hidden = false;
+      mode = 'login';
+      authTitle.textContent = 'Welcome back';
+      authSubmit.textContent = 'Log in';
+      modeToggle.textContent = 'Create account';
+      document.querySelector('#auth-form').reset();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "locale": "en",
+  "canonical": true,
+  "messages": {
+    "update_ready": "Update ready.",
+    "known_problem": "Known problem detected.",
+    "owner_approval_required": "Owner approval required.",
+    "quality_verified": "Acceptance verified.",
+    "release_not_run": "Remote publication has not run."
+  }
+}

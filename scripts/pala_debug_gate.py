@@ -307,6 +307,12 @@ def record_debug_attempt(
         )
     except (OSError, ValueError, TypeError, KeyError, ImportError):
         return None
+    except Exception as exc:
+        # SQLite is an optional observational ledger; a locked/unavailable
+        # store must not block begin/checkpoint lifecycle operations.
+        if exc.__class__.__module__ == "sqlite3":
+            return None
+        raise
 
 
 def session_memory_hit(*, debug_open: int, debugging_read: bool) -> dict[str, object]:

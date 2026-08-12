@@ -125,7 +125,7 @@ packet. Soft “hatırlıyorum” kanıt sayılmaz.
 
 Dağıtım sınırları: [PALA_EVERYWHERE.md](PALA_EVERYWHERE.md).
 Kapsam: [CODEX_SCOPE_AND_LIMITS.md](CODEX_SCOPE_AND_LIMITS.md).
-Release (owner): [RELEASE_0.8.1_CHECKLIST.md](RELEASE_0.8.1_CHECKLIST.md).
+Release (owner): [RELEASE_1.0.0.md](RELEASE_1.0.0.md).
 
 ## Bilerek yok
 

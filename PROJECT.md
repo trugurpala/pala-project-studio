@@ -1,5 +1,21 @@
 # Pala Project Studio
 
+## PALA 1.0 canonical product goal
+
+PALA 1.0 is a **Provider-Independent Local Software Delivery OS**: a
+local-first, single-host product that helps people and replaceable AI
+developers plan, execute, verify, package, and prepare software delivery while
+keeping completion evidence-gated and external actions owner-authorized.
+
+Current identity is `product_version=1.0.0` and `plugin_version=1.0.0`; the
+machine-readable contract is `product-identity.json`. This public release is
+being reconciled through M69; real remote deploy remains `not-run`.
+
+The historical Codex project-memory/plugin description below remains valid as
+the product's original surface, but it is superseded as the complete product
+definition by
+`docs/plans/active/PALA-1.0-product-completion.md`.
+
 ## Ürün amacı
 
 Pala Project Studio, Codex'in mevcut bir yazılım projesini veya yeni bir ürün
@@ -38,6 +54,12 @@ okur. Ağ kullanan sürüm sorgusu hook içinde çalışmaz; Pala'nın ilk ilgil
 adımında süreli önbellekle en fazla günde bir kez yapılır. Böylece her oturum
 güncellik durumunu görürken çevrimdışı kullanım, başlangıç hızı ve hook güveni
 korunur.
+
+Güncellik sorgusu yalnız bilgi verir; paket indirme veya kurulum başlatmaz.
+Gerçek yükseltme, yeni resmi portable paketin `Update` moduyla yapılır. Resmi
+eski Pala manifesti güvenle tanınır; değiştirilmiş kullanıcı ağacı ve aynı
+isimli yabancı entegrasyon fail-closed korunur. Destek matrisi ve oturum/uzman
+sınırları `docs/PALA_UPDATE_COMPATIBILITY.md` içinde tek kaynaktır.
 
 ## Yönetilen araç politikası
 

@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parent
 PLUGIN_ROOT = SCRIPTS.parent
@@ -18,6 +19,7 @@ if str(SCRIPTS) not in sys.path:
 
 import pala_cmd_memory
 import pala_cold_packet
+import pala_cold_packet_git
 import pala_db
 import pala_state
 
@@ -117,6 +119,53 @@ class ColdSessionFindsActiveWorkTests(unittest.TestCase):
             self.assertTrue(str(packet.get("base_commit")).startswith(head[:7]))
             self.assertIn("next_action", packet)
             self.assertTrue(packet.get("within_budget"))
+
+    def test_cold_packet_falls_back_to_one_canonical_active_task(self) -> None:
+        from pala_store import WorkflowStore
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            _init_repo(root)
+            WorkflowStore(root).claim("R6-M5", "canonical packet", "session-alpha")
+            packet = pala_cold_packet.build_cold_packet(root, profile="minimal")
+
+        self.assertEqual(packet.get("active_ticket"), "R6-M5")
+        self.assertEqual(packet.get("goal"), "canonical packet")
+
+
+class GitObservationBoundaryTests(unittest.TestCase):
+    def test_timeout_never_claims_a_clean_worktree_and_reuses_one_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+
+            def git_result(argv, **_kwargs):
+                command = tuple(argv[1:])
+                if command == ("status", "--porcelain=v1"):
+                    raise subprocess.TimeoutExpired(argv, pala_cold_packet_git.GIT_TIMEOUT_SECONDS)
+                outputs = {
+                    ("rev-parse", "HEAD"): "0123456789abcdef0123456789abcdef01234567\\n",
+                    ("rev-parse", "--abbrev-ref", "HEAD"): "main\\n",
+                    ("rev-parse", "--show-toplevel"): str(root) + "\\n",
+                }
+                return subprocess.CompletedProcess(argv, 0, stdout=outputs[command])
+
+            with (
+                patch.object(pala_cold_packet_git.shutil, "which", return_value="git"),
+                patch.object(pala_cold_packet_git.subprocess, "run", side_effect=git_result) as run,
+            ):
+                surface = pala_cold_packet.git_surface(root)
+            self.assertIsNone(surface["dirty"])
+            self.assertEqual(surface["worktree_status"], "unknown")
+            self.assertEqual(surface["freshness"], "partial")
+            for call in run.call_args_list:
+                self.assertEqual(call.kwargs["timeout"], pala_cold_packet_git.GIT_TIMEOUT_SECONDS)
+                self.assertFalse(call.kwargs["shell"])
+
+            with patch.object(pala_cold_packet, "git_surface", return_value=surface) as observe:
+                packet = pala_cold_packet.build_cold_packet(root, profile="minimal")
+            self.assertEqual(observe.call_count, 1)
+            self.assertFalse(packet["continue_without_verify"])
+            self.assertIn("verify Git worktree", str(packet["next_action"]))
 
 
 class PathMemoryNewSessionTests(unittest.TestCase):
@@ -386,7 +435,10 @@ class FullLifecycleIntegrityTests(unittest.TestCase):
             ):
                 (root / name).write_text(body, encoding="utf-8", newline="\n")
             # Refresh manifest docs for register-style mapping already present.
-            pala_state.begin_work(root, "M29-LIFE", "lifecycle integrity")
+            pala_state.begin_work(
+                root, "M29-LIFE", "lifecycle integrity",
+                acceptance=["Quality evidence maps to acceptance"],
+            )
             pala_state.checkpoint_work(
                 root,
                 "complete after verify",
@@ -418,9 +470,9 @@ class FullLifecycleIntegrityTests(unittest.TestCase):
                 "py -3 -m unittest scripts.test_pala_cold_packet",
             )
             done = store.complete("M29-LIFE", pala_state.DEFAULT_LOCAL_SESSION)
-            self.assertEqual(done.status, "completed")
-            self.assertEqual(done.record.get("lifecycle"), "completed")
-            self.assertFalse(done.record.get("dirty"))
+            self.assertEqual(done.status, "verification_required")
+            self.assertEqual(done.record.get("lifecycle"), "active")
+            self.assertTrue(done.record.get("dirty"))
 
 
 class CapabilityHonestLabelsTests(unittest.TestCase):

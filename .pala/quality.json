@@ -2,6 +2,47 @@
   "schema_version": 1,
   "checks": [
     {
+      "id": "product-contracts",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts",
+        "-p",
+        "test_pala_product*.py"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "unittest",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts",
+        "-p",
+        "test_*.py"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
       "id": "source-verify",
       "kind": "integration",
       "argv": [
@@ -12,6 +53,299 @@
         "source"
       ],
       "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "pala-code-audit",
+      "kind": "security",
+      "argv": [
+        "py",
+        "-3",
+        "scripts/pala_code_audit.py",
+        "--root",
+        "."
+      ],
+      "tiers": [
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "ruff-m47-changed",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_view_sections.py",
+        "scripts/pala_agent_provider.py",
+        "scripts/pala_artifact.py",
+        "scripts/pala_capabilities.py",
+        "scripts/pala_credentials.py",
+        "scripts/pala_delivery.py",
+        "scripts/pala_execution.py",
+        "scripts/pala_knowledge.py",
+        "scripts/pala_owner_cockpit.py",
+        "scripts/pala_p0_smoke.py",
+        "scripts/pala_product.py",
+        "scripts/pala_product_e2e.py",
+        "scripts/pala_product_planner.py",
+        "scripts/pala_quality.py",
+        "scripts/pala_quality_discovery.py",
+        "scripts/pala_store.py",
+        "scripts/pala_task_packet.py",
+        "scripts/test_pala_hardening.py",
+        "scripts/test_pala_product.py",
+        "scripts/test_pala_quality.py",
+        "scripts/test_pala_tools.py",
+        "--ignore",
+        "E501"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "mypy-critical",
+      "kind": "typecheck",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "mypy"
+      ],
+      "tiers": [
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "coverage-baseline",
+      "kind": "integration",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "coverage",
+        "report",
+        "--data-file=artifacts/quality/.coverage-current",
+        "--fail-under=75"
+      ],
+      "tiers": [
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "bandit-high",
+      "kind": "security",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "bandit",
+        "-r",
+        "scripts",
+        "-lll"
+      ],
+      "tiers": [
+        "release"
+      ]
+    },
+    {
+      "id": "pip-audit-dev",
+      "kind": "dependency",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "pip-audit",
+        "--path",
+        ".venv"
+      ],
+      "tiers": [
+        "release"
+      ]
+    },
+    {
+      "id": "design-contract",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_design",
+        "scripts.test_pala_tokens"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "control-center",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_control_center"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "failure-intelligence",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_failure_intelligence"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "policy-contract",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_policy"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "ux-gates",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_ux_gates"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "release-truth",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_release_truth"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m68-closure",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_m68_closure"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "github-preflight",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_release_truth.ReleaseTruthTests.test_github_preflight_artifact_is_secret_free_and_complete"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "publication-audit",
+      "kind": "security",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_publication.PublicationGovernanceTests.test_current_repository_audit_artifact_is_passed_and_secret_free"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "portable-slimming",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_plugin_experience.PortablePackageContractTests.test_portable_archive_excludes_development_only_surface"
+      ],
+      "tiers": [
+        "narrow",
         "ticket",
         "milestone",
         "release"

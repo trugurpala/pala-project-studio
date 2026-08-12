@@ -6,6 +6,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import subprocess
 import zipfile
 import shutil
 import sys
@@ -101,7 +102,24 @@ def make_bundle(root: Path, version: str = "0.4.0+codex.test") -> Path:
         encoding="utf-8",
     )
     (source / "scripts" / "pala_state.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_state_core.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_state_documents.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_state_cli.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_cold_packet_packet.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_state_git.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_quality.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_quality_discovery.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_quality_policy.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_quality_runner.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_installer_codex.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_installer_shared.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_installer_integrity.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_installer_core.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_installer_transaction.py").write_text("VALUE = 1\n", encoding="utf-8")
     (source / "scripts" / "pala_hook.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_hook_session.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_view_styles.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (source / "scripts" / "pala_view_layout.py").write_text("VALUE = 1\n", encoding="utf-8")
     (source / "scripts" / "pala_self_audit.py").write_text(
         "VALUE = 1\n", encoding="utf-8"
     )
@@ -143,6 +161,10 @@ class InstallerCoreTests(unittest.TestCase):
     def tearDown(self) -> None:
         self._codex_home_patcher.stop()
         self._codex_home_dir.cleanup()
+
+    def test_cli_parser_is_available_for_windows_entrypoint(self) -> None:
+        parsed = self.installer.parser().parse_args(["doctor"])
+        self.assertEqual(parsed.mode, "doctor")
 
     def test_safe_source_file_forbids_secret_shaped_and_sqlite(self) -> None:
         for relative in (
@@ -254,6 +276,33 @@ class InstallerCoreTests(unittest.TestCase):
                 resolved = self.installer.resolve_codex_executable()
             self.assertEqual(resolved, exe)
 
+    def test_codex_bridge_is_sibling_loaded_and_cli_call_is_shell_free(self) -> None:
+        bridge = self.installer._codex_bridge
+        self.assertEqual(
+            Path(bridge.__file__).resolve(),
+            (ROOT / "scripts" / "pala_installer_codex.py").resolve(),
+        )
+        completed = subprocess.CompletedProcess(
+            args=["codex", "plugin", "list", "--json"],
+            returncode=0,
+            stdout="{}",
+            stderr="",
+        )
+        with patch.object(
+            self.installer,
+            "resolve_codex_executable",
+            return_value=Path("C:/tools/codex.exe"),
+        ), patch.object(bridge.subprocess, "run", return_value=completed) as runner:
+            self.assertEqual(
+                self.installer.run_codex_json(["plugin", "list", "--json"]), {}
+            )
+
+        call = runner.call_args
+        self.assertTrue(str(call.args[0][0]).casefold().endswith("codex.exe"))
+        self.assertEqual(call.args[0][1:], ["plugin", "list", "--json"])
+        self.assertFalse(call.kwargs["shell"])
+        self.assertEqual(call.kwargs["timeout"], 30)
+
     def test_doctor_core_healthy_without_node_uv_experts(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
             root = Path(temp)
@@ -341,6 +390,11 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertIn("plugin=drifted", drifted)
             self.assertIn("Repair", drifted)
             self.assertIn("healthy", drifted.casefold())
+            modified = self.installer.plugin_drift_next_step_message(
+                {"status": "modified"}
+            )
+            self.assertIn("plugin=modified", modified)
+            self.assertIn("otomatik yazmaz", modified)
             self.assertEqual(
                 self.installer.plugin_drift_next_step_message({"status": "ready"}),
                 "",
@@ -348,6 +402,48 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertIn("plugin_next_step", report)
             # Healthy fixture install is not drifted.
             self.assertEqual(report["plugin_next_step"], "")
+
+    def test_doctor_expert_readiness_requires_verified_workers(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-expert-readiness-") as temp:
+            root = Path(temp)
+            source = make_bundle(root / "source")
+            managed = (
+                "code-review-graph",
+                "codebase-memory",
+                "graphify",
+                "ollama",
+                "serena",
+            )
+            bundle = {
+                "healthy": True,
+                "plugin": {"status": "ready"},
+                "adapters": {name: {"state": "missing"} for name in managed},
+                "state_file": str(root / "state" / "install-state.json"),
+            }
+
+            with patch.object(self.installer, "doctor_bundle", return_value=bundle), patch.object(
+                self.installer, "codex_status", return_value={"healthy": True}
+            ), patch.object(
+                self.installer.shutil,
+                "which",
+                side_effect=lambda name: f"C:/tools/{name}.exe" if name in {"git", "node", "uv"} else None,
+            ), patch.object(
+                self.installer, "resolve_codex_executable", return_value=Path("C:/tools/codex.exe")
+            ), patch.object(
+                self.installer,
+                "project_doctor",
+                return_value={"available": True, "hook_safety": {"status": "passed"}},
+            ):
+                report = self.installer.doctor_installation(
+                    source,
+                    root / "installed",
+                    root / "state",
+                    root,
+                )
+
+            self.assertTrue(report["expert_prerequisites_ready"])
+            self.assertFalse(report["experts_ready"])
+            self.assertTrue(report["healthy"])
 
     def test_doctor_reports_verified_pala_owned_expert_artifact(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-experts-") as temp:
@@ -370,6 +466,106 @@ class InstallerCoreTests(unittest.TestCase):
             doctor = self.installer.doctor_bundle(source, root / "installed", state_root)
 
             self.assertEqual(doctor["adapters"]["codebase-memory"]["state"], "ready")
+
+    def test_portable_package_includes_current_quality_and_install_docs(self) -> None:
+        packager = load_packager()
+        names = {path.relative_to(ROOT).as_posix() for path in packager.source_files(ROOT)}
+
+        self.assertTrue(
+            {
+                "docs/PALA_0_9_2_CODE_QUALITY_CONTROL.md",
+                "docs/PALA_0_9_3_MODULARITY.md",
+                "docs/PALA_0_9_4_INSTALL_BOUNDARY.md",
+                "docs/PALA_0_9_5_INSTALL_INTEGRITY.md",
+                "scripts/pala_state_git.py",
+                "scripts/pala_installer_codex.py",
+                "scripts/pala_installer_shared.py",
+                "scripts/pala_installer_integrity.py",
+                "scripts/pala_installer_core.py",
+                "scripts/pala_installer_transaction.py",
+                "scripts/pala_quality.py",
+                "scripts/pala_quality_discovery.py",
+                "scripts/pala_quality_policy.py",
+                "scripts/pala_quality_runner.py",
+                "scripts/pala_cold_packet_packet.py",
+                "scripts/pala_hook_session.py",
+            }.issubset(names)
+        )
+
+    def test_validate_bundle_requires_state_git_helper(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            source = make_bundle(Path(temp))
+            (source / "scripts" / "pala_state_git.py").unlink()
+
+            with self.assertRaisesRegex(FileNotFoundError, r"scripts[\\/]pala_state_git\.py"):
+                self.installer.validate_bundle(source)
+
+    def test_validate_bundle_requires_state_runtime_siblings(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            source = make_bundle(Path(temp))
+            (source / "scripts" / "pala_state_core.py").unlink()
+
+            with self.assertRaisesRegex(FileNotFoundError, "pala_state_core.py"):
+                self.installer.validate_bundle(source)
+
+    def test_validate_bundle_requires_installer_codex_helper(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            source = make_bundle(Path(temp))
+            (source / "scripts" / "pala_installer_codex.py").unlink()
+
+            with self.assertRaisesRegex(
+                FileNotFoundError, r"scripts[\\/]pala_installer_codex\.py"
+            ):
+                self.installer.validate_bundle(source)
+
+    def test_validate_bundle_requires_installer_transaction_runtime(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            source = make_bundle(Path(temp))
+            (source / "scripts" / "pala_installer_transaction.py").unlink()
+
+            with self.assertRaisesRegex(
+                FileNotFoundError, "pala_installer_transaction.py"
+            ):
+                self.installer.validate_bundle(source)
+
+    def test_validate_bundle_requires_quality_policy_runtime(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            source = make_bundle(Path(temp))
+            (source / "scripts" / "pala_quality_policy.py").unlink()
+
+            with self.assertRaisesRegex(
+                FileNotFoundError, r"scripts[\\/]pala_quality_policy\.py"
+            ):
+                self.installer.validate_bundle(source)
+
+    def test_validate_bundle_requires_quality_runner_runtime(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            source = make_bundle(Path(temp))
+            (source / "scripts" / "pala_quality_runner.py").unlink()
+
+            with self.assertRaisesRegex(
+                FileNotFoundError, r"scripts[\\/]pala_quality_runner\.py"
+            ):
+                self.installer.validate_bundle(source)
+
+    def test_validate_bundle_requires_cold_packet_and_hook_session_helpers(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            source = make_bundle(Path(temp))
+            (source / "scripts" / "pala_hook_session.py").unlink()
+
+            with self.assertRaisesRegex(FileNotFoundError, "pala_hook_session.py"):
+                self.installer.validate_bundle(source)
+
+    def test_validate_bundle_requires_view_runtime_helpers(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            for helper in ("pala_view_styles.py", "pala_view_layout.py"):
+                with self.subTest(helper=helper):
+                    source = make_bundle(root / helper)
+                    (source / "scripts" / helper).unlink()
+
+                    with self.assertRaisesRegex(FileNotFoundError, helper):
+                        self.installer.validate_bundle(source)
 
     def test_mcp_adapter_distinguishes_exact_missing_and_foreign_records(self) -> None:
         spec = {
@@ -867,10 +1063,18 @@ class InstallerCoreTests(unittest.TestCase):
             root = Path(temp)
             source = make_bundle(root, "0.4.0+codex.test")
             legacy = make_bundle(root / "legacy", "0.3.3+codex.legacy")
+            legacy_manifest_path = legacy / ".codex-plugin" / "plugin.json"
+            legacy_manifest = json.loads(legacy_manifest_path.read_text(encoding="utf-8"))
+            legacy_manifest["repository"] = self.installer.OFFICIAL_REPOSITORY
+            legacy_manifest["author"] = {
+                "name": "Pala",
+                "url": self.installer.OFFICIAL_AUTHOR,
+            }
+            legacy_manifest_path.write_text(json.dumps(legacy_manifest), encoding="utf-8")
             install_root = root / "home" / "plugins" / "pala-project-studio"
             state_root = root / "local" / "Pala"
             install_root.parent.mkdir(parents=True)
-            legacy.replace(install_root)
+            self.installer.copy_bundle(legacy, install_root)
 
             report = self.installer.install_bundle(source, install_root, state_root)
             doctor = self.installer.doctor_bundle(source, install_root, state_root)
@@ -878,6 +1082,108 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertEqual(report["status"], "migrated")
             self.assertEqual(doctor["plugin"]["status"], "ready")
             self.assertTrue((state_root / "install-state.json").is_file())
+
+    def test_real_shape_legacy_does_not_need_future_runtime_siblings(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root / "candidate", "0.8.2+codex.test")
+            legacy = make_bundle(root / "legacy", "0.8.0+codex.legacy")
+            manifest_path = legacy / ".codex-plugin" / "plugin.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["repository"] = self.installer.OFFICIAL_REPOSITORY
+            manifest["author"] = {"name": "Pala", "url": self.installer.OFFICIAL_AUTHOR}
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            for relative in (
+                "scripts/pala_installer_codex.py",
+                "scripts/pala_installer_shared.py",
+                "scripts/pala_installer_integrity.py",
+                "scripts/pala_installer_core.py",
+                "scripts/pala_installer_transaction.py",
+                "scripts/pala_quality_discovery.py",
+                "scripts/pala_quality_policy.py",
+                "scripts/pala_state_core.py",
+                "scripts/pala_state_documents.py",
+                "scripts/pala_state_cli.py",
+                "scripts/pala_state_git.py",
+                "scripts/pala_cold_packet_packet.py",
+                "scripts/pala_hook_session.py",
+                "scripts/pala_view_styles.py",
+                "scripts/pala_view_layout.py",
+            ):
+                (legacy / relative).unlink(missing_ok=True)
+            install_root = root / "local" / "Pala" / "marketplace"
+            state_root = root / "local" / "Pala"
+            self.installer.copy_bundle(legacy, install_root)
+
+            report = self.installer.install_bundle(source, install_root, state_root)
+
+            self.assertEqual(report["status"], "migrated")
+            self.assertEqual(
+                json.loads((install_root / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"],
+                "0.8.2+codex.test",
+            )
+
+    def test_upgrade_transfers_new_runtime_skill_and_hook_bytes(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            candidate = make_bundle(root / "candidate", "0.8.2+codex.test")
+            old = make_bundle(root / "old", "0.8.1+codex.old")
+            expected = {
+                "scripts/pala_state_documents.py": "NEW_DOCUMENT_RUNTIME = True\n",
+                "scripts/pala_hook_session.py": "NEW_SESSION_RUNTIME = True\n",
+                "hooks/hooks.json": '{"version":"0.8.2-hook"}\n',
+                "skills/pala-project-finisher/SKILL.md": "# Pala 0.8.2 skill\n",
+            }
+            for relative, content in expected.items():
+                (candidate / relative).write_text(content, encoding="utf-8")
+            for relative in (
+                "scripts/pala_state_documents.py",
+                "scripts/pala_hook_session.py",
+            ):
+                (old / relative).unlink()
+            install_root = root / "local" / "Pala" / "marketplace"
+            state_root = root / "local" / "Pala"
+            self.installer.copy_bundle(old, install_root)
+            self.installer.atomic_write_json(
+                self.installer.state_path(state_root),
+                {
+                    "schema_version": self.installer.SCHEMA_VERSION,
+                    "owner": self.installer.OWNER,
+                    "install_root": str(install_root.resolve()),
+                    "version": "0.8.1+codex.old",
+                    "fingerprint": self.installer.tree_fingerprint(install_root),
+                    "file_hashes": self.installer.bundle_file_hashes(install_root),
+                    "source": self.installer.OFFICIAL_REPOSITORY,
+                },
+            )
+
+            report = self.installer.install_bundle(candidate, install_root, state_root)
+
+            self.assertEqual(report["status"], "updated")
+            for relative, content in expected.items():
+                self.assertEqual(
+                    (install_root / relative).read_text(encoding="utf-8"),
+                    content,
+                )
+            self.assertEqual(
+                self.installer.tree_fingerprint(install_root),
+                self.installer.bundle_fingerprint(candidate),
+            )
+
+    def test_unattested_legacy_shape_remains_external_conflict(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root / "candidate", "0.8.2+codex.test")
+            legacy = make_bundle(root / "foreign", "0.8.0+codex.foreign")
+            (legacy / "scripts" / "pala_installer_core.py").unlink()
+            install_root = root / "local" / "Pala" / "marketplace"
+            state_root = root / "local" / "Pala"
+            self.installer.copy_bundle(legacy, install_root)
+
+            report = self.installer.install_bundle(source, install_root, state_root)
+
+            self.assertEqual(report["status"], "external_conflict")
+            self.assertFalse(report["changed"])
 
     def test_dry_run_never_writes(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
@@ -894,7 +1200,7 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertFalse(install_root.exists())
             self.assertFalse(state_root.exists())
 
-    def test_repair_replaces_only_owned_drifted_installation(self) -> None:
+    def test_repair_refuses_modified_owned_installation(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
             root = Path(temp)
             source = make_bundle(root)
@@ -905,15 +1211,65 @@ class InstallerCoreTests(unittest.TestCase):
             changed.write_text("BROKEN = True\n", encoding="utf-8")
 
             before = self.installer.doctor_bundle(source, install_root, state_root)
-            repaired = self.installer.install_bundle(
+            repair = self.installer.install_bundle(
                 source, install_root, state_root, repair=True
             )
             after = self.installer.doctor_bundle(source, install_root, state_root)
 
-            self.assertEqual(before["plugin"]["status"], "drifted")
-            self.assertEqual(repaired["status"], "repaired")
-            self.assertEqual(after["plugin"]["status"], "ready")
-            self.assertTrue(after["healthy"])
+            self.assertEqual(before["plugin"]["status"], "modified")
+            self.assertEqual(repair["status"], "modified")
+            self.assertFalse(repair["changed"])
+            self.assertEqual(changed.read_text(encoding="utf-8"), "BROKEN = True\n")
+            self.assertEqual(after["plugin"]["status"], "modified")
+            self.assertFalse(after["healthy"])
+
+    def test_user_added_file_blocks_update_before_codex_mutation(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source_v1 = make_bundle(root / "source-v1", "0.4.0+codex.test")
+            source_v2 = make_bundle(root / "source-v2", "0.4.1+codex.test")
+            install_root = root / "home" / "plugins" / "pala-project-studio"
+            state_root = root / "local" / "Pala"
+            self.installer.install_bundle(source_v1, install_root, state_root)
+            marker = install_root / "preserve-me.txt"
+            marker.write_text("user work", encoding="utf-8")
+            state_before = (state_root / "install-state.json").read_text(encoding="utf-8")
+            calls: list[tuple[str, ...]] = []
+
+            def invoke(arguments: list[str]) -> dict[str, object]:
+                command = tuple(arguments)
+                calls.append(command)
+                if command == ("plugin", "marketplace", "list", "--json"):
+                    return {"marketplaces": []}
+                if command == ("plugin", "list", "--json"):
+                    return {"installed": [], "available": []}
+                raise AssertionError(f"modified tree attempted Codex mutation: {command}")
+
+            doctor = self.installer.doctor_bundle(source_v2, install_root, state_root)
+            direct = self.installer.install_bundle(source_v2, install_root, state_root)
+            full = self.installer.install_all(
+                source_v2, install_root, state_root, invoke=invoke
+            )
+
+            self.assertEqual(doctor["plugin"]["status"], "modified")
+            self.assertFalse(doctor["healthy"])
+            self.assertEqual(direct["status"], "modified")
+            self.assertFalse(direct["changed"])
+            self.assertEqual(full["status"], "modified")
+            self.assertFalse(full["changed"])
+            self.assertTrue(marker.is_file())
+            self.assertEqual(marker.read_text(encoding="utf-8"), "user work")
+            self.assertEqual(
+                (state_root / "install-state.json").read_text(encoding="utf-8"),
+                state_before,
+            )
+            self.assertEqual(
+                calls,
+                [
+                    ("plugin", "marketplace", "list", "--json"),
+                    ("plugin", "list", "--json"),
+                ],
+            )
 
     def test_failed_activation_rolls_back_previous_working_bundle(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
@@ -1635,6 +1991,22 @@ class InstallerCoreTests(unittest.TestCase):
             self.assertEqual(report["status"], "uninstalled")
             self.assertFalse(install_root.exists())
 
+    def test_uninstall_refuses_bytecode_outside_runtime_pycache(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-installer-") as temp:
+            root = Path(temp)
+            source = make_bundle(root)
+            install_root = root / "home" / "plugins" / "pala-project-studio"
+            state_root = root / "local" / "Pala"
+            self.installer.install_bundle(source, install_root, state_root)
+            marker = install_root / "preserve-me.pyc"
+            marker.write_bytes(b"user bytecode")
+
+            report = self.installer.uninstall_bundle(install_root, state_root)
+
+            self.assertEqual(report["status"], "modified")
+            self.assertTrue(marker.is_file())
+            self.assertTrue(install_root.exists())
+
     def test_source_root_install_repair_uninstall_in_clean_profile(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-installer-clean-") as temp:
             root = Path(temp)
@@ -1724,8 +2096,17 @@ class InstallerCoreTests(unittest.TestCase):
                 repair=True,
                 invoke=invoke,
             )
-            self.assertEqual(repaired["status"], "repaired")
-            self.assertTrue(repaired["changed"])
+            self.assertEqual(repaired["status"], "modified")
+            self.assertFalse(repaired["changed"])
+            self.assertNotEqual(self.installer.tree_fingerprint(install_root), baseline_fingerprint)
+
+            (install_root / "scripts" / "pala_state.py").write_bytes(
+                (source / "scripts" / "pala_state.py").read_bytes()
+            )
+            recovered = self.installer.install_all(
+                source, install_root, state_root, invoke=invoke
+            )
+            self.assertEqual(recovered["status"], "ready")
             self.assertEqual(self.installer.tree_fingerprint(install_root), baseline_fingerprint)
 
             removed = self.installer.uninstall_all(

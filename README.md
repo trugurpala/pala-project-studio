@@ -1,299 +1,97 @@
 # Pala Project Studio
 
+Pala is a **Provider-Independent Local Software Delivery OS** for planning,
+coordinating, verifying, and packaging AI-assisted software projects.
+
+Pala keeps project intent, task ownership, quality evidence, failure memory,
+and release truth local and inspectable. It helps an owner move from an idea to
+a verified package without inventing capabilities or silently publishing work.
+
+Current product version: **1.0.0**
+Plugin version: **1.0.0**
+Release channel: **public release pending remote reconciliation**
+Portable asset: `pala-project-studio-1.0.0.zip`
+Remote publication status: `not-run` until the approved GitHub workflow and
+remote read-back complete. Last published release: [v0.8.1](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.1),
+asset `pala-project-studio-0.8.1-final.zip`.
+
 ![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
-[![Release v0.8.1](https://img.shields.io/badge/release-v0.8.1-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-index-0A66C2)](docs/README.md)
 
-**English (30 seconds):** Pala is a **Codex plugin** (not a ChatGPT Plus chat
-add-on) that keeps long software projects durable across sessions: memory
-contract, local status HTML, SQLite catalog, evidence-gated verification, and a
-Codex-native install (`marketplace add` + `plugin add`; ZIP is extract-only —
-no Plugins ZIP-upload UI). It does **not** enlarge model context or quotas.
-Install: [docs/VIBE_INSTALL.md](docs/VIBE_INSTALL.md) · First 10 minutes:
-[docs/VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md).
+## Install
 
-Pala Project Studio, Codex'in uzun soluklu yazılım projelerinde aktif işi
-kaybetmeden ilerlemesine yardımcı olan Türkçe odaklı bir proje yürütme
-eklentisidir. Ürün kararlarının yerine geçmez; mevcut proje belgelerini bulur,
-aktif işi kısa bir kontrol noktasında tutar ve doğrulamayı değişikliğin riskine
-göre katmanlandırır.
-
-- Son yayımlanmış GitHub sürüm **0.8.1**. Release:
-  [v0.8.1](https://github.com/trugurpala/pala-project-studio/releases/tag/v0.8.1).
-- Değişiklik günlüğü: [CHANGELOG.md](CHANGELOG.md) · Destek: [SUPPORT.md](SUPPORT.md)
-  · Doküman dizini: [docs/README.md](docs/README.md)
-- Fork paketi: [docs/FORK_PACK.md](docs/FORK_PACK.md)
-
-## Hızlı başlangıç
-
-**Kurulum kitabı (sıfır bilgi):** [docs/VIBE_INSTALL.md](docs/VIBE_INSTALL.md) ·
-**İlk 10 dakika:** [docs/VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md)
-
-### Birincil — Codex-native CLI (2 komut)
-
-Marketplace / eklenti: `pala-project-studio` →
-`pala-project-studio@pala-project-studio`. Codex’te native ZIP-upload UI **yok**.
+The primary path is the Codex-native CLI:
 
 ```powershell
 codex plugin marketplace add trugurpala/pala-project-studio
 codex plugin add pala-project-studio@pala-project-studio
 ```
 
-Yerel checkout kökü:
-
-```powershell
-codex plugin marketplace add C:\path\to\pala-project-studio
-codex plugin add pala-project-studio@pala-project-studio
-```
-
-Sonra: Codex Work → `/hooks` (Pala'ya güven) → **yeni sohbet** → yazılım işi söyle.
-Kayıtlı projede SessionStart: `Pala burada — bu oturumda yanındayım.`
-
-### İkincil — ZIP / tam toolkit (çevrimdışı)
-
-Son yayımlanmış taşınabilir sürüm (GitHub indirmesi **0.8.1**):
-
-[Pala Project Studio 0.8.1'i indir](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-0.8.1-final.zip)
-
-ZIP’i **çıkar** (Plugins’e yükleme). Kökte `Kur.cmd` çift tık veya:
+For a local checkout, replace the marketplace URL with the checkout path. The
+portable ZIP is an extract-only toolkit; it is not a Plugins ZIP-upload.
+ZIP Codex Plugins'e yüklenmez; onu çıkartıp yerel kurulum aracını çalıştırın.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 ```
 
-Kısa not: [KUR.md](KUR.md). `-WhatIf` / `-Mode Doctor` ile önizle veya sağlık
-kontrolü. Aynı `/hooks` → yeni sohbet adımları zorunlu.
+Read the [zero-knowledge install guide](docs/VIBE_INSTALL.md), then the
+[first ten minutes](docs/VIBE_FIRST_SESSION.md). After installation, review
+`/hooks` and open a new Codex conversation.
 
-Durum sayfasını (sol menülü yerel HTML) üretip açmak için:
+## Start a project
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Status
-```
+Tell Pala what you want to build or ask it to continue an existing project.
+Pala discovers the applicable instructions, keeps one canonical task active,
+runs the relevant quality gates, and reports the evidence needed for closure.
 
-Panel açılınca: **Pala kontrol merkezi** — tema (koyu/açık), Genel bakış,
-Kurulum/Doctor, Hooks trust, Quality 0.9, Hafıza/store, Ticket, Yetki/özellik.
-Hedef: [GOAL.md](GOAL.md) · [docs/GOAL_0_8_1_FINISH.md](docs/GOAL_0_8_1_FINISH.md).
-Yerel store: `%USERPROFILE%\Desktop\Codex\pala.sqlite`
-([0.7 yerel store](docs/PALA_0_7_LOCAL_STORE.md)).
+Pala does:
 
-Fork demo verisini Status paneline doldurmak için:
+- turn intent into a durable ProductSpec and bounded task plan;
+- coordinate local AI workers without creating a second task authority;
+- require real verification evidence before a task is DONE;
+- remember verified failure resolutions without storing secrets or transcripts;
+- prepare a reproducible portable release and explain owner decisions plainly.
 
-```powershell
-py -3 scripts\pala_demo.py seed --demo-root examples\demo-software-project --catalog-root $env:USERPROFILE\Desktop\Codex
-py -3 scripts\pala_self_audit.py
-```
+Pala never, without explicit owner authority:
 
-Kayıtlı bir projede hafızayı insan dilinde görmek için:
+- commits, pushes, creates PRs, tags, or publishes releases;
+- changes repository visibility, billing, protections, or spending settings;
+- deploys to production or a hosting provider;
+- claims a test, build, release, or deployment that was not run.
 
-```powershell
-py -3 scripts\pala_state.py memory --cwd .
-```
+## GitHub publication
 
+When an owner asks Pala to publish a project, the generic flow is:
 
-Bir GitHub/GitLab HTTPS URL'sinden projeyi yerel klasöre alıp Pala kataloğuna
-yazmak (iç kurulum / provision):
+`quality -> hygiene -> secret scan -> version consistency -> documentation -> publication preflight -> cost/risk -> owner authority -> publish -> remote read-back`
 
-```powershell
-py -3 scripts\pala_provision.py provision --url https://github.com/org/repo.git --parent $env:USERPROFILE\Desktop\Cursor --dry-run
-```
+Normal owner output answers: where we are, what Pala is doing, whether there is
+a problem, and what the owner must do. Technical policy IDs, commands, exit
+codes, and evidence references remain available under Advanced.
 
-Ayrıntı: [İç kurulum](docs/PALA_INTERNAL_PROVISION.md).
+For this repository, the canonical identity is in
+[product-identity.json](product-identity.json), the current release notes are
+[docs/RELEASE_1.0.0.md](docs/RELEASE_1.0.0.md), and the document index is
+[docs/README.md](docs/README.md).
 
+## Safety and boundaries
 
-## Ne sağlar?
+Pala is local-first. It does not enlarge model context or usage quotas. Hooks
+do not run tests, builds, network calls, or GitHub mutations. Real production
+deployment is separate evidence and is not part of the Pala 1.0 GitHub release.
 
-- Mevcut `AGENTS.md`, ürün, plan, durum ve karar belgelerini yeniden kullanır.
-- Yalnızca aktif iş için küçük bir oturum bağlamı üretir.
-- Belge, Git başı veya çalışma ağacı kontrol noktasından sonra değiştiğinde
-  uzlaştırma gerektiğini bildirir.
-- Dar test, görev testi, kilometre taşı ve sürüm doğrulamasını birbirinden
-  ayırır.
-- Kullanıcıya gösterilebilir işlerde ticket sonunda kısa bir owner-demo dosyası
-  ve varsa gerçek tarayıcı ekran kanıtı bırakır.
-- Hook içinde test, build, ağ veya GitHub işlemi çalıştırmaz.
-- Commit, push, PR, release ve deploy için ayrı kullanıcı yetkisini korur.
+See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md),
+[SUPPORT.md](SUPPORT.md), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## Ne değildir? / What this is not
+## Safe expert workers
 
-| Claim | Reality |
-| --- | --- |
-| ChatGPT Plus chat plugin | **No** — Codex / Work only ([PALA_EVERYWHERE](docs/PALA_EVERYWHERE.md)) |
-| Bigger context / quota | **No** — selects less wasteful context |
-| Hook auto-commits | **No** — hooks stay short and local |
-| Soft “done” | **No** — evidence labels only |
+Optional local helpers such as Graphify, Serena, codebase-memory, and Ollama
+remain bounded Pala workers. They do not replace Pala's task, evidence, or
+owner-authorization authorities. Divan is the project's development
+infrastructure, not a second runtime authority.
 
-Bu depoyu fork/PR ile geliştirmek için [CONTRIBUTING.md](CONTRIBUTING.md) ve
-[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) dosyalarına bak. Güvenlik bildirimleri:
-[SECURITY.md](SECURITY.md). Destek: [SUPPORT.md](SUPPORT.md).
-
-Pala daha fazla token veya daha geniş bir Codex bağlamı oluşturamaz. Katkısı,
-gereksiz belgeleri her turda tekrar yüklemeyi ve ağır doğrulamayı yanlış yerde
-çalıştırmayı azaltmaktır. Ölçülmemiş hız ya da token tasarrufu yüzdesi vaat
-etmez.
-
-## Açık kaynağa katkı
-
-Bir vibe coder Pala'ya örneğin `bugün açık kaynağa katkı yapalım` diyebilir.
-Pala hedef depoda önce salt-okunur keşif yapar; katkı kurallarını, AI kullanım
-politikasını, atanma/claim şartlarını, CLA/DCO beklentisini, açık PR'ları ve
-issue sahipliğini kontrol eder. Güvenlik hassasiyetli, başkasına atanmış,
-mevcut uygulama PR'ı bulunan veya AI katkısını yasaklayan adayları otomatik
-katkı akışından çıkarır.
-
-Uygun iş seçildikten sonra değişiklik hedef projenin mevcut test ve kalite
-kapılarıyla doğrulanır. `scripts/pala_oss.py` politika, açıklanabilir issue
-puanlama, approval fingerprint ve draft-PR publish kapısını ağsız ve
-deterministik yürütür. OSV-Scanner ve zizmor yalnız zaten kuruluysa ve ilgili
-proje yüzeyi varsa isteğe bağlı ek kanıt sağlar; bunların yokluğu Pala'yı
-çalışamaz hâle getirmez.
-
-Fork, branch push ve draft PR üç ayrı uzak-yazma yetkisidir. Merge, tag,
-release, force-push, silme ve görünürlük değişimi bu akıştan otomatik yetki
-almaz. Ayrıntılı sözleşme için
-[OSS Contribution Flow](skills/pala-project-finisher/references/oss-contribution.md)
-belgesine bakın.
-
-## Windows kurulumu
-
-**Birincil kapı** Codex CLI’dır (Python kurucu gerekmez):
-
-```powershell
-codex plugin marketplace add trugurpala/pala-project-studio
-codex plugin add pala-project-studio@pala-project-studio
-```
-
-Yerel kök: `codex plugin marketplace add C:\path\to\pala-project-studio` sonra
-aynı `codex plugin add pala-project-studio@pala-project-studio`.
-
-**İkincil** — GitHub checkout veya portable ZIP kökünde tam toolkit
-(`Kur.cmd` / `Install-Pala.ps1`). ZIP Codex Plugins’e yüklenmez.
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
-```
-
-Kurucu mevcut Codex ve Pala envanterini önce okur. Doğru sürüm varsa dosyalara
-dokunmadan `Zaten hazır` der; eksik veya Pala'ya ait eski sürümü doğrulanmış
-staging alanından kurar; aynı adlı yabancı kaydı ezmez. Repo marketplace'i ve
-eklenti kurulumu yalnız Codex'in desteklenen `codex plugin marketplace` ve
-`codex plugin` komutlarıyla yapılır. Kullanıcının kişisel marketplace JSON'u
-elle değiştirilmez.
-
-```powershell
-# Hiçbir değişiklik yapmadan önizle
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -WhatIf
-
-# Sağlık, proje kaydı ve hook güvenini kontrol et
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Doctor
-
-# Onar, güncelle veya güvenli biçimde kaldır
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Repair
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Update
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Uninstall
-```
-
-Kurulum aynı oturumda doğrulanır. Yeni skill ve hook'ların güvenilir biçimde
-yüklenmesi için kurulumdan sonra yeni bir Codex sohbeti açılır. Hook güveni
-eksikse kurucu güvenlik kontrolünü atlamaz; Codex'te `/hooks` komutunu gösterir.
-Doctor `hook_safety` ≠ `/hooks` UI trust.
-
-Sıfır-bilgi kurulum: [VIBE_INSTALL.md](docs/VIBE_INSTALL.md). İlk 10 dakika:
-[VIBE_FIRST_SESSION.md](docs/VIBE_FIRST_SESSION.md). “Her yerde çalışır”
-sözleşmesi: [PALA_EVERYWHERE.md](docs/PALA_EVERYWHERE.md). ZIP kökü:
-[KUR.md](KUR.md).
-
-## Güvenli uzman işçileri
-
-Pala tek karar verici olarak kalır. Aşağıdaki araçlar Pala'nın kendi doğrulanmış
-alanında, yalnız gerektiğinde çalışan uzman yardımcılarıdır:
-
-- **Graphify:** Kod ve doküman ilişkilerini yerelde çıkarır. Kod analizi
-  `--code-only` çalışır; anlamsal doküman işi yalnız Pala'nın yerel Ollama'sına
-  gider.
-- **Serena:** Python, JavaScript/TypeScript, PHP ve PowerShell sembol
-  gezinmesi için salt-okunur yardımcıdır. Bellek, dashboard, shell ve düzenleme
-  araçları kapalıdır.
-- **codebase-memory:** Çok büyük veya çok dilli projelerde yalnız tek seferlik
-  yerel mimari/kod grafiği komutları çalıştırır.
-- **Ollama + Qwen3 4B:** Pala'nın ayrı model klasöründe ve yalnız bilgisayarın
-  içinde çalışır; mevcut Ollama modellerini değiştirmez.
-
-Bu işçiler Pala'nın yerine karar vermez, GitHub'a veya bulut servislerine proje
-kodunu göndermez. Her indirilen araç kilitli sürüm ve SHA-256 doğrulamasıyla
-kontrol edilir.
-
-## Büyük repo kod zekâsı
-
-Pala, büyük ve çapraz modüllü incelemelerde isteğe bağlı
-[`code-review-graph`](https://github.com/tirth8205/code-review-graph)
-entegrasyonunu kullanabilir. Araç Pala'ya gömülmez; yerel graph üretir ve
-değişiklik etkisini daraltmaya yardımcı olur. Bulgular yine kaynak ve testlerle
-doğrulanır.
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install_code_intelligence.ps1 -ProjectPath C:\proje
-```
-
-Komut, global `pip` yerine `uv` veya `pipx` ile izole kurulum yapar. Codex
-yapılandırması ve ilk graph varsayılan olarak değişmez; bunlar ancak sırasıyla
-`-ConfigureCodex` ve `-BuildGraph` bayrakları verilirse çalışır. Önizleme için
-`-DryRun` kullanın.
-
-Doğrulanmış Codex sınırları ve bunların tasarıma etkisi için
-[Codex kapsam ve limitleri](docs/CODEX_SCOPE_AND_LIMITS.md) belgesine bakın.
-
-## Kullanım
-
-Eklenti Codex'e kurulduktan sonra yeni bir oturum açın ve örneğin şunu yazın:
-
-> Pala Project Studio ile mevcut durumu oku, aktif işi bul ve yetkilendirilmiş
-> yerel uygulamaya kaldığı yerden devam et.
-
-Proje kaydı ve kontrol noktaları için:
-
-```powershell
-py -3 scripts/pala_state.py discover --cwd C:\proje
-py -3 scripts/pala_state.py register --cwd C:\proje
-py -3 scripts/pala_state.py begin --cwd C:\proje --ticket F2-T1 --goal "Aktif hedef"
-py -3 scripts/pala_state.py checkpoint --cwd C:\proje --tier ticket --next-action "Sıradaki iş"
-py -3 scripts/pala_state.py context --cwd C:\proje
-```
-
-Komut seçeneklerinin güncel biçimi için `--help` kullanın. Projenin kendi
-durum ve plan belgeleri kaynak gerçektir; `.codex` altındaki Pala dosyaları
-küçük bir çalışma kontrol noktasıdır.
-
-Checkpoint, değişen dosya içeriklerini belleğe kopyalamaz; yol sayısı ve
-birleşik SHA-256 özeti saklar. Checkpoint'ten sonra aynı değişikliklerin atomik
-commit edilmesi yeni iş sayılmaz. Ek veya farklı bir commit ise yeniden
-uzlaştırma gerektirir.
-
-Kullanıcıya gösterilebilir bir ürün üzerinde çalışılıyorsa mevcut demo belgesi
-yeniden kullanılır; yoksa uygun ticket sonunda `reports/OWNER_DEMO.md` şablonu
-oluşturulur. Hook kendi başına ekran görüntüsü almaz. Görsel kanıt ancak gerçek
-runtime tarayıcıda açılıp incelendiyse eklenir.
-
-## Yerel doğrulama
-
-```powershell
-py -3 scripts/verify.py
-```
-
-Bu komut sözleşme testlerini, Python sözdizimini, JSON dosyalarını ve taşınabilir
-ZIP'in tekrarlanabilir üretimini ağ erişimi olmadan doğrular.
-
-## GitHub güvenliği
-
-Kaynak depoya token, parola, `.env`, oturum dökümü, müşteri verisi veya başka
-projelerin özel içeriği eklenmemelidir. Pala bir projeyi yürütürken uzak depo
-işlemlerini ancak o işlem için açık yetki varsa yapar.
-
-## Divan
-
-Bu proje, ortak üretim ve geliştirme altyapısı olan
-[Divan](https://github.com/trugurpala/divan) ile geliştirilmiştir.
-
-## Lisans
+## License
 
 [MIT](LICENSE)

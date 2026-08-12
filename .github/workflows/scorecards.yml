@@ -1,0 +1,32 @@
+name: Scorecards supply-chain security
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+# Observational only: this workflow is not a PR, release, or merge gate.
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5.0.0
+        with:
+          persist-credentials: false
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+      - name: Upload SARIF to GitHub code scanning
+        uses: github/codeql-action/upload-sarif@f205ea1c3313d31db17d3d3e8b55d42dc1e6bb6 # v4.37.4
+        with:
+          sarif_file: results.sarif

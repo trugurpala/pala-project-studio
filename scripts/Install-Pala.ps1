@@ -1,11 +1,14 @@
 <#
+    Pala 1.0.0 installer metadata. The machine-readable ReleaseTruth lives in
+    product-identity.json; this entry point does not own a second version.
     .SYNOPSIS
     Pala Project Studio'yu atomik ve idempotent bicimde yonetir.
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [ValidateSet("Install", "Doctor", "Repair", "Update", "Uninstall", "Status")]
-    [string]$Mode = "Install"
+    [string]$Mode = "Install",
+    [switch]$InstallExperts
 )
 
 $ErrorActionPreference = "Stop"
@@ -105,7 +108,7 @@ function Show-PalaResult([pscustomobject]$Payload) {
         $codexStatus = $Payload.codex.status
         Write-Host "[Pala] Doctor: healthy=$($Payload.healthy), plugin=$pluginStatus, codex=$codexStatus"
         if ($null -ne $Payload.plugin_ready) {
-            Write-Host "[Pala] Cekirdek(plugin_ready)=$($Payload.plugin_ready), uzmanlar(experts_ready)=$($Payload.experts_ready)"
+            Write-Host "[Pala] Cekirdek(plugin_ready)=$($Payload.plugin_ready), uzmanlar(experts_ready)=$($Payload.experts_ready), uzman-onkosullari=$($Payload.expert_prerequisites_ready)"
         }
         Write-Host "[Pala] Python=$($Payload.python.ready), Git=$($Payload.git.ready), Codex CLI=$($Payload.codex_cli.ready), Node=$($Payload.node.ready), uv=$($Payload.uv.ready)"
         if ($null -ne $Payload.codex_cli.hint -and "$($Payload.codex_cli.hint)".Trim().Length -gt 0) {
@@ -164,7 +167,10 @@ function Invoke-PalaExperts([string]$Action) {
         throw "Pala uzman isci sonucu okunamadi."
     }
     Write-Host "[Pala] Uzman isciler: $($expertPayload.state)"
-    if ($expertExit -ne 0) { exit $expertExit }
+    if ($expertExit -ne 0) {
+        Write-Host "[Pala] Uzman isciler istege baglidir; cekirdek Pala durumu etkilenmedi. Ayrinti icin Doctor calistirin."
+    }
+    return [pscustomobject]@{ Payload = $expertPayload; ExitCode = $expertExit }
 }
 
 function Invoke-PalaLocalModel {
@@ -249,9 +255,18 @@ Show-PalaResult $payload
 if ($exitCode -ne 0) { exit $exitCode }
 
 if ($Mode -in @("Install", "Update", "Repair")) {
-    Invoke-PalaExperts "install"
+    $expertInstall = $null
+    if ($InstallExperts) {
+        $expertInstall = Invoke-PalaExperts "install"
+    } else {
+        Write-Host "[Pala] Uzman isciler varsayilan olarak kurulmaz; gerekirse -InstallExperts ile acikca isteyin."
+    }
     if (-not $WhatIfPreference) {
-    Invoke-PalaLocalModel
+    if ($InstallExperts -and $expertInstall.ExitCode -eq 0) {
+        Invoke-PalaLocalModel
+    } elseif ($InstallExperts) {
+        Write-Host "[Pala] Basarisiz uzman kurulumundan sonra yerel model baslatilmadi."
+    }
     $doctorArgs = @()
     if ($pythonCommand.Count -gt 1) { $doctorArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
     $doctorArgs += @($core, "doctor", "--source", $pluginRoot, "--project-root", (Get-Location).Path)
@@ -265,7 +280,9 @@ if ($Mode -in @("Install", "Update", "Repair")) {
     }
     Show-PalaResult $doctor
     if ($doctorExit -ne 0) { exit $doctorExit }
-    Invoke-PalaExperts "doctor"
+    if ($InstallExperts) {
+        Invoke-PalaExperts "doctor" | Out-Null
+    }
     if ($Mode -eq "Install") {
         Show-PalaGuiNextSteps $doctor
     } else {
@@ -273,7 +290,7 @@ if ($Mode -in @("Install", "Update", "Repair")) {
     }
     }
 } elseif ($Mode -eq "Doctor") {
-    Invoke-PalaExperts "doctor"
+    Invoke-PalaExperts "doctor" | Out-Null
 }
 
 exit 0

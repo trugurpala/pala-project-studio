@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -79,6 +80,53 @@ class CodeIntelligenceTests(unittest.TestCase):
         self.assertTrue(result["available"])
         self.assertEqual(result["executable"], str(binary))
 
+    def test_readonly_probes_timeout_to_the_existing_safe_fallback(self) -> None:
+        with (
+            patch.object(
+                code_intel.shutil,
+                "which",
+                side_effect=lambda name: "uv" if name == "uv" else None,
+            ),
+            patch.object(
+                code_intel.subprocess,
+                "run",
+                side_effect=subprocess.TimeoutExpired(["uv"], 5),
+            ) as run,
+        ):
+            self.assertIsNone(code_intel.find_executable())
+        self.assertEqual(run.call_args.kwargs["timeout"], code_intel.READ_ONLY_TIMEOUT_SECONDS)
+        self.assertFalse(run.call_args.kwargs["shell"])
+
+        with (
+            patch.object(code_intel.shutil, "which", return_value="git"),
+            patch.object(
+                code_intel.subprocess,
+                "run",
+                side_effect=subprocess.TimeoutExpired(["git"], 5),
+            ) as run,
+        ):
+            self.assertIsNone(code_intel.git_root(ROOT))
+        self.assertEqual(run.call_args.kwargs["timeout"], code_intel.READ_ONLY_TIMEOUT_SECONDS)
+        self.assertFalse(run.call_args.kwargs["shell"])
+
+    def test_github_remote_timeout_is_unknown_not_a_route_or_secret_claim(self) -> None:
+        github = load_module("pala_github_timeout", SCRIPTS / "pala_github.py")
+        with (
+            patch.object(github.shutil, "which", return_value="git"),
+            patch.object(
+                github.subprocess,
+                "run",
+                side_effect=subprocess.TimeoutExpired(["git"], 5),
+            ) as run,
+        ):
+            result = github.GitHubRouter(gh_path="").inspect(ROOT)
+        self.assertEqual(
+            result,
+            {"route": "git", "write_capability": "none", "remote": None},
+        )
+        self.assertEqual(run.call_args.kwargs["timeout"], github.READ_ONLY_TIMEOUT_SECONDS)
+        self.assertFalse(run.call_args.kwargs["shell"])
+
     def test_update_uses_bounded_brief_output(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -92,6 +140,21 @@ class CodeIntelligenceTests(unittest.TestCase):
         env = run.call_args.kwargs["env"]
         self.assertIsNot(env, os.environ)
         self.assertEqual(env.get("PYTHONUTF8"), "1")
+
+    def test_graph_execution_timeout_is_returned_as_blocked(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with (
+                patch.object(code_intel.shutil, "which", return_value="crg"),
+                patch.object(
+                    code_intel.subprocess,
+                    "run",
+                    side_effect=subprocess.TimeoutExpired(["crg"], 30),
+                ) as run,
+            ):
+                self.assertEqual(code_intel.run_graph(root, "review"), 124)
+        self.assertEqual(run.call_args.kwargs["timeout"], code_intel.EXECUTION_TIMEOUT_SECONDS)
+        self.assertFalse(run.call_args.kwargs["shell"])
 
     def test_installer_keeps_codex_config_and_graph_build_opt_in(self) -> None:
         installer = (SCRIPTS / "install_code_intelligence.ps1").read_text(

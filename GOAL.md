@@ -1,10 +1,11 @@
-# Pala — GOAL (pointer)
+# Pala 1.0 canonical goal
 
-**Tam hedef + bitiş kriterleri + tamamlanma denetimi:**
-[`docs/GOAL_0_8_1_FINISH.md`](docs/GOAL_0_8_1_FINISH.md)
+Current goal: deliver `1.0.0` of the **PALA Provider-Independent
+Local Software Delivery OS**. The locked completion contract is
+[`docs/RELEASE_1.0.0.md`](docs/RELEASE_1.0.0.md).
 
-Kısa özet: Pala, Codex için yerel hafıza / plan / doğrulama eklentisidir;
-Status HTML bir **kontrol merkezi** gibi hissedilmeli (tema + gerçek özellik
-aç/kapa). Filament yalnız UX esinlenmesi — PHP/Laravel yeniden yazım yok.
-`/hooks` trust: `configured-not-verified` (insan). Kanıt etiketleri yalnız
-`passed` | `not-run` | `blocked` | `configured-not-verified`.
+Pala turns user intent into a durable ProductSpec, capability-backed plan,
+canonical TaskContract execution, Quality Engine evidence, package-ready
+projection, and owner-readable cockpit. TaskContract, WorkflowStore, and the
+existing Pala Quality Engine remain the only completion authorities. Remote
+publish is the M69 publication workflow; real remote deploy remains `not-run`.

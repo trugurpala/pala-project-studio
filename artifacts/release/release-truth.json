@@ -1,0 +1,7 @@
+{
+  "authority": "product-identity.json",
+  "product_version": "1.0.0",
+  "release_status": "PUBLIC RELEASE PENDING",
+  "remote_publish": "not-run",
+  "real_remote_deploy": "not-run"
+}

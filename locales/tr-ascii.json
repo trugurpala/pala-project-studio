@@ -1,0 +1,11 @@
+{
+  "locale": "tr-ascii",
+  "canonical": false,
+  "messages": {
+    "update_ready": "Guncelleme hazir.",
+    "known_problem": "Bilinen hata bulundu.",
+    "owner_approval_required": "Kullanici onayi gerekiyor.",
+    "quality_verified": "Kabul kosullari dogrulandi.",
+    "release_not_run": "Uzak yayinlama calistirilmadi."
+  }
+}

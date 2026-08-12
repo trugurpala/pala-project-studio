@@ -27,16 +27,32 @@ def load_packager():
 
 
 class UserExperienceContractTests(unittest.TestCase):
+    def test_agent_contract_names_canonical_task_quality_acceptance_done_flow(self) -> None:
+        agents = (PLUGIN_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        normalized_agents = " ".join(agents.casefold().split())
+        normalized_skill = " ".join(skill.casefold().split())
+        for marker in ("taskcontract", "quality engine", "acceptance", "done", "generated"):
+            self.assertIn(marker, normalized_agents)
+            self.assertIn(marker, normalized_skill)
+        self.assertIn("pala_report", normalized_agents)
+        self.assertIn("pala_state.py begin", normalized_agents)
+        self.assertIn("pala_report", normalized_skill)
+        self.assertIn("begin --ticket", normalized_skill)
+
     def test_readme_exposes_current_release_and_expert_worker_boundary(self) -> None:
         readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
-        status = (PLUGIN_ROOT / "STATUS.md").read_text(encoding="utf-8")
         normalized = " ".join(readme.casefold().split())
+        identity = json.loads(
+            (PLUGIN_ROOT / "product-identity.json").read_text(encoding="utf-8")
+        )
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(
                 encoding="utf-8"
             )
         )
-        release_version = manifest["version"].split("+", maxsplit=1)[0]
+        self.assertEqual(manifest["version"], identity["plugin_version"])
+        release_version = identity["product_version"]
         green_badge = f"img.shields.io/badge/release-v{release_version}-2ea44f"
         published_zip = (
             "releases/latest/download/"
@@ -46,13 +62,7 @@ class UserExperienceContractTests(unittest.TestCase):
             "releases/latest/download/"
             f"pala-project-studio-{release_version}-final.zip"
         )
-        release_pending = bool(
-            re.search(
-                rf"`v?{re.escape(release_version)}`[^\n]*`not-run`",
-                status,
-                flags=re.IGNORECASE,
-            )
-        )
+        release_pending = identity["remote_publish"] == "not-run"
 
         self.assertIn(release_version, readme)
         self.assertNotIn("img.shields.io/github/v/release/", readme)
@@ -67,20 +77,13 @@ class UserExperienceContractTests(unittest.TestCase):
                 "README must state GitHub publish is pending while STATUS says not-run",
             )
             # Primary download stays on last published GitHub release.
-            if release_version == "0.8.1":
-                self.assertIn("v0.8.0", readme)
-                self.assertIn(
-                    "pala-project-studio-0.8.0.zip",
-                    readme,
-                    "While 0.8.1 is pending, README must point at last published ZIP",
-                )
-            else:
-                self.assertIn("v0.7.1", readme)
-                self.assertIn(
-                    "pala-project-studio-0.7.1.zip",
-                    readme,
-                    "While next release is pending, README must point at last published ZIP",
-                )
+            published = identity["last_published_version"]
+            self.assertIn(f"v{published}", readme)
+            self.assertIn(
+                f"pala-project-studio-{published}-final.zip",
+                readme,
+                "Pending candidate must point at the last published ZIP",
+            )
         else:
             self.assertTrue(
                 published_zip in readme or published_zip_final in readme,
@@ -92,7 +95,7 @@ class UserExperienceContractTests(unittest.TestCase):
             self.assertIn(green_badge, readme)
             self.assertIn(f"releases/tag/v{release_version}", readme)
         for required in (
-            "güvenli uzman işçileri",
+            "safe expert workers",
             "graphify",
             "serena",
             "codebase-memory",
@@ -100,6 +103,23 @@ class UserExperienceContractTests(unittest.TestCase):
             "divan",
         ):
             self.assertIn(required, normalized)
+
+    def test_r6_candidate_identity_is_local_and_release_history_stays_historical(self) -> None:
+        identity = json.loads(
+            (PLUGIN_ROOT / "product-identity.json").read_text(encoding="utf-8")
+        )
+        manifest = json.loads(
+            (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
+        )
+        readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
+        project = (PLUGIN_ROOT / "PROJECT.md").read_text(encoding="utf-8")
+        goal = (PLUGIN_ROOT / "GOAL.md").read_text(encoding="utf-8")
+        self.assertEqual(manifest["version"], identity["plugin_version"])
+        self.assertIn("Current product version: **1.0.0**", readme)
+        self.assertNotIn("Yerel yayın adayı **0.8.2**", readme)
+        self.assertIn(identity["product_version"], project)
+        self.assertIn(identity["product_version"], goal)
+        self.assertIn("pala-project-studio-1.0.0.zip", readme)
 
     def test_readme_download_matches_published_or_pending_policy(self) -> None:
         """Task 5: download ZIP name follows STATUS publish honesty."""
@@ -119,7 +139,7 @@ class UserExperienceContractTests(unittest.TestCase):
             )
         )
         if pending:
-            self.assertIn("pala-project-studio-0.8.0.zip", readme)
+            self.assertIn("pala-project-studio-0.8.1-final.zip", readme)
             self.assertNotIn(
                 f"img.shields.io/badge/release-v{version}-2ea44f",
                 readme,
@@ -172,12 +192,15 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertIn("0.4 dışında", normalized)
 
     def test_manifest_presents_three_natural_turkish_starters(self) -> None:
+        identity = json.loads(
+            (PLUGIN_ROOT / "product-identity.json").read_text(encoding="utf-8")
+        )
         manifest = json.loads(
             (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(
                 encoding="utf-8"
             )
         )
-        self.assertTrue(manifest["version"].startswith("0.8.1+codex."))
+        self.assertEqual(manifest["version"], identity["plugin_version"])
         self.assertEqual(
             manifest["repository"],
             "https://github.com/trugurpala/pala-project-studio",
@@ -561,7 +584,8 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertIn(PLUGIN_ROOT / "scripts" / "pala_update.py", files)
         self.assertIn(PLUGIN_ROOT / "managed-tools.lock.json", files)
         self.assertIn(PLUGIN_ROOT / "docs" / "FORK_PACK.md", files)
-        self.assertIn(PLUGIN_ROOT / "docs" / "RELEASE_0_8_0_CHECKLIST.md", files)
+        self.assertIn(PLUGIN_ROOT / "docs" / "RELEASE_1.0.0.md", files)
+        self.assertNotIn(PLUGIN_ROOT / "docs" / "RELEASE_0_8_0_CHECKLIST.md", files)
         self.assertIn(
             PLUGIN_ROOT / "examples" / "demo-software-project" / "STATUS.md",
             files,
@@ -576,6 +600,22 @@ class UserExperienceContractTests(unittest.TestCase):
         )
         self.assertIn(PLUGIN_ROOT / "scripts" / "pala_demo.py", files)
         self.assertIn(PLUGIN_ROOT / "scripts" / "pala_self_audit.py", files)
+
+    def test_update_compatibility_contract_is_explicit_and_honest(self) -> None:
+        path = PLUGIN_ROOT / "docs" / "PALA_UPDATE_COMPATIBILITY.md"
+        self.assertTrue(path.is_file())
+        text = " ".join(path.read_text(encoding="utf-8").casefold().split())
+        for required in (
+            "0.8.0 -> 0.8.2",
+            "0.8.1 -> 0.8.2",
+            "doğrulanmış legacy pala",
+            "modified",
+            "external_conflict",
+            "-installexperts",
+            "yeni sohbet",
+            "sürüm kontrolü kurulum yapmaz",
+        ):
+            self.assertIn(required, text)
 
     def test_windows_single_entry_delegates_to_atomic_installer_core(self) -> None:
         entry = (PLUGIN_ROOT / "Install-Pala.ps1").read_text(encoding="utf-8")
@@ -661,6 +701,28 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertIn("python scripts/verify.py", workflow)
         self.assertNotIn("write-all", workflow)
 
+    def test_scorecard_workflow_is_observational_and_pinned(self) -> None:
+        workflow = (
+            PLUGIN_ROOT / ".github" / "workflows" / "scorecards.yml"
+        ).read_text(encoding="utf-8")
+        normalized = " ".join(workflow.split())
+        self.assertIn("schedule:", workflow)
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertNotIn("pull_request:", workflow)
+        self.assertNotIn("release:", workflow)
+        self.assertIn("permissions: read-all", normalized)
+        self.assertIn("security-events: write", normalized)
+        self.assertIn("id-token: write", normalized)
+        self.assertIn(
+            "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            workflow,
+        )
+        self.assertIn(
+            "ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc",
+            workflow,
+        )
+        self.assertIn("github/codeql-action/upload-sarif@f205ea1c3313d31db17d3d3e8b55d42dc1e6bb6", workflow)
+
 
 class PortablePackageContractTests(unittest.TestCase):
     def test_packager_exists(self) -> None:
@@ -693,10 +755,7 @@ class PortablePackageContractTests(unittest.TestCase):
                 "pala-project-studio/skills/pala-project-finisher/SKILL.md",
                 names,
             )
-            self.assertIn(
-                "pala-project-studio/scripts/test_plugin_experience.py",
-                names,
-            )
+            self.assertNotIn("pala-project-studio/scripts/test_plugin_experience.py", names)
             self.assertIn("pala-project-studio/Install-Pala.ps1", names)
             self.assertIn("pala-project-studio/Kur.cmd", names)
             packager_source = PACKAGER_PATH.read_text(encoding="utf-8")
@@ -706,6 +765,8 @@ class PortablePackageContractTests(unittest.TestCase):
                 self.assertIn("pala-project-studio/KUR.md", names)
             self.assertIn("pala-project-studio/scripts/pala_installer.py", names)
             self.assertIn("pala-project-studio/README.md", names)
+            self.assertIn("pala-project-studio/README.tr.md", names)
+            self.assertIn("pala-project-studio/docs/RELEASE_1.0.0.md", names)
             self.assertIn("pala-project-studio/PROJECT.md", names)
             self.assertIn("pala-project-studio/DECISIONS.md", names)
             self.assertIn(
@@ -725,12 +786,35 @@ class PortablePackageContractTests(unittest.TestCase):
                 packager.build_archive(output, PLUGIN_ROOT)
 
     @unittest.skipUnless(PACKAGER_PATH.is_file(), "packager not implemented")
+    def test_portable_archive_excludes_development_only_surface(self) -> None:
+        packager = load_packager()
+        names = {
+            name
+            for _, name in packager.archive_entries(PLUGIN_ROOT)
+        }
+        self.assertNotIn("pala-project-studio/scripts/test_pala_product.py", names)
+        self.assertNotIn(
+            "pala-project-studio/docs/RELEASE_0_8_0_CHECKLIST.md",
+            names,
+        )
+        self.assertNotIn(
+            "pala-project-studio/docs/plans/active/PALA-1.0-product-completion.md",
+            names,
+        )
+        for required in (
+            "pala-project-studio/Install-Pala.ps1",
+            "pala-project-studio/scripts/verify.py",
+            "pala-project-studio/README.tr.md",
+            "pala-project-studio/docs/RELEASE_1.0.0.md",
+        ):
+            self.assertIn(required, names)
+
+    @unittest.skipUnless(PACKAGER_PATH.is_file(), "packager not implemented")
     def test_packager_rejects_unsafe_and_case_colliding_names(self) -> None:
         packager = load_packager()
         for value in ("/absolute/file", "../escape", "C:/drive/file"):
-            with self.subTest(value=value):
-                with self.assertRaises(ValueError):
-                    packager.validate_archive_name(value)
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                packager.validate_archive_name(value)
         with self.assertRaises(ValueError):
             packager.ensure_unique_names(["Root/File.py", "root/file.py"])
 
