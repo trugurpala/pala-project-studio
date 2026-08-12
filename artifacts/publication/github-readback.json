@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "repository": {
+    "full_name": "trugurpala/pala-project-studio",
+    "visibility": "public",
+    "default_branch": "main",
+    "main_commit": "416a45117c7cee383cfa7d5c19efcdd88e49daaf",
+    "license": "MIT",
+    "archived": false,
+    "wiki": "NOT_APPLICABLE",
+    "pages": "NOT_APPLICABLE",
+    "branch_protection": "not-configured"
+  },
+  "pull_requests": {
+    "release": 21,
+    "reconciliation": 22,
+    "release_ci": "passed",
+    "reconciliation_ci": "passed"
+  },
+  "tag": {
+    "name": "v1.0.0",
+    "target_commit": "f016df98766a78a5d8fa2ee28c53be5b41e4293a",
+    "annotated": true
+  },
+  "release": {
+    "name": "Pala 1.0.0",
+    "tag": "v1.0.0",
+    "published": true,
+    "url": "https://github.com/trugurpala/pala-project-studio/releases/tag/v1.0.0",
+    "assets": [
+      "pala-project-studio-1.0.0.zip",
+      "pala-project-studio-1.0.0.zip.sha256",
+      "pala-1.0.0-evidence-manifest.json"
+    ]
+  },
+  "metadata_reconciliation": {
+    "description": "passed",
+    "topics": "passed",
+    "visibility_unchanged": true,
+    "billing_mutation": "not-run",
+    "real_remote_deploy": "not-run"
+  },
+  "secrets": "none"
+}
