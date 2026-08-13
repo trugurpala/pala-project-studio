@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "status": "passed",
-  "expected_version": "1.1.1",
+  "expected_version": "1.1.2",
   "release_truth": {
-    "product_version": "1.1.1",
-    "plugin_base_version": "1.1.1",
-    "artifact_name": "pala-project-studio-1.1.1.zip",
+    "product_version": "1.1.2",
+    "plugin_base_version": "1.1.2",
+    "artifact_name": "pala-project-studio-1.1.2.zip",
     "authority": "product-identity.json"
   },
   "required_drift": [],
@@ -26,6 +26,6 @@
   ],
   "wiki": "NOT_APPLICABLE",
   "pages": "NOT_APPLICABLE",
-  "remote_publish": "passed",
+  "remote_publish": "not-run",
   "real_remote_deploy": "not-run"
 }

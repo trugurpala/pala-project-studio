@@ -13,7 +13,12 @@ def _normalized(intent: str) -> str:
 
 
 def open_if_explicit(intent: str, *, refresh, opener) -> bool:
-    if _normalized(intent) != "paneli ac":
+    if _normalized(intent) not in {
+        "paneli ac",
+        "pala panelini ac",
+        "pala paneli",
+        "pala control center",
+    }:
         return False
     target = refresh()
     if not isinstance(target, Path):

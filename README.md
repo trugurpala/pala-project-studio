@@ -10,7 +10,13 @@ Codex'e sunu yaz:
 
 > https://github.com/trugurpala/pala-project-studio eklentisini kur ve guncel oldugunu dogrula.
 
-Current version: **1.1.1**
+Codex installation contract: plugin registration alone is not success. In the
+same journey Codex must resolve the installed plugin root, run its bundled Pala
+installer transaction, and accept success only when Doctor reports the plugin,
+runtime bundle, required Workbench, and version healthy.
+The user does not need to know or run these internal steps.
+
+Current version: **1.1.2**
 
 [![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -54,8 +60,8 @@ machine-local installation data from packages.
 The same natural-language request handles a clean install, repair, or safe
 update. Pala inventories the existing installation, verifies ownership and
 integrity, stages changes, runs health checks, activates atomically, and rolls
-back on failure. A second install is a no-op when the exact healthy version is
-already present.
+back on failure. A second install is a no-op only when every required dimension
+is exact and healthy; matching only the plugin version is insufficient.
 
 For an extracted portable package:
 
@@ -78,7 +84,7 @@ Providers are advisory; they cannot mark work complete. Telemetry, shared
 daemons, silent global PATH mutation, and automatic helper UI are disabled.
 
 Read [architecture](docs/ARCHITECTURE.md), [Quality Engine](docs/QUALITY_ENGINE.md),
-and [Pala 1.1.1 release notes](docs/RELEASE_1.1.1.md).
+and [Pala 1.1.2 release notes](docs/RELEASE_1.1.2.md).
 
 ## License
 

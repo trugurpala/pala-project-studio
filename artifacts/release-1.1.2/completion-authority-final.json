@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "ticket": "M75-T1",
+  "status": "passed",
+  "adversarial_tests": 9,
+  "controlled_block": {
+    "required_capability": "code_intelligence",
+    "quality": "passed",
+    "environment": "blocked",
+    "project_state": "BUILDING",
+    "task_state": "VERIFIED",
+    "package_ready": false
+  },
+  "after_repair": {
+    "environment": "passed",
+    "environment_authority": "pala-workbench-doctor",
+    "quality": "passed",
+    "quality_authority": "pala-quality-runner",
+    "project_state": "PACKAGE_READY",
+    "task_state": "DONE"
+  },
+  "forged_health_rejected": true,
+  "optional_absence_allowed": ["symbol_precision", "current_docs"],
+  "sanitized": true
+}

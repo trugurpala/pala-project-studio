@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "ticket": "M75-T1",
+  "target_release": "1.1.2",
+  "source_head": "5674a428828722ce8092e060de7a234a7886d9f2",
+  "branch": "main",
+  "initial_worktree": "clean",
+  "origin": "https://github.com/trugurpala/pala-project-studio.git",
+  "public_truth": {
+    "latest": "v1.1.1",
+    "immutable": true,
+    "release_commit": "ca7211a672531cec1cdfe674b28b2288cd849a13",
+    "zip_sha256": "89061A4E2B51A8C6042AAF33C6D9538702923DD3D42B21094B15D1002D54E128"
+  },
+  "canonical_claim": {
+    "ticket": "M75-T1",
+    "lifecycle": "active",
+    "dirty": true,
+    "acceptance_count": 9,
+    "authority": "WorkflowStore/TaskContract"
+  },
+  "normal_codex": {
+    "cli_version": "0.147.0",
+    "pala_installed": true,
+    "pala_enabled": true,
+    "reported_version": "1.0.0",
+    "marketplace_type": "git",
+    "mutated": false
+  },
+  "known_blockers": [
+    "natural install did not bootstrap runtime and required Workbench",
+    "empty-workspace panel routing was non-deterministic",
+    "completion allowed unverified required environment capabilities",
+    "second install transactional no-op was not proved"
+  ],
+  "credentials_recorded": false
+}

@@ -86,6 +86,33 @@ def codex_runtime_cache_matches(
     )
 
 
+def trusted_bootstrap_marketplace_root(
+    root: object, expected_version: str
+) -> bool:
+    """Admit only an exact official Pala bundle registered by the current flow.
+
+    A natural first install necessarily starts with Codex pointing at the
+    downloaded/Git marketplace, before Pala has a managed runtime root.  That
+    source is adoptable only when its manifest and complete bundle validate as
+    the official, exact candidate.  Ambiguous or modified installed roots stay
+    foreign.
+    """
+    if not isinstance(root, str) or not root.strip():
+        return False
+    try:
+        bundle_root = _host_path(root).resolve()
+        value = validate_bundle(bundle_root)
+    except (OSError, ValueError):
+        return False
+    author = value.get("author")
+    return bool(
+        base_version(value.get("version")) == base_version(expected_version)
+        and value.get("repository") == OFFICIAL_REPOSITORY
+        and isinstance(author, dict)
+        and author.get("url") == OFFICIAL_AUTHOR
+    )
+
+
 def codex_status(
     install_root: Path, expected_version: str, *, invoke=run_codex_json
 ) -> dict[str, object]:
@@ -93,6 +120,7 @@ def codex_status(
         install_root, expected_version, owner=OWNER,
         plugin_id=PLUGIN_ID, official_repository=OFFICIAL_REPOSITORY,
         trusted_legacy=trusted_legacy_pala,
+        trusted_bootstrap_root=trusted_bootstrap_marketplace_root,
         cache_matches=codex_runtime_cache_matches,
         invoke=invoke,
     )

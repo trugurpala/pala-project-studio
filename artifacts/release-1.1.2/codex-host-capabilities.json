@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "ticket": "M75-T1",
+  "host": "Windows x64 Codex desktop",
+  "commands": {
+    "codex": "0.147.0",
+    "git": "2.55.0.windows.3",
+    "python": "3.13.14",
+    "node": "24.19.0",
+    "rg": "available",
+    "gh": "available"
+  },
+  "capabilities": {
+    "subagents": {
+      "status": "available",
+      "total_slots": 4,
+      "use": "three independent RED investigations"
+    },
+    "git_worktrees": {
+      "status": "available",
+      "active_count": 1,
+      "use": "not required for disjoint new test files"
+    },
+    "shell_filesystem": "available",
+    "browser_control": "passed-browser-automation",
+    "computer_use": "available-not-required",
+    "screenshots_keyboard_pointer": "browser-keyboard-scroll-viewport-passed",
+    "context7": "used for current Codex plugin and skill-routing contracts"
+  },
+  "installed_host_plugins": {
+    "browser": "enabled",
+    "chrome": "enabled",
+    "computer_use": "enabled",
+    "pala": "enabled-stale-normal-profile"
+  },
+  "normal_profile_mutated": false,
+  "credentials_recorded": false
+}

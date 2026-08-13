@@ -89,7 +89,7 @@ class PublicRepositoryCleanupTests(unittest.TestCase):
 
     def test_current_artifact_tree_is_release_or_governance_only(self) -> None:
         allowed_roots = {
-            "codex-compat", "governance", "publication", "release", "release-1.1.0", "release-1.1.1"
+            "codex-compat", "governance", "publication", "release", "release-1.1.0", "release-1.1.1", "release-1.1.2"
         }
         tracked = subprocess.run(
             ["git", "ls-files", "artifacts"], cwd=ROOT, check=True,
@@ -131,8 +131,8 @@ class PublicRepositoryCleanupTests(unittest.TestCase):
 
     def test_product_identity_is_one_point_one(self) -> None:
         identity = json.loads((ROOT / "product-identity.json").read_text(encoding="utf-8"))
-        self.assertEqual(identity["product_version"], "1.1.1")
-        self.assertEqual(identity["plugin_version"], "1.1.1")
+        self.assertEqual(identity["product_version"], "1.1.2")
+        self.assertEqual(identity["plugin_version"], "1.1.2")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,13 @@
+{
+  "schema": "pala.m75.red.v1",
+  "ticket": "M75-T1",
+  "surface": "control-center-routing",
+  "command": "py -3 -m unittest scripts.test_pala_m75_routing -v",
+  "exit_code": 1,
+  "status": "blocked",
+  "observed": [
+    "dedicated pala-control-center routing skill was absent",
+    "portable and installed-plugin discovery could not expose the dedicated skill"
+  ],
+  "sanitized": true
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "ticket": "M75-T1",
+  "status": "passed",
+  "version": "1.1.2",
+  "artifact": "pala-project-studio-1.1.2.zip",
+  "sha256": "8A7A1293E2991081F85E8F02818314B56C17183F80364AB251645E3CCFDE5BE5",
+  "entries": 194,
+  "deterministic_builds": 2,
+  "digests_equal": true,
+  "release_state": "LOCAL RELEASE CANDIDATE VERIFIED",
+  "last_published": "1.1.1",
+  "remote_publish": "not-run",
+  "real_remote_deploy": "not-run",
+  "historical_v1_1_1_mutated": false
+}

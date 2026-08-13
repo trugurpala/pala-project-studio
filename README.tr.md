@@ -10,7 +10,13 @@ Codex'e şunu yaz:
 
 > https://github.com/trugurpala/pala-project-studio eklentisini kur ve guncel oldugunu dogrula.
 
-Güncel sürüm: **1.1.1**
+Codex kurulum sözleşmesi: Yalnız eklentinin kaydedilmesi başarı değildir. Codex
+aynı kurulum yolculuğunda kurulu eklenti kökünü bulur, içindeki Pala installer
+transaction'ını çalıştırır ve ancak plugin, runtime bundle, zorunlu Workbench
+ve sürüm Doctor tarafından sağlıklı doğrulanırsa başarılı
+der. Kullanıcının bu iç adımları bilmesi veya elle çalıştırması gerekmez.
+
+Güncel sürüm: **1.1.2**
 
 ## Pala ne yapar?
 
@@ -39,7 +45,7 @@ Aynı doğal dil isteği temiz kurulum, onarım ve güvenli güncellemeyi yönet
 Pala mevcut kurulumu ve sahipliği denetler, bütünlüğü doğrular, değişikliği
 geçici alanda hazırlar, health kontrolünden sonra atomik etkinleştirir ve
 hata durumunda geri alır. Sağlıklı exact sürüm zaten varsa ikinci kurulum
-no-op olur.
+no-op olur. Yalnız plugin sürümünün eşit olması `CURRENT` sayılmaz.
 
 Portable paket çıkarıldıysa:
 

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "ticket": "M75-T1",
+  "status": "passed",
+  "installed_skill": "pala-control-center",
+  "fresh_positive_conversations": {
+    "paneli ac": "selected-and-opened-once",
+    "paneli aç": "selected-and-opened-once",
+    "Pala panelini aç": "selected-and-opened-once"
+  },
+  "fresh_negative_conversations": {
+    "tarayıcı panelini aç": "not-selected",
+    "uygulamanın admin panelini aç": "not-selected"
+  },
+  "project_contract_required": false,
+  "canonical_mutation": false,
+  "sanitized": true
+}

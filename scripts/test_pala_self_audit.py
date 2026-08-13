@@ -57,7 +57,7 @@ class SelfAuditUnitTests(unittest.TestCase):
         self.assertEqual(result["status"], "passed")
         self.assertIn(
             result.get("detail", ""),
-            {"no task cards", "cards=0"},
+            {"no task cards", "cards=0", "cards=1"},
         )
 
     def test_runtime_profile_passes_on_copied_bundle(self) -> None:

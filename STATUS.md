@@ -1,12 +1,12 @@
 # Pala current status
 
-- Product version: `1.1.1`
+- Product version: `1.1.2` local release candidate verified
 - Branch: `main`
 - Local release candidate: `passed`
-- Current work: `M74-T1` final public-install canary remediation required
+- Current work: `M75-T1` claimed — public bootstrap, routing and completion safety
 - Last published version: `1.1.1`
 - Public `v1.1.1`: `passed`
-- Final public-install canary: `blocked`
+- Final public-install canary: `not-run` for `1.1.2`
 - Real remote deploy: `not-run`
 - Canonical authority: TaskContract → WorkflowStore → Pala Quality Engine
 
@@ -30,6 +30,10 @@ workspace also failed to route the exact `paneli aç` intent to Pala. The
 installed skill remained usable when explicitly selected, but reached package
 ready with CodeGraph absent and Semgrep blocked.
 
-Next action: prepare a separately authorized patch release that makes public
-installation bootstrap core health and makes the no-project panel intent
-deterministic. Do not rewrite `v1.1.1`.
+M75 local acceptance now passes: fresh install bootstraps required Workbench,
+second ensure-current is mutation-free, all positive/negative host-routing
+cases are deterministic, and completion blocks then succeeds only after
+Doctor-backed repair. Canonical Quality is 24/24 with 76% coverage.
+
+Next action: publish the sealed `1.1.2` candidate after CI, then run the final
+completely-new public clean-user canary. Do not rewrite `v1.1.1` or start M72.

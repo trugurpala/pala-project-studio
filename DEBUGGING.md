@@ -2,23 +2,18 @@
 
 ## Format
 
-Each `### INC-...` entry must include: Symptoms, Root cause, Fix criteria,
-Proved by, Related files, Date, Status. Never store secrets, credentials,
-transcripts, tokens, or real customer data. Evidence labels are `passed`,
-`not-run`, `blocked`, and `configured-not-verified`.
+Each incident includes Symptoms, Root cause, Fix criteria, Proved by,
+Related files, Date, Status. Never store secrets, credentials, transcripts, tokens, or
+customer data. Labels: `passed|not-run|blocked|configured-not-verified`.
 
 ## Incidents
 
 ### INC-20260813-release-ci-portability
 
 - **Symptoms:** GitHub Quality failed on Linux and Windows while local release gates passed.
-- **Root cause:** two tests assumed a machine-local `.mcp.json`, Windows path spelling,
-  or Windows separators instead of testing the portable contracts.
-- **Fix criteria:** all three assertions are platform-independent; source verify passes
-  locally and the exact follow-up `main` commit is green on Linux and Windows CI.
-- **Proved by:** `py -3 -m unittest scripts.test_pala_playwright scripts.test_pala_semgrep -v`
-  = `passed`; `py -3 scripts/verify.py --mode source` = `passed`; GitHub Quality
-  run `31674469025` on the follow-up main commit = `passed`.
+- **Root cause:** tests assumed local `.mcp.json`, Windows spelling/separators.
+- **Fix criteria:** portable assertions; local source and exact CI commit pass.
+- **Proved by:** focused tests + source verify passed; CI run `31674469025` passed.
 - **Related files:** `scripts/test_pala_playwright.py`, `scripts/test_pala_semgrep.py`.
 - **Date:** 2026-08-13
 - **Status:** fixed (`passed` contract)
@@ -35,46 +30,34 @@ transcripts, tokens, or real customer data. Evidence labels are `passed`,
 
 ### INC-20260813-m74-installed-codegraph-runner
 
-- **Root cause:** the candidate plugin exposed CodeGraph lifecycle internals but
-  did not package a stable Quality-runner CLI. The installed Codex self-test
-  created that missing wrapper inside its own marketplace tree, correctly
-  causing Doctor ownership drift after the run.
-- **Symptoms:** candidate Doctor reported `plugin=modified`; exact file diff was
-  the added `scripts/pala_codegraph_runner.py` (plus expected versioned source
-  changes), not runtime `__pycache__`.
-- **Fix criteria:** package the bounded runner in source, accept explicit
-  `--state-root`, fail closed on stale/failed graph state, include it in current
-  Quality discovery, and complete a fresh install without marketplace writes.
+- **Root cause:** CodeGraph lifecycle lacked a packaged Quality-runner CLI; the
+  self-test created it in marketplace, correctly causing ownership drift.
+- **Symptoms:** Doctor `plugin=modified`; diff was `pala_codegraph_runner.py`.
+- **Fix criteria:** packaged bounded runner, explicit state root, stale fail-close,
+  Quality discovery, and fresh install without marketplace writes.
 - **Proved by:** `py -3 -m unittest scripts.test_pala_codegraph.CodeGraphContractTests.test_quality_runner_requires_current_graph_and_supports_explicit_state_root -v`; `py -3 scripts/pala_codegraph_runner.py --project .`.
-- **Related files:** `scripts/pala_codegraph_runner.py`,
-  `scripts/test_pala_codegraph.py`, `.pala/quality.json`.
+- **Related files:** `pala_codegraph_runner.py`, its tests, `.pala/quality.json`.
 - **Date:** 2026-08-13
 - **Status:** fixed
 
 ### INC-20260813-m74-public-bootstrap-and-routing
 
-- **Symptoms:** A clean public Codex profile installed/enabled `1.1.1`, but
-  isolated Doctor returned exit `2`, `healthy=false`, `plugin_ready=false`, and
-  no Workbench state. CodeGraph was absent and Semgrep blocked. Exact `paneli
-  aç` passed once but asked which panel was intended in a second empty
-  workspace. The installed-skill self-test reached `PACKAGE_READY` anyway.
-- **Root cause:** The public URL flow installs the Codex plugin only; it does not
-  bootstrap the Pala bundle/Workbench. The skill description does not make the
-  no-project panel intent a deterministic routing trigger, and completion can omit required core
-  health checks from its generated Quality contract.
+- **Symptoms:** Public `1.1.1` lacked Workbench; routing varied; completion
+  reached `PACKAGE_READY` with required providers blocked.
+- **Root cause:** plugin-only bootstrap, broad routing, missing environment gate.
 - **Fix criteria:** From a genuinely empty Codex and Pala state, the single URL
   instruction installs plugin plus required Pala core providers, second install
   is a proved no-op, Doctor exits `0`, and exact `paneli aç` always invokes one
   complete Control Center. Product completion must remain blocked whenever a
   required core provider is absent or blocked.
-- **Proved by:** public release readback SHA-256 = `passed`; public plugin
-  inventory = installed/enabled `1.1.1`; isolated `pala_installer.py doctor`
-  exit `2`; empty-workspace native panel retry = `blocked`; installed Decision
-  Log Mini Quality = `passed` while CodeGraph=`absent` and Semgrep=`blocked`.
-- **Related files:** `artifacts/release-1.1.1/public-install-canary.json`, `scripts/pala_installer.py`, `scripts/pala_product_cli.py`,
-  `skills/pala-project-finisher/SKILL.md`.
+- **Proved by:** public 1.1.1 readback passed; Doctor exit 2; native routing and
+  required providers blocked while installed sample Quality passed.
+- **Related files:** `artifacts/release-1.1.1/public-install-canary.json`, `scripts/pala_installer.py`, `scripts/pala_product_cli.py`, `skills/pala-project-finisher/SKILL.md`.
 - **Date:** 2026-08-13
-- **Status:** open (`blocked`)
+- **Attempts:** Real canaries found exact bootstrap adoption, VERIFIED retry, and
+  `Pala panelini aç` guard gaps; all now fail closed outside exact contracts.
+- **Proved by:** 16 focused/9 adversarial tests, 659 source tests, fresh Doctor,
+  no-op, 3 positive/2 negative routes, canonical Quality 24/24: all passed.
+- **Status:** fixed (`passed` local candidate; public canary `not-run`)
 
-Verified historical incidents remain available in Git history and in Failure
-Intelligence. New reproducible failures are recorded here only while active.
+Historical incidents remain in Git/Failure Intelligence; new failures stay here.

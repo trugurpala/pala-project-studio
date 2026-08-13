@@ -67,9 +67,18 @@ class ControlCenterTests(unittest.TestCase):
         for intent in ("install", "doctor", "rapor", "open", ""):
             self.assertFalse(open_if_explicit(intent, refresh=refresh, opener=opener))
         self.assertEqual(events, [])
-        for intent in ("paneli aç", "paneli ac", "  PANELİ   AÇ  "):
+        for intent in (
+            "paneli aç",
+            "paneli ac",
+            "  PANELİ   AÇ  ",
+            "Pala panelini aç",
+            "Pala paneli",
+            "Pala Control Center",
+        ):
             self.assertTrue(open_if_explicit(intent, refresh=refresh, opener=opener))
-        self.assertEqual(events, ["refresh", "open"] * 3)
+        for intent in ("tarayıcı panelini aç", "uygulamanın admin panelini aç"):
+            self.assertFalse(open_if_explicit(intent, refresh=refresh, opener=opener))
+        self.assertEqual(events, ["refresh", "open"] * 6)
 
     def test_public_open_instruction_uses_turkish_owner_phrase(self) -> None:
         report_source = (Path(__file__).resolve().parent / "pala_report.py").read_text(encoding="utf-8")
@@ -83,7 +92,7 @@ class ControlCenterTests(unittest.TestCase):
             html = target.read_text(encoding="utf-8")
 
         for required in (
-            "Pala 1.1.1",
+            "Pala 1.1.2",
             "PALA CONTROL CENTER",
             "Neredeyiz?",
             "Pala ne yapiyor?",
@@ -111,7 +120,7 @@ class ControlCenterTests(unittest.TestCase):
 
         self.assertIn("PALA CONTROL CENTER", html)
         self.assertIn("Service Desk Mini", html)
-        self.assertIn("Pala 1.1.1", html)
+        self.assertIn("Pala 1.1.2", html)
 
     def test_real_report_path_keeps_control_center_for_unreadable_project(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-m74-corrupt-") as temp, patch(
@@ -128,7 +137,7 @@ class ControlCenterTests(unittest.TestCase):
         self.assertNotIn("synthetic corrupt state", html)
 
     def test_real_cli_explicit_panel_intents_open_one_current_control_center(self) -> None:
-        for intent in ("paneli aç", "paneli ac"):
+        for intent in ("paneli aç", "paneli ac", "Pala panelini aç"):
             with self.subTest(intent=intent), tempfile.TemporaryDirectory(
                 prefix="pala-m74-open-"
             ) as temp, patch("pala_report.open_report") as opener, patch.object(
@@ -150,7 +159,7 @@ class ControlCenterTests(unittest.TestCase):
                 opened = Path(opener.call_args.args[0])
                 html = opened.read_text(encoding="utf-8")
                 self.assertIn("PALA CONTROL CENTER", html)
-                self.assertIn("Pala 1.1.1", html)
+                self.assertIn("Pala 1.1.2", html)
 
     def test_real_cli_without_explicit_open_never_opens_browser(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-m74-silent-") as temp, patch(

@@ -2,7 +2,7 @@
 
 ## Amaç
 
-- PALA `1.1.1-local-rc` Provider-Independent Local Software Delivery OS'u
+- PALA `1.1.2-local-rc` Provider-Independent Local Software Delivery OS'u
   güvenli, yerel ve kanıta bağlı olarak tamamla.
 - Yeni üründe niyeti kalıcı ProductSpec ve canonical task akışına; mevcut
   projede canonical context/task akışına bağla.
@@ -26,6 +26,9 @@
   formatında kaydet (sır/token/transcript yok).
 - Skill gövdesini kısa tut; ayrıntıyı doğrudan bağlı referanslara ve deterministik scriptlere taşı.
 - Pala hiçbir hook içinde test, build, commit, push veya ağ çağrısını kendiliğinden başlatmaz.
+- Doğal public kurulumda `plugin add` tek başına başarı değildir; kurulu plugin
+  kökündeki Pala installer transaction'ı ve required Workbench Doctor sağlığı
+  aynı kurulum yolculuğunda doğrulanır.
 - Ölçülmemiş hız, token veya kalite yüzdesi raporlama.
 - Soft “bitti/done/ok” kanıt sayılmaz; `name=passed|not-run|blocked|configured-not-verified` kullan.
 

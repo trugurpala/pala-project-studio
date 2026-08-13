@@ -1,6 +1,18 @@
 # Pala progress
 
-Pala 1.1.1 retains the complete local delivery flow from public 1.1.0:
+Pala 1.1.2 retains the complete local delivery flow from public 1.1.1 and fixes
+the four blockers found by its final clean-user canary:
+
+- M75 natural install + required Workbench bootstrap focused contract: `passed`.
+- M75 full-state transactional no-op focused contract: `passed`.
+- M75 dedicated Control Center routing and portable discovery: `passed`.
+- M75 environment/capability completion adversarial matrix: `passed`.
+- Full Quality (24/24), deterministic package, source/portable/installed,
+  fresh install/no-op, host routing, professional authority, and browser
+  operator canaries: `passed`.
+- Publication and final public clean-user canary: `not-run`.
+
+Historical 1.1.1 result:
 
 - M74 Control Center bootstrap and explicit-open regression: `passed`.
 - Installed Codex professional self-test with controlled failure/repair: `passed`.

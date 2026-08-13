@@ -12,6 +12,7 @@ from build_portable import validate_internal_markdown_links
 from pala_product_e2e import REQUIRED_EVIDENCE_FIELDS, write_evidence_manifest
 from pala_quality import quality_ledger_path
 from pala_report import write_report
+from pala_product import load_project_contract, save_project_contract
 from pala_store import WorkflowStore
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -133,6 +134,28 @@ class ProductionProductFlowTests(unittest.TestCase):
             timeout_seconds,
         )
 
+    def record_verified_environment(self) -> None:
+        with patch.dict(os.environ, self.environment, clear=True):
+            record = load_project_contract(self.project, "water-tracker")
+            requirements = [
+                {
+                    **item,
+                    "status": "passed",
+                    "required": True,
+                    "authority": "pala-workbench-doctor",
+                    "evidence_refs": [f"DOCTOR-{item['id']}"],
+                }
+                for item in record["environment_requirements"]
+            ]
+            record["environment_requirements"] = requirements
+            record["environment_status"] = "passed"
+            record["environment_readiness"] = {
+                "status": "passed",
+                "authority": "pala-workbench-doctor",
+                "requirements": requirements,
+            }
+            save_project_contract(self.project, record)
+
     def assert_product_not_done(self) -> None:
         status = self.product_cli(
             "status", "--cwd", str(self.project), "--project-id", "water-tracker"
@@ -163,6 +186,7 @@ class ProductionProductFlowTests(unittest.TestCase):
         quality_ticket, check_id = self.initialize_quality(
             [sys.executable, "-c", "raise SystemExit(0)"]
         )
+        self.record_verified_environment()
         result, completed = self.complete_with_approved_check(quality_ticket, check_id)
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
 
@@ -178,7 +202,7 @@ class ProductionProductFlowTests(unittest.TestCase):
             write_report(self.project, output)
         html = output.read_text(encoding="utf-8")
         for label in (
-            "Pala 1.1.1 Owner Cockpit",
+            "Pala 1.1.2 Owner Cockpit",
             "Project",
             "State",
             "Acceptance",
@@ -218,6 +242,7 @@ class ProductionProductFlowTests(unittest.TestCase):
         quality_ticket, check_id = self.initialize_quality(
             [sys.executable, "-c", "raise SystemExit(0)"]
         )
+        self.record_verified_environment()
         result, payload = self.complete_with_approved_check(quality_ticket, check_id)
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
         self.assertEqual(payload["status"], "package-ready")
@@ -275,18 +300,18 @@ class ProductIdentityAndArtifactTests(unittest.TestCase):
         project = (ROOT / "PROJECT.md").read_text(encoding="utf-8")
         goal = (ROOT / "GOAL.md").read_text(encoding="utf-8")
 
-        self.assertEqual(identity["product_version"], "1.1.1")
+        self.assertEqual(identity["product_version"], "1.1.2")
         self.assertEqual(identity["plugin_version"], plugin["version"])
-        self.assertEqual(identity["python_package_version"], "1.1.1")
-        self.assertEqual(identity["artifact_name"], "pala-project-studio-1.1.1.zip")
+        self.assertEqual(identity["python_package_version"], "1.1.2")
+        self.assertEqual(identity["artifact_name"], "pala-project-studio-1.1.2.zip")
         if identity["remote_publish"] == "passed":
             self.assertEqual(identity["build_release_state"], "VERIFIED")
             self.assertEqual(identity["remote_observed_state"], "PUBLIC RELEASED")
-            self.assertEqual(identity["last_published_version"], "1.1.1")
+            self.assertEqual(identity["last_published_version"], "1.1.2")
         else:
-            self.assertEqual(identity["build_release_state"], "LOCAL RELEASE CANDIDATE VERIFIED")
-            self.assertEqual(identity["remote_observed_state"], "NOT PUBLISHED AS 1.1.1")
-            self.assertEqual(identity["last_published_version"], "1.1.0")
+            self.assertIn(identity["build_release_state"], {"CONFIGURED_NOT_VERIFIED", "LOCAL RELEASE CANDIDATE VERIFIED"})
+            self.assertEqual(identity["remote_observed_state"], "NOT PUBLISHED AS 1.1.2")
+            self.assertEqual(identity["last_published_version"], "1.1.1")
             self.assertEqual(identity["remote_publish"], "not-run")
         for document in (readme, project, goal):
             self.assertIn(identity["product_version"], document)

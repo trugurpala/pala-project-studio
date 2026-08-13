@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "ticket": "M75-T1",
+  "status": "passed",
+  "profile": "fresh-isolated-codex-and-localappdata",
+  "source": "exact-portable-candidate-installed-plugin-root",
+  "plugin": {"version": "1.1.2", "installed": true, "enabled": true},
+  "runtime_bundle": "current",
+  "doctor": {"healthy": true, "plugin_ready": true, "version_ready": true, "authority": "pala-workbench-doctor"},
+  "workbench": {"healthy": true, "code_intelligence": "exact", "security_static": "exact"},
+  "browser_opens": 0,
+  "global_path_mutation": false,
+  "global_python_mutation": false,
+  "sanitized": true
+}

@@ -4,7 +4,7 @@ Pala is a **Provider-Independent Local Software Delivery OS** for people who
 want an AI-assisted software project to remain understandable, resumable,
 verifiable, and publishable without giving one provider control of the product.
 
-Current identity: `1.1.1`. Machine-readable identity lives in
+Current identity: `1.1.2`. Machine-readable identity lives in
 `product-identity.json`.
 
 ## Primary outcome

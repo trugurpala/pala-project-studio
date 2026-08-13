@@ -146,8 +146,20 @@ class InstallerCoreTests(unittest.TestCase):
             os.environ, {"CODEX_HOME": self._codex_home_dir.name}
         )
         self._codex_home_patcher.start()
+        self._workbench_patcher = patch.object(
+            self.installer,
+            "ensure_required_workbench",
+            return_value={
+                "status": "ready",
+                "healthy": True,
+                "changed": False,
+                "state": "CURRENT",
+            },
+        )
+        self._workbench_patcher.start()
 
     def tearDown(self) -> None:
+        self._workbench_patcher.stop()
         self._codex_home_patcher.stop()
         self._codex_home_dir.cleanup()
 

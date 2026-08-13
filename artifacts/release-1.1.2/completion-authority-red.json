@@ -1,0 +1,21 @@
+{
+  "schema": "pala.m75.red.v1",
+  "ticket": "M75-T1",
+  "surface": "completion-authority",
+  "command": "py -3 scripts/test_pala_m75_completion.py -v",
+  "exit_code": 1,
+  "status": "blocked",
+  "observed": [
+    "required Semgrep blocked still reached DONE and PACKAGE_READY",
+    "required CodeGraph absent still reached DONE and PACKAGE_READY",
+    "required browser evidence absent still reached DONE and PACKAGE_READY",
+    "configured-not-verified environment still reached DONE and PACKAGE_READY",
+    "caller-supplied forged health still reached DONE and PACKAGE_READY"
+  ],
+  "control_cases": [
+    "all required authoritative evidence passed",
+    "optional Serena absent allowed",
+    "optional Context7 absent allowed"
+  ],
+  "sanitized": true
+}

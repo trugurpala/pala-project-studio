@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "ticket": "M75-T1",
+  "status": "passed",
+  "host": "Codex CLI 0.147.0 on Windows x64",
+  "runtime_source": "installed-plugin-only",
+  "natural_install": "passed",
+  "second_install": "passed-no-op",
+  "empty_workspace_routing": "passed",
+  "professional_natural_request": "passed-with-required-capability-refusal",
+  "repair_retry": "passed",
+  "browser_opens_during_normal_operations": 0,
+  "credentials_recorded": false,
+  "transcripts_recorded": false
+}

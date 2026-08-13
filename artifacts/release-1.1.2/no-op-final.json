@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "ticket": "M75-T1",
+  "status": "passed",
+  "installation_state": "CURRENT",
+  "changed": false,
+  "workbench_changed": false,
+  "inventory_reads": 2,
+  "marketplace_plugin_mutations": 0,
+  "fingerprints": ["runtime_bundle", "codegraph", "semgrep", "install_state", "update_cache"],
+  "fingerprints_stable": true,
+  "sanitized": true
+}

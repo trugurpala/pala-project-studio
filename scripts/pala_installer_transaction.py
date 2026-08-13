@@ -13,6 +13,39 @@ from pathlib import Path
 from pala_installer_integrity import bundle_files
 from pala_installer_shared import *
 
+INSTALLATION_STATES = frozenset(
+    {"ABSENT", "CURRENT", "OLD", "STALE", "FOREIGN", "OFFLINE", "BROKEN"}
+)
+
+
+def classify_installation_state(
+    bundle: dict[str, object],
+    codex: dict[str, object],
+    workbench: dict[str, object],
+) -> str:
+    """Classify all required dimensions; version equality alone is never CURRENT."""
+    if codex.get("status") == "unavailable":
+        return "OFFLINE"
+    if codex.get("status") == "external_conflict" or bundle.get("status") in {
+        "external_conflict",
+        "modified",
+    } or workbench.get("state") == "FOREIGN":
+        return "FOREIGN"
+    if bundle.get("status") == "outdated" or codex.get("status") == "outdated" or workbench.get("state") == "OLD":
+        return "OLD"
+    if bundle.get("status") == "drifted" or codex.get("cache_stale") or workbench.get("state") == "STALE":
+        return "STALE"
+    if bundle.get("status") in {"missing", "legacy_pala"} or codex.get("status") == "missing" or workbench.get("state") == "ABSENT":
+        return "ABSENT"
+    if (
+        bundle.get("status") == "ready"
+        and codex.get("status") == "ready"
+        and workbench.get("status") == "ready"
+        and workbench.get("healthy") is True
+    ):
+        return "CURRENT"
+    return "BROKEN"
+
 def copy_bundle(source: Path, destination: Path) -> None:
     source = source.resolve()
     destination.mkdir(parents=True, exist_ok=False)
@@ -171,6 +204,7 @@ def install_all_transaction(
     plugin_status = operations["plugin_status"]
     install_bundle = operations["install_bundle"]
     ensure_codex_install = operations["ensure_codex_install"]
+    ensure_workbench = operations["ensure_workbench"]
     atomic_write_json = operations["atomic_write_json"]
     install_gui_next_steps_message = operations["install_gui_next_steps_message"]
     remove_tree_resilient = operations["remove_tree_resilient"]
@@ -183,6 +217,9 @@ def install_all_transaction(
         return {
             "status": codex_before["status"],
             "changed": False,
+            "installation_state": (
+                "OFFLINE" if codex_before["status"] == "unavailable" else "FOREIGN"
+            ),
             "codex": codex_before,
         }
 
@@ -191,15 +228,64 @@ def install_all_transaction(
         return {
             "status": str(bundle_before["status"]),
             "changed": False,
+            "installation_state": "FOREIGN",
             "bundle": bundle_before,
             "codex": codex_before,
         }
 
+    workbench_before = ensure_workbench(
+        source,
+        state_root,
+        dry_run=True,
+        repair=False,
+    )
+    installation_before = classify_installation_state(
+        bundle_before, codex_before, workbench_before
+    )
+    if workbench_before.get("state") == "FOREIGN":
+        return {
+            "status": "external_conflict",
+            "changed": False,
+            "installation_state": installation_before,
+            "bundle": bundle_before,
+            "codex": codex_before,
+            "workbench": workbench_before,
+        }
+    if (
+        not repair
+        and not dry_run
+        and bundle_before.get("status") == "ready"
+        and codex_before.get("status") == "ready"
+        and workbench_before.get("status") == "ready"
+        and workbench_before.get("healthy") is True
+    ):
+        return {
+            "status": "ready",
+            "changed": False,
+            "version": expected_version,
+            "installation_state": installation_before,
+            "bundle": bundle_before,
+            "codex": codex_before,
+            "workbench": workbench_before,
+            "update_cache": read_json(update_cache_path(state_root)),
+            "gui_next_steps": install_gui_next_steps_message(),
+        }
+
     snapshot: Path | None = None
+    workbench_root = state_root / "workbench"
+    workbench_existed_before = workbench_root.exists()
+    workbench_snapshot: Path | None = None
     previous_state = read_json(state_path(state_root))
     if not dry_run and install_root.exists():
         snapshot = install_root.parent / f".{OWNER}.snapshot-{uuid.uuid4().hex}"
         shutil.copytree(install_root, snapshot)
+    if (
+        not dry_run
+        and workbench_existed_before
+        and workbench_before.get("status") != "ready"
+    ):
+        workbench_snapshot = state_root / f".workbench.snapshot-{uuid.uuid4().hex}"
+        shutil.copytree(workbench_root, workbench_snapshot)
 
     try:
         bundle = install_bundle(
@@ -211,6 +297,16 @@ def install_all_transaction(
         )
         if bundle.get("status") in {"external_conflict", "modified"}:
             return {**bundle, "bundle": bundle, "codex": codex_before}
+        workbench = ensure_workbench(
+            source,
+            state_root,
+            dry_run=dry_run,
+            repair=repair,
+        )
+        if workbench.get("status") not in {"ready", "would_install"}:
+            raise RuntimeError(
+                f"Required Workbench did not complete: {workbench.get('status')}"
+            )
         codex = ensure_codex_install(
             install_root,
             expected_version,
@@ -231,11 +327,21 @@ def install_all_transaction(
                 state_path(state_root).unlink(missing_ok=True)
             else:
                 atomic_write_json(state_path(state_root), previous_state)
+            if workbench_snapshot is not None and workbench_snapshot.exists():
+                if workbench_root.exists():
+                    remove_tree_resilient(workbench_root)
+                os.replace(workbench_snapshot, workbench_root)
+            elif not workbench_existed_before and workbench_root.exists():
+                remove_tree_resilient(workbench_root)
         raise
     finally:
         if snapshot is not None and snapshot.exists():
             remove_tree_resilient(snapshot)
-    changed = bool(bundle.get("changed") or codex.get("changed"))
+        if workbench_snapshot is not None and workbench_snapshot.exists():
+            remove_tree_resilient(workbench_snapshot)
+    changed = bool(
+        bundle.get("changed") or workbench.get("changed") or codex.get("changed")
+    )
     if dry_run:
         statuses = {str(bundle.get("status")), str(codex.get("status"))}
         status = "would_update" if "would_update" in statuses else "would_install"
@@ -265,7 +371,9 @@ def install_all_transaction(
         "status": status,
         "changed": changed,
         "version": expected_version,
+        "installation_state": "CURRENT" if status in {"ready", "installed", "updated", "repaired", "migrated"} else "BROKEN",
         "bundle": bundle,
+        "workbench": workbench,
         "codex": codex,
         "update_cache": update_cache,
         "gui_next_steps": install_gui_next_steps_message(),

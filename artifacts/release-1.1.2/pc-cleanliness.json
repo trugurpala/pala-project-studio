@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "ticket": "M75-T1",
+  "status": "passed",
+  "normal_profile": {"pala_instances": 1, "marketplaces": 1, "source_type": "git", "mutated_by_canary": false},
+  "canary_profiles": "isolated",
+  "provider_path_entries_added": 0,
+  "global_python_installs_performed": 0,
+  "orphan_provider_processes": 0,
+  "orphan_loopback_servers": 0,
+  "pala_services": 0,
+  "pala_startup_entries": 0,
+  "unrelated_plugin_changes": 0,
+  "unrelated_marketplace_changes": 0,
+  "sanitized": true
+}

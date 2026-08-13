@@ -1,0 +1,13 @@
+{
+  "schema": "pala.m75.red.v1",
+  "ticket": "M75-T1",
+  "surface": "natural-install-bootstrap",
+  "command": "py -3 -m unittest scripts.test_pala_m75_install -v",
+  "exit_code": 1,
+  "status": "blocked",
+  "observed": [
+    "plugin and runtime bundle completed while required Workbench was absent",
+    "CodeGraph and Semgrep fingerprints were absent, so complete no-op was unproved"
+  ],
+  "sanitized": true
+}

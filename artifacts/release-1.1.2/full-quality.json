@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "ticket": "M75-T1",
+  "status": "passed",
+  "canonical_quality": {"passed": 24, "required": 24, "authority": "pala-quality-runner", "exit_codes": "all-zero"},
+  "source_verify": {"status": "passed", "tests": 659, "skipped": 1},
+  "coverage_percent": 76,
+  "coverage_threshold": 75,
+  "focused_m75_tests": 16,
+  "source": "passed",
+  "portable": "passed",
+  "installed": "passed",
+  "plugin_validator": "passed",
+  "skill_validators": "passed",
+  "sanitized": true
+}

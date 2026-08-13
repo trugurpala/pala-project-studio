@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import asdict
 from pathlib import Path
 
@@ -282,36 +283,97 @@ def complete_product(
     if not task_id:
         raise ValueError("project contract has no active canonical task")
     store = WorkflowStore(root)
-    configured = store.configure_quality_mapping(
-        task_id,
-        session_key,
-        [check_id],
-        EXECUTION_AUTHORITY,
+    current = store._read_ticket(task_id)
+    task_contract = current.get("task_contract") if isinstance(current, dict) else None
+    verified_retry = bool(
+        isinstance(task_contract, dict)
+        and task_contract.get("status") == "VERIFIED"
     )
-    if configured.status != "configured":
-        raise ValueError(f"quality mapping refused: {configured.status}")
-    execution = run_approved_check(
-        root,
-        quality_ticket,
-        check_id,
-        timeout_seconds=timeout_seconds,
-    )
-    if execution.get("status") != "passed":
-        record["quality"] = {"status": "blocked", "check_id": check_id}
-        record["blocker"] = str(execution.get("detail") or "quality evidence blocked")
-        save_project_contract(root, record)
-        return {"status": "blocked", "task_id": task_id, "quality": "blocked"}
+    if verified_retry:
+        if current.get("quality_ticket") != quality_ticket:
+            raise ValueError("verified quality ticket does not match completion request")
+        gate = quality_gate(root, quality_ticket)
+        approved = next(
+            (
+                item
+                for item in gate.get("checks", [])
+                if isinstance(item, dict) and item.get("id") == check_id
+            ),
+            None,
+        )
+        acceptance = task_contract.get("acceptance")
+        acceptance_current = bool(
+            isinstance(acceptance, list)
+            and acceptance
+            and all(
+                isinstance(item, dict)
+                and item.get("status") == "passed"
+                and check_id in item.get("quality_check_ids", [])
+                and item.get("quality_execution_authority") == EXECUTION_AUTHORITY
+                and bool(item.get("evidence_refs"))
+                for item in acceptance
+            )
+        )
+        if not (
+            gate.get("status") == "passed"
+            and isinstance(approved, dict)
+            and approved.get("status") == "passed"
+            and approved.get("exit_code") == 0
+            and approved.get("execution_authority") == EXECUTION_AUTHORITY
+            and acceptance_current
+        ):
+            raise ValueError("verified quality evidence is not current and authoritative")
+    else:
+        configured = store.configure_quality_mapping(
+            task_id,
+            session_key,
+            [check_id],
+            EXECUTION_AUTHORITY,
+        )
+        if configured.status != "configured":
+            raise ValueError(f"quality mapping refused: {configured.status}")
+        execution = run_approved_check(
+            root,
+            quality_ticket,
+            check_id,
+            timeout_seconds=timeout_seconds,
+        )
+        if execution.get("status") != "passed":
+            record["quality"] = {"status": "blocked", "check_id": check_id}
+            record["blocker"] = str(execution.get("detail") or "quality evidence blocked")
+            save_project_contract(root, record)
+            return {"status": "blocked", "task_id": task_id, "quality": "blocked"}
 
-    gate = quality_gate(root, quality_ticket)
-    if gate["status"] != "passed":
-        record["quality"] = {"status": "blocked", "check_id": check_id}
-        record["blocker"] = str(gate.get("last_problem") or "quality evidence blocked")
-        save_project_contract(root, record)
-        return {"status": "blocked", "task_id": task_id, "quality": "blocked"}
+        gate = quality_gate(root, quality_ticket)
+        if gate["status"] != "passed":
+            record["quality"] = {"status": "blocked", "check_id": check_id}
+            record["blocker"] = str(gate.get("last_problem") or "quality evidence blocked")
+            save_project_contract(root, record)
+            return {"status": "blocked", "task_id": task_id, "quality": "blocked"}
 
-    mapped = store.sync_quality_evidence(task_id, session_key, quality_ticket)
-    if mapped.status != "mapped":
-        raise ValueError(f"quality evidence mapping refused: {mapped.status}")
+        mapped = store.sync_quality_evidence(task_id, session_key, quality_ticket)
+        if mapped.status != "mapped":
+            raise ValueError(f"quality evidence mapping refused: {mapped.status}")
+
+    readiness = _environment_completion_gate(record)
+    if readiness["status"] != "passed":
+        record["quality"] = {
+            "status": "passed",
+            "check_id": check_id,
+            "execution_authority": EXECUTION_AUTHORITY,
+        }
+        record["blocker"] = str(readiness["reason"])
+        record["next_action"] = (
+            "Verify the required environment and capability evidence, then retry completion"
+        )
+        record["owner_request"] = "No owner action is required unless Pala reports an explicit owner blocker."
+        save_project_contract(root, record)
+        return {
+            "status": "blocked",
+            "task_id": task_id,
+            "quality": "passed",
+            "environment": readiness,
+        }
     completed = store.complete(task_id, session_key)
     if completed.status != "completed":
         raise ValueError(f"canonical completion refused: {completed.status}")
@@ -338,6 +400,62 @@ def complete_product(
         "remote_publish": "not-run",
         "real_remote_deploy": "not-run",
     }
+
+
+def _environment_completion_gate(record: dict[str, object]) -> dict[str, object]:
+    """Require canonical Pala-owned readiness before task/project completion."""
+    authority = "pala-workbench-doctor"
+    requirements = record.get("environment_requirements")
+    required = [
+        item
+        for item in requirements if isinstance(item, dict) and item.get("required", True)
+    ] if isinstance(requirements, list) else []
+    readiness = record.get("environment_readiness")
+    if not isinstance(readiness, dict):
+        return {"status": "blocked", "reason": "required environment verification is not-run"}
+    if readiness.get("authority") != authority:
+        return {"status": "blocked", "reason": "environment readiness authority is not Pala Doctor"}
+    if record.get("environment_status") != "passed" or readiness.get("status") != "passed":
+        return {"status": "blocked", "reason": "required environment is not verified"}
+
+    readiness_items = readiness.get("requirements")
+    if not isinstance(readiness_items, list):
+        return {"status": "blocked", "reason": "environment readiness requirements are missing"}
+    indexed = {
+        str(item.get("capability")): item
+        for item in readiness_items
+        if isinstance(item, dict) and item.get("capability")
+    }
+    for requirement in required:
+        capability = str(requirement.get("capability") or "")
+        current = indexed.get(capability)
+        if not isinstance(current, dict):
+            return {"status": "blocked", "reason": f"required capability is missing: {capability}"}
+        if current.get("authority") != authority or current.get("status") != "passed":
+            return {"status": "blocked", "reason": f"required capability is not verified: {capability}"}
+        evidence = current.get("evidence_refs")
+        if not isinstance(evidence, list) or not evidence:
+            return {"status": "blocked", "reason": f"required capability evidence is missing: {capability}"}
+
+    acceptance = record.get("acceptance_matrix")
+    browser_required = any(
+        isinstance(item, dict) and item.get("required_capability") == "browser_e2e"
+        for item in acceptance
+    ) if isinstance(acceptance, list) else False
+    if browser_required:
+        browser = indexed.get("browser_e2e")
+        live = record.get("live_verification")
+        if (
+            not isinstance(browser, dict)
+            or browser.get("status") != "passed"
+            or browser.get("authority") != authority
+            or not browser.get("evidence_refs")
+            or not isinstance(live, dict)
+            or live.get("status") != "passed"
+            or not live.get("evidence_refs")
+        ):
+            return {"status": "blocked", "reason": "required browser evidence is not verified"}
+    return {"status": "passed", "authority": authority}
 
 
 def record_local_live_verification(
@@ -379,6 +497,96 @@ def record_local_live_verification(
     }
 
 
+def verify_product_environment(
+    root: Path,
+    project_id: str,
+    *,
+    state_root: Path | None = None,
+) -> dict[str, object]:
+    """Project task-scoped readiness from Pala-owned Doctor/evidence only."""
+    from pala_workbench_doctor import doctor as workbench_doctor
+
+    record = load_project_contract(root, project_id)
+    acceptance = record.get("acceptance_matrix")
+    browser_required = any(
+        isinstance(item, dict) and item.get("required_capability") == "browser_e2e"
+        for item in acceptance
+    ) if isinstance(acceptance, list) else False
+    if state_root is None:
+        local = os.environ.get("LOCALAPPDATA")
+        if not local:
+            raise ValueError("LOCALAPPDATA is required for Pala environment verification")
+        state_root = Path(local) / "Pala"
+    report = workbench_doctor(
+        Path(state_root).resolve(),
+        root,
+        task_requires_browser=browser_required,
+    )
+    capabilities = report.get("capabilities")
+    if not isinstance(capabilities, dict):
+        capabilities = {}
+    live = record.get("live_verification")
+    live_passed = (
+        isinstance(live, dict)
+        and live.get("status") == "passed"
+        and bool(live.get("evidence_refs"))
+    )
+    source_requirements = record.get("environment_requirements")
+    requirements: list[dict[str, object]] = []
+    for source in source_requirements if isinstance(source_requirements, list) else []:
+        if not isinstance(source, dict):
+            continue
+        item = dict(source)
+        capability = str(item.get("capability") or "")
+        required = bool(item.get("required", True))
+        observed = capabilities.get(capability)
+        if capability == "code_intelligence" and isinstance(observed, dict):
+            passed = observed.get("state") == "exact" and observed.get("health") == "passed"
+            version = observed.get("version")
+        elif capability == "security_static" and isinstance(observed, dict):
+            passed = observed.get("state") == "exact" and observed.get("status") == "passed"
+            version = observed.get("version")
+        elif capability == "browser_e2e":
+            profile = capabilities.get("browser_profile")
+            passed = isinstance(profile, dict) and profile.get("status") == "passed" and live_passed
+            version = profile.get("version") if isinstance(profile, dict) else None
+        else:
+            passed = False
+            version = None
+        item.update(
+            {
+                "required": required,
+                "status": "passed" if passed else str(item.get("status") or "not-run").casefold(),
+                "authority": "pala-workbench-doctor",
+                "evidence_refs": (
+                    [f"DOCTOR-{capability}-{version or 'verified'}"] if passed else []
+                ),
+            }
+        )
+        requirements.append(item)
+    blocked = [
+        str(item.get("capability") or item.get("id") or "unknown")
+        for item in requirements
+        if item.get("required", True) and item.get("status") != "passed"
+    ]
+    status = "passed" if not blocked else "blocked"
+    readiness = {
+        "status": status,
+        "authority": "pala-workbench-doctor",
+        "requirements": requirements,
+        "blocked": blocked,
+    }
+    record["environment_requirements"] = requirements
+    record["environment_status"] = status
+    record["environment_readiness"] = readiness
+    if blocked:
+        record["blocker"] = "required environment is not verified: " + ", ".join(blocked)
+        record["next_action"] = "Pala will prepare or re-verify the missing capability"
+        record["owner_request"] = "No owner action is required unless Pala reports an explicit owner blocker."
+    save_project_contract(root, record)
+    return readiness
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     subparsers = result.add_subparsers(dest="command", required=True)
@@ -406,6 +614,10 @@ def parser() -> argparse.ArgumentParser:
     live.add_argument("--project-id", required=True)
     live.add_argument("--quality-ticket", required=True)
     live.add_argument("--check-id", required=True)
+    environment = subparsers.add_parser("verify-environment")
+    environment.add_argument("--cwd", default=".")
+    environment.add_argument("--project-id", required=True)
+    environment.add_argument("--state-root", type=Path)
     return result
 
 
@@ -443,6 +655,12 @@ def main(argv: list[str] | None = None) -> int:
                 args.project_id,
                 args.quality_ticket,
                 args.check_id,
+            )
+        elif args.command == "verify-environment":
+            payload = verify_product_environment(
+                root,
+                args.project_id,
+                state_root=args.state_root,
             )
         else:
             payload = public_status(root, args.project_id)

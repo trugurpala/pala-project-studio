@@ -18,16 +18,20 @@ https://github.com/trugurpala/pala-project-studio eklentisini kur ve güncel old
 
 Pala'nın beklenen davranışı:
 
-`marketplace exists → Git snapshot refresh/upgrade → plugin install/reinstall → version verify → Doctor → new Codex conversation`
+`marketplace inventory → Git snapshot refresh/upgrade → plugin registration → installed root resolution → bundled installer transaction → required Workbench → Doctor → new Codex conversation`
 
 Kullanıcının marketplace root, plugin cache veya manifest ayrıntılarını bilmesi
-gerekmez. `marketplace add` başarılı dönse bile mevcut Git snapshot stale
-olabilir; bu tek başına kurulum kanıtı değildir.
+gerekmez. `marketplace add` veya `plugin add` başarılı dönse bile kurulum bitmiş
+sayılmaz. Codex `plugin list --json` içindeki Pala `source.path` kökünü çözer,
+oradaki `Install-Pala.ps1` transaction'ını çalıştırır ve Doctor `healthy=true`,
+`plugin_ready=true`, `version_ready=true`, CodeGraph exact/healthy ve Semgrep
+exact/healthy olmadan başarı bildirmez. Yeni skill'in aynı konuşmada seçileceğine
+güvenilmez.
 
 ## Önce karar ağacı
 
 1. **ChatGPT Work / Codex** veya **Codex CLI** açık mı?
-   - Evet → aşağıdaki **birincil kapı** (2 CLI komutu).
+   - Evet → aşağıdaki **birincil kapı** (Codex'in tamamladığı tek transaction).
    - Hayır → dur. Yanlış uygulama (Plus sohbet, Cursor “plugin kur”, vs.).
 2. Codex’te **Plugins** / `/plugins` görünüyor mu?
    - Görünüyorsa yüzey doğru; kurulumdan sonra `/hooks` adımına geçeceksin.
@@ -66,6 +70,11 @@ Marketplace adı ve eklenti adı: `pala-project-studio`
 codex plugin marketplace add trugurpala/pala-project-studio
 codex plugin add pala-project-studio@pala-project-studio
 ```
+
+Bu iki komuttan sonra Codex durmaz: `codex plugin list --json` ile Pala'nın
+kurulu `source.path` değerini bulur, o kökteki `Install-Pala.ps1` dosyasını
+çalıştırır ve bundled Doctor'ı doğrular. Bunlar kullanıcıya devredilen manuel
+adımlar değil, doğal dil kurulum isteğinin tek uygulama transaction'ıdır.
 
 **Yerel klasör (klon veya çıkarılmış ağaç kökü):**
 
@@ -128,6 +137,7 @@ Ayrıntı: kök [KUR.md](../KUR.md).
 - `codex plugin list` içinde `pala-project-studio@pala-project-studio` (enabled)
 - **Kayıtlı** projede yeni sohbette presence satırı
 - Doctor çekirdek `plugin_ready` / `healthy` (ZIP/Install yolunda; drifted değil)
+- Doctor required Workbench: CodeGraph exact/healthy ve Semgrep exact/healthy
 - İlk iş: STATUS → PLAN aktif kart → tek task ID (uydurma ticket yok)
 
 ## Başarısızlık / sık sürtünme

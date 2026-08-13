@@ -24,6 +24,7 @@ from pala_installer_transaction import (
     uninstall_all_transaction,
     uninstall_bundle_transaction,
 )
+from pala_workbench_bootstrap import ensure_required_workbench
 
 
 def run_codex_json(arguments: list[str]) -> dict[str, object]:
@@ -41,6 +42,7 @@ def _transaction_operations() -> dict[str, object]:
         "bundle_fingerprint": bundle_fingerprint,
         "codex_status": codex_status,
         "ensure_codex_install": ensure_codex_install,
+        "ensure_workbench": ensure_required_workbench,
         "finalize_verified_uninstall": finalize_verified_uninstall,
         "install_bundle": install_bundle,
         "install_has_user_added_files": install_has_user_added_files,
@@ -106,8 +108,11 @@ def doctor_installation(
     node_path = shutil.which("node")
     uv_path = shutil.which("uv")
     project = project_doctor(install_root, project_root)
+    workbench_required = (
+        source / "workbench" / "semgrep" / "requirements-win-amd64.lock"
+    ).is_file()
     workbench = None
-    if (state_root / "workbench").exists():
+    if workbench_required:
         try:
             from pala_workbench_doctor import doctor as workbench_doctor
 
@@ -129,7 +134,10 @@ def doctor_installation(
     adapters = bundle.get("adapters", {})
     if not isinstance(adapters, dict):
         adapters = {}
-    healthy = bool(plugin_ready and (workbench is None or workbench.get("healthy")))
+    healthy = bool(
+        plugin_ready
+        and (not workbench_required or (isinstance(workbench, dict) and workbench.get("healthy")))
+    )
     hooks_next = hooks_next_step_message(project)
     plugin_payload = bundle["plugin"]
     update_cache = read_json(update_cache_path(state_root))

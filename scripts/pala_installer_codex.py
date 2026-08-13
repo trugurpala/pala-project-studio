@@ -288,6 +288,7 @@ def codex_status(
     official_repository: str,
     trusted_legacy: Callable[[dict[str, object]], bool],
     cache_matches: Callable[[Path, str], bool],
+    trusted_bootstrap_root: Callable[[object, str], bool] | None = None,
     invoke: Callable[[list[str]], dict[str, object]] = run_codex_json,
 ) -> dict[str, object]:
     """Read Codex marketplace/plugin inventory without modifying it."""
@@ -330,10 +331,30 @@ def codex_status(
         marketplace_source_type == "git"
         and _official_marketplace_source(marketplace_source, official_repository)
     )
+    bootstrap_target = next(
+        (
+            entry
+            for entry in installed
+            if isinstance(entry, dict) and entry.get("pluginId") == plugin_id
+        ),
+        None,
+    )
+    bootstrap_adoptable = bool(
+        marketplace is not None
+        and comparable_path(marketplace.get("root")) != expected_root
+        and not marketplace_owned
+        and trusted_bootstrap_root is not None
+        and trusted_bootstrap_root(marketplace.get("root"), expected_version)
+        and bootstrap_target
+        and base_version(bootstrap_target.get("version"))
+        == base_version(expected_version)
+        and bootstrap_target.get("enabled")
+    )
     if (
         marketplace is not None
         and comparable_path(marketplace.get("root")) != expected_root
         and not marketplace_owned
+        and not bootstrap_adoptable
     ):
         return {
             "status": "external_conflict",
@@ -384,11 +405,16 @@ def codex_status(
         # so cache integrity must compare like with like.
         cache_basis = _host_path(marketplace_root)
         cache_basis_kind = "owned-git-snapshot"
+    elif bootstrap_adoptable and isinstance(marketplace_root, str):
+        cache_basis = _host_path(marketplace_root)
+        cache_basis_kind = "verified-bootstrap-source"
     cache_stale = bool(
         version_ready and not cache_matches(cache_basis, expected_version)
     )
     target_ready = bool(version_ready and not cache_stale)
-    if legacy_plugins:
+    if bootstrap_adoptable:
+        status = "bootstrap_source"
+    elif legacy_plugins:
         status = "legacy_pala"
     elif marketplace is None or target is None:
         status = "missing"
@@ -405,6 +431,7 @@ def codex_status(
         "marketplace_source_type": marketplace_source_type,
         "marketplace_source": marketplace_source,
         "marketplace_owned": marketplace_owned,
+        "marketplace_bootstrap_adoptable": bootstrap_adoptable,
         "marketplace_snapshot_version": (
             marketplace.get("snapshotVersion") if marketplace else None
         ),
@@ -499,10 +526,25 @@ def ensure_codex_install(
             before = status_check(install_root, expected_version, invoke=invoke)
 
     marketplace_added = False
+    bootstrap_source = (
+        str(before.get("marketplace_root"))
+        if before.get("marketplace_bootstrap_adoptable")
+        else None
+    )
+    bootstrap_removed = False
     target_was_present = bool(before.get("plugin_id") == plugin_id)
     removed_for_cache_refresh = False
     removed_legacy: list[str] = []
     try:
+        if bootstrap_source is not None:
+            if not capabilities.marketplace_remove or not capabilities.marketplace_add:
+                raise RuntimeError("Codex cannot adopt the verified bootstrap marketplace")
+            if target_was_present:
+                invoke(["plugin", "remove", plugin_id, "--json"])
+                removed_for_cache_refresh = True
+            invoke(["plugin", "marketplace", "remove", owner, "--json"])
+            bootstrap_removed = True
+            before = {**before, "marketplace_registered": False}
         if not before.get("marketplace_registered"):
             invoke(["plugin", "marketplace", "add", str(install_root), "--json"])
             marketplace_added = True
@@ -540,6 +582,12 @@ def ensure_codex_install(
         if marketplace_added:
             try:
                 invoke(["plugin", "marketplace", "remove", owner, "--json"])
+            except Exception:
+                pass
+        if bootstrap_removed and bootstrap_source is not None:
+            try:
+                invoke(["plugin", "marketplace", "add", bootstrap_source, "--json"])
+                invoke(["plugin", "add", plugin_id, "--json"])
             except Exception:
                 pass
         raise

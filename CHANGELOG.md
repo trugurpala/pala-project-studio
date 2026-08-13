@@ -5,6 +5,20 @@ All notable changes to Pala Project Studio are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The canonical product identity and Git tags use `X.Y.Z`.
 
+## [1.1.2] - 2026-08-13
+
+### Fixed
+
+- Natural public installation now completes plugin registration, the Pala
+  runtime bundle, required CodeGraph/Semgrep Workbench bootstrap, and Doctor
+  health as one rollback-capable journey.
+- The complete `CURRENT` installation state returns before mutation and exposes
+  stable plugin, marketplace, runtime, and provider fingerprints.
+- A dedicated tiny `pala-control-center` skill routes explicit Pala panel
+  intents in empty workspaces without capturing browser/admin panel requests.
+- Product completion now requires Pala Doctor-owned task environment evidence;
+  Quality success alone cannot produce `DONE` or `PACKAGE_READY`.
+
 ## [1.1.1] - 2026-08-13
 
 ### Fixed

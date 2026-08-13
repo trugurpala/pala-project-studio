@@ -112,5 +112,5 @@ def doctor(
             },
             "retired_remnants": retired,
         },
-        "authority": "capability-health-projection",
+        "authority": "pala-workbench-doctor",
     }

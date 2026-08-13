@@ -144,6 +144,36 @@ function Show-PalaResult([pscustomobject]$Payload) {
     }
 }
 
+function Show-PalaArrival([pscustomobject]$Doctor, [bool]$NoOp) {
+    Write-Host ""
+    Write-Host "PALA"
+    Write-Host "Professional Delivery Mode"
+    Write-Host ""
+    if ($Doctor.healthy) {
+        Write-Host "Pala Core       Hazir"
+        Write-Host "Kod anlayisi    Hazir"
+        Write-Host "Guvenlik        Hazir"
+        Write-Host "Control Center  Hazir"
+        Write-Host ""
+        if ($NoOp) { Write-Host "Pala zaten guncel." }
+        else { Write-Host "Pala sizin icin hazir." }
+        Write-Host ""
+        Write-Host "Sizden gereken:"
+        Write-Host "Hicbir sey."
+        return
+    }
+    Write-Host "Teslimi durdurdum."
+    Write-Host ""
+    Write-Host "Problem:"
+    Write-Host "Gerekli calisma ortami henuz dogrulanmadi."
+    Write-Host ""
+    Write-Host "Pala ne yapiyor?"
+    Write-Host "Eksik yetenegi hazirliyor veya tekrar dogruluyor."
+    Write-Host ""
+    Write-Host "Sizden gereken:"
+    Write-Host "Hicbir sey."
+}
+
 if (-not (Test-Path -LiteralPath $core -PathType Leaf)) {
     throw "Pala kurulum cekirdegi bulunamadi: $core"
 }
@@ -173,7 +203,7 @@ if ($Mode -eq "Status") {
     if (-not $WhatIfPreference) {
         $reportArgs = @()
         if ($pythonCommand.Count -gt 1) { $reportArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
-        $reportArgs += @($reportScript, "--cwd", $projectRoot, "--open")
+        $reportArgs += @($reportScript, "--cwd", $projectRoot)
         $reportOut = (& $executable @reportArgs 2>&1 | Out-String).Trim()
         if ($statusExit -eq 0 -and $null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
             $statusExit = $LASTEXITCODE
@@ -216,7 +246,7 @@ if ($Mode -in @("Install", "Update", "Repair")) {
         Write-Error "Pala doktor sonucu okunamadi."
         exit 1
     }
-    Show-PalaResult $doctor
+    Show-PalaArrival $doctor ($payload.status -eq "ready" -and -not $payload.changed)
     if ($doctorExit -ne 0) { exit $doctorExit }
     if ($Mode -eq "Install") {
         Show-PalaGuiNextSteps $doctor

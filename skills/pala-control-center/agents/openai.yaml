@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pala Control Center"
+  short_description: "Pala panelini guvenle ac ve durumu goster"
+  default_prompt: "Use $pala-control-center to open the Pala Control Center."
