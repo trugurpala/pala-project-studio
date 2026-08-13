@@ -3,7 +3,7 @@
 - Product version: `1.1.2` public release verified
 - Branch: `main`
 - Local release candidate: `passed`
-- Current work: `M75-T1` verified — canonical completion pending final projection
+- Current work: `M75-T1` canonical `DONE`
 - Last published version: `1.1.2`
 - Public `v1.1.2`: `passed`
 - Final public-install canary: `passed`
@@ -42,5 +42,7 @@ Empty-workspace routing selected the installed Control Center skill exactly,
 and completion remained blocked until Pala Doctor repaired required CodeGraph.
 Canary profiles and processes were removed without changing the normal profile.
 
-Next action: close `M75-T1` from current canonical Quality evidence. Do not
-rewrite `v1.1.1` or start M72.
+M75-T1 is canonically complete: all nine acceptance criteria map to the current
+24/24 exit-code-0 Pala Quality evidence on `afc8c6e`, and the public-truth CI
+passed on Windows, Ubuntu and artifact smoke. Do not rewrite `v1.1.1` or start
+M72.

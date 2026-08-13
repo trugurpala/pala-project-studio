@@ -12,6 +12,7 @@ the four blockers found by its final clean-user canary:
   operator canaries: `passed`.
 - Public `v1.1.2` tag/release, independent asset readback, final clean-user
   install/no-op/routing/completion canary and PC cleanup: `passed`.
+- M75-T1 canonical acceptance mapping and TaskContract completion: `passed`.
 
 Historical 1.1.1 result:
 
