@@ -6,6 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pala_m68_closure import closure_report, manifest
+from pala_release_truth import release_truth
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -17,7 +18,7 @@ class M68ClosureTests(unittest.TestCase):
         self.assertTrue(result["xss_escaped"])
         self.assertTrue(result["diagnostic_redaction"])
         self.assertTrue(result["design_advisory_only"])
-        self.assertEqual(result["remote_publish"], "not-run")
+        self.assertEqual(result["remote_publish"], release_truth(ROOT)["remote_publish"])
         self.assertEqual(result["network"], "not-run")
 
     def test_manifest_has_sealed_candidate_shape_without_publication_claim(self) -> None:

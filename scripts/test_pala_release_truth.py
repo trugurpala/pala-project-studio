@@ -32,7 +32,10 @@ class ReleaseTruthTests(unittest.TestCase):
         self.assertEqual(drift_lint(ROOT)["status"], "passed")
         truth = release_truth(ROOT)
         matrix = publication_matrix(ROOT)
-        self.assertEqual(matrix["local_candidate"]["status"], "passed")
+        expected_local = (
+            "configured-not-verified" if truth["remote_publish"] == "passed" else "passed"
+        )
+        self.assertEqual(matrix["local_candidate"]["status"], expected_local)
         self.assertEqual(matrix["public_release"]["status"], "passed")
         self.assertEqual(matrix["public_release"]["version"], truth["last_published_version"])
         self.assertEqual(matrix["remote_publish"], truth["remote_publish"])
@@ -57,7 +60,11 @@ class ReleaseTruthTests(unittest.TestCase):
         self.assertEqual(payload["repository"]["full_name"], "trugurpala/pala-project-studio")
         self.assertEqual(payload["repository"]["visibility"], "public")
         self.assertEqual(payload["repository"]["default_branch"], "main")
-        self.assertEqual(payload["latest_release"]["tag"], "v1.0.0")
+        identity = json.loads((ROOT / "product-identity.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            payload["latest_release"]["tag"],
+            f"v{identity['last_published_version']}",
+        )
         self.assertEqual(payload["wiki"]["status"], "not-applicable")
         self.assertEqual(payload["pages"]["status"], "not-applicable")
         serialized = json.dumps(payload, ensure_ascii=True).casefold()

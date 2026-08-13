@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "status": "passed",
-  "observed_at": "2026-08-13T06:30:00Z",
+  "observed_at": "2026-08-13T06:41:01Z",
   "repository_hygiene": {
     "status": "passed",
-    "tracked_count": 118,
-    "untracked_count": 40,
+    "tracked_count": 280,
+    "untracked_count": 0,
     "ignored_count": 13882,
     "tracked_junk": [],
     "untracked_junk": []

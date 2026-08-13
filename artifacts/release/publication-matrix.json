@@ -26,6 +26,6 @@
   ],
   "wiki": "NOT_APPLICABLE",
   "pages": "NOT_APPLICABLE",
-  "remote_publish": "not-run",
+  "remote_publish": "passed",
   "real_remote_deploy": "not-run"
 }

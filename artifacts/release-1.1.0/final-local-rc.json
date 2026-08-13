@@ -1,11 +1,13 @@
 {
   "schema": "pala.release.final-local-rc.v1",
-  "status": "PALA 1.1.0 CLEAN MAIN RELEASE PREP VERIFIED",
+  "status": "PALA 1.1.0 CLEAN MAIN PUBLIC RELEASE VERIFIED",
   "version": "1.1.0",
   "git": {
     "base_head": "05f582e49191d8ad2aa443a6830f897b4bc7de51",
     "branch": "main",
     "origin_main_at_baseline": "05f582e49191d8ad2aa443a6830f897b4bc7de51",
+    "release_source_commit": "621802e869f83631804660f0a1f754daf819f8e0",
+    "tag_target": "621802e869f83631804660f0a1f754daf819f8e0",
     "history_rewritten": false
   },
   "cleanup": {
@@ -15,7 +17,7 @@
     "removed_from_current_tree": 53
   },
   "quality": {
-    "ticket": "M73-T1-PREPUBLIC",
+    "ticket": "M73-T1-PUBLIC",
     "required": 23,
     "passed": 23,
     "status": "passed"
@@ -45,11 +47,19 @@
   },
   "final_clean_user_install_canary": "not-run-by-owner-stop-boundary",
   "release_truth": {
-    "build_release_state": "LOCAL RELEASE CANDIDATE VERIFIED",
-    "remote_observed_state": "NOT PUBLISHED AS 1.1.0",
-    "last_published_version": "1.0.0",
-    "remote_publish": "not-run",
+    "build_release_state": "VERIFIED",
+    "remote_observed_state": "PUBLIC RELEASED",
+    "last_published_version": "1.1.0",
+    "remote_publish": "passed",
     "real_remote_deploy": "not-run"
+  },
+  "public_readback": {
+    "latest_release": "v1.1.0",
+    "draft": false,
+    "prerelease": false,
+    "zip_digest": "passed",
+    "checksum_asset": "passed",
+    "evidence_manifest_asset": "passed"
   },
   "sanitized": true
 }

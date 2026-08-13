@@ -2,7 +2,7 @@
   "schema": "pala.release.source.v1",
   "status": "passed",
   "version": "1.1.0",
-  "quality_ticket": "M73-T1-PREPUBLIC",
+  "quality_ticket": "M73-T1-PUBLIC",
   "quality_required": 23,
   "quality_passed": 23,
   "tests_passed": 636,

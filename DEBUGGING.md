@@ -17,10 +17,11 @@ transcripts, tokens, or real customer data. Evidence labels are `passed`,
 - **Fix criteria:** all three assertions are platform-independent; source verify passes
   locally and the exact follow-up `main` commit is green on Linux and Windows CI.
 - **Proved by:** `py -3 -m unittest scripts.test_pala_playwright scripts.test_pala_semgrep -v`
-  = `passed`; GitHub Quality follow-up = `not-run`.
+  = `passed`; `py -3 scripts/verify.py --mode source` = `passed`; GitHub Quality
+  run `31674469025` on the follow-up main commit = `passed`.
 - **Related files:** `scripts/test_pala_playwright.py`, `scripts/test_pala_semgrep.py`.
 - **Date:** 2026-08-13
-- **Status:** configured-not-verified
+- **Status:** fixed (`passed` contract)
 
 Verified historical incidents remain available in Git history and in Failure
 Intelligence. New reproducible failures are recorded here only while active.
