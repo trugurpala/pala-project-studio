@@ -5,38 +5,40 @@
     "full_name": "trugurpala/pala-project-studio",
     "visibility": "public",
     "default_branch": "main",
-    "main_commit": "416a45117c7cee383cfa7d5c19efcdd88e49daaf",
+    "main_commit": "fe34ca35ef6b383b076a3d435b9708c18ae2cd81",
     "license": "MIT",
     "archived": false,
     "wiki": "NOT_APPLICABLE",
     "pages": "NOT_APPLICABLE",
     "branch_protection": "not-configured"
   },
-  "pull_requests": {
-    "release": 21,
-    "reconciliation": 22,
-    "release_ci": "passed",
-    "reconciliation_ci": "passed"
-  },
   "tag": {
-    "name": "v1.0.0",
-    "target_commit": "f016df98766a78a5d8fa2ee28c53be5b41e4293a",
+    "name": "v1.1.2",
+    "target_commit": "fe34ca35ef6b383b076a3d435b9708c18ae2cd81",
     "annotated": true
   },
   "release": {
-    "name": "Pala 1.0.0",
-    "tag": "v1.0.0",
+    "name": "Pala 1.1.2",
+    "tag": "v1.1.2",
     "published": true,
-    "url": "https://github.com/trugurpala/pala-project-studio/releases/tag/v1.0.0",
+    "latest": true,
+    "url": "https://github.com/trugurpala/pala-project-studio/releases/tag/v1.1.2",
     "assets": [
-      "pala-project-studio-1.0.0.zip",
-      "pala-project-studio-1.0.0.zip.sha256",
-      "pala-1.0.0-evidence-manifest.json"
-    ]
+      "pala-project-studio-1.1.2.zip",
+      "pala-project-studio-1.1.2.zip.sha256",
+      "pala-project-studio-1.1.2-evidence-manifest.json"
+    ],
+    "zip_sha256": "A718AEA977536E5385401F7DEBCB1CDB6CEE005F054A52574B820C263D1962B2",
+    "independent_download_match": true
+  },
+  "actions": {
+    "status": "passed",
+    "run_id": 31704568248,
+    "windows": "passed",
+    "ubuntu": "passed",
+    "artifact_smoke": "passed"
   },
   "metadata_reconciliation": {
-    "description": "passed",
-    "topics": "passed",
     "visibility_unchanged": true,
     "billing_mutation": "not-run",
     "real_remote_deploy": "not-run"

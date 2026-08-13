@@ -2,8 +2,48 @@
   "schema_version": 1,
   "ticket": "M75-T1",
   "version": "1.1.2",
-  "status": "not-run",
-  "reason": "Public release does not exist yet; final clean-user canary follows publication.",
+  "status": "passed",
+  "public_release": {
+    "tag": "v1.1.2",
+    "latest": true,
+    "asset_sha256": "A718AEA977536E5385401F7DEBCB1CDB6CEE005F054A52574B820C263D1962B2",
+    "asset_readback": "passed"
+  },
+  "clean_profile": {
+    "source": "public-git-marketplace-v1.1.2",
+    "plugin": "installed-enabled-exact",
+    "runtime": "ready",
+    "codegraph": "exact-healthy-1.5.0",
+    "semgrep": "exact-healthy-1.172.0",
+    "doctor": "healthy",
+    "browser_opens_during_install": 0
+  },
+  "second_install": {
+    "status": "passed-no-op",
+    "changed": false,
+    "plugin_count": 1,
+    "marketplace_count": 1,
+    "fingerprints": "stable"
+  },
+  "host_routing": {
+    "intent": "paneli ac",
+    "installed_skill_selected": "pala-control-center",
+    "control_center_opens": 1,
+    "negative_browser_panel_captured": false,
+    "negative_admin_panel_captured": false
+  },
+  "professional_sample": {
+    "natural_request": "passed",
+    "quality": "4/4 passed",
+    "required_codegraph_absent": "completion-blocked",
+    "blocked_task_state": "VERIFIED",
+    "blocked_project_state": "BUILDING",
+    "repair_authority": "pala-workbench-doctor",
+    "quality_authority": "pala-quality-runner",
+    "repaired_task_state": "DONE",
+    "repaired_project_state": "PACKAGE_READY"
+  },
+  "cleanup": "passed",
   "credentials_recorded": false,
   "transcripts_recorded": false
 }

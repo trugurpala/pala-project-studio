@@ -7,7 +7,7 @@
   "coverage_percent": 76,
   "coverage_threshold": 75,
   "focused_m75_tests": 17,
-  "github_quality": {"status": "passed", "run_id": 31704132994, "windows": "passed", "ubuntu": "passed", "artifact_smoke": "passed"},
+  "github_quality": {"status": "passed", "run_id": 31704568248, "windows": "passed", "ubuntu": "passed", "artifact_smoke": "passed"},
   "source": "passed",
   "portable": "passed",
   "installed": "passed",

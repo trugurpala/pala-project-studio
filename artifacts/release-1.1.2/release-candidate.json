@@ -8,9 +8,9 @@
   "entries": 199,
   "deterministic_builds": 2,
   "digests_equal": true,
-  "release_state": "LOCAL RELEASE CANDIDATE VERIFIED",
-  "last_published": "1.1.1",
-  "remote_publish": "not-run",
+  "release_state": "VERIFIED",
+  "last_published": "1.1.2",
+  "remote_publish": "passed",
   "real_remote_deploy": "not-run",
   "historical_v1_1_1_mutated": false
 }

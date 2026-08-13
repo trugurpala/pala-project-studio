@@ -10,7 +10,8 @@ the four blockers found by its final clean-user canary:
 - Full Quality (24/24), deterministic package, source/portable/installed,
   fresh install/no-op, host routing, professional authority, and browser
   operator canaries: `passed`.
-- Publication and final public clean-user canary: `not-run`.
+- Public `v1.1.2` tag/release, independent asset readback, final clean-user
+  install/no-op/routing/completion canary and PC cleanup: `passed`.
 
 Historical 1.1.1 result:
 

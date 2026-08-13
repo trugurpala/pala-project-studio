@@ -5,11 +5,11 @@
   "plugin_version": "1.1.2",
   "python_package_version": "1.1.2",
   "artifact_name": "pala-project-studio-1.1.2.zip",
-  "release_status": "LOCAL RELEASE CANDIDATE VERIFIED",
-  "build_release_state": "LOCAL RELEASE CANDIDATE VERIFIED",
-  "remote_observed_state": "NOT PUBLISHED AS 1.1.2",
-  "remote_publish": "not-run",
+  "release_status": "VERIFIED",
+  "build_release_state": "VERIFIED",
+  "remote_observed_state": "PUBLIC RELEASED",
+  "remote_publish": "passed",
   "real_remote_deploy": "not-run",
-  "current_public_version": "1.1.1",
-  "last_published_version": "1.1.1"
+  "current_public_version": "1.1.2",
+  "last_published_version": "1.1.2"
 }

@@ -10,7 +10,8 @@ of scope.
 - **Dosyalar:** installer/runtime/Workbench, product completion authority, Pala skills, focused tests, current release surfaces, sanitized M75 evidence
 - **Bitti sayılır:** AC-01–AC-09 map to current exit-code-0 Quality evidence; deterministic artifact and fresh public clean-user canary pass.
 - **Bağımlılık:** M74-T1 public canary blocker evidence
-- **Kanıt:** local candidate `passed`; public publication/canary `not-run`
+- **Kanıt:** local candidate, public publication/readback, clean install/no-op,
+  native routing, completion block/repair and cleanup `passed`
 
 Historical milestone plans remain available in Git history and are not current
 product authority. Canonical active work lives in TaskContract/WorkflowStore;

@@ -3,7 +3,7 @@
   "ticket": "M75-T1",
   "status": "passed",
   "normal_profile": {"pala_instances": 1, "marketplaces": 1, "source_type": "git", "mutated_by_canary": false},
-  "canary_profiles": "isolated",
+  "canary_profiles": "isolated-and-removed",
   "provider_path_entries_added": 0,
   "global_python_installs_performed": 0,
   "orphan_provider_processes": 0,
@@ -12,5 +12,8 @@
   "pala_startup_entries": 0,
   "unrelated_plugin_changes": 0,
   "unrelated_marketplace_changes": 0,
+  "canary_processes_remaining": 0,
+  "canary_directories_remaining": 0,
+  "global_semgrep_present": false,
   "sanitized": true
 }

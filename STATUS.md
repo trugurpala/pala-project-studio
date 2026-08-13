@@ -1,12 +1,12 @@
 # Pala current status
 
-- Product version: `1.1.2` local release candidate verified
+- Product version: `1.1.2` public release verified
 - Branch: `main`
 - Local release candidate: `passed`
-- Current work: `M75-T1` claimed — public bootstrap, routing and completion safety
-- Last published version: `1.1.1`
-- Public `v1.1.1`: `passed`
-- Final public-install canary: `not-run` for `1.1.2`
+- Current work: `M75-T1` verified — canonical completion pending final projection
+- Last published version: `1.1.2`
+- Public `v1.1.2`: `passed`
+- Final public-install canary: `passed`
 - Real remote deploy: `not-run`
 - Canonical authority: TaskContract → WorkflowStore → Pala Quality Engine
 
@@ -35,5 +35,12 @@ second ensure-current is mutation-free, all positive/negative host-routing
 cases are deterministic, and completion blocks then succeeds only after
 Doctor-backed repair. Canonical Quality is 24/24 with 76% coverage.
 
-Next action: publish the sealed `1.1.2` candidate after CI, then run the final
-completely-new public clean-user canary. Do not rewrite `v1.1.1` or start M72.
+Public `v1.1.2` readback matched the sealed SHA-256. A completely new public
+Git marketplace profile installed plugin, runtime, CodeGraph and Semgrep;
+Doctor was healthy and the second install was a fingerprint-stable no-op.
+Empty-workspace routing selected the installed Control Center skill exactly,
+and completion remained blocked until Pala Doctor repaired required CodeGraph.
+Canary profiles and processes were removed without changing the normal profile.
+
+Next action: close `M75-T1` from current canonical Quality evidence. Do not
+rewrite `v1.1.1` or start M72.
