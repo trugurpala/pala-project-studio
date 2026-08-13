@@ -58,6 +58,9 @@ customer data. Labels: `passed|not-run|blocked|configured-not-verified`.
   `Pala panelini aç` guard gaps; all now fail closed outside exact contracts.
 - **Proved by:** 16 focused/9 adversarial tests, 659 source tests, fresh Doctor,
   no-op, 3 positive/2 negative routes, canonical Quality 24/24: all passed.
+- **CI portability:** Ubuntu correctly cannot install the Windows-x64 managed
+  Workbench; its real-install contract is now explicitly Windows-only while
+  cross-platform source/portable contracts continue to run on Ubuntu.
 - **Status:** fixed (`passed` local candidate; public canary `not-run`)
 
 Historical incidents remain in Git/Failure Intelligence; new failures stay here.

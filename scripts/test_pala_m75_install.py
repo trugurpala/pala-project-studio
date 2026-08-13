@@ -87,6 +87,7 @@ class FakeCodexPluginHost:
         )
 
 
+@unittest.skipUnless(os.name == "nt", "M75 managed Workbench target is Windows x64")
 class M75InstallContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
