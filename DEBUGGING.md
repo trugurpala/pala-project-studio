@@ -68,9 +68,9 @@ customer data. Labels: `passed|not-run|blocked|configured-not-verified`.
 - **Symptoms:** Windows CI first rejected the wheelhouse, then its corrected real install exceeded the old 240-second suite limit.
 - **Root cause:** one CPython 3.13 lock served 3.12, and the pre-bootstrap timeout had no real-install headroom.
 - **Fix criteria:** exact 3.10-3.14 locks/caches plus a bounded 420-second suite and 10-minute job limit.
-- **Proved by:** RED timeout contract failed at 240; focused install and local 660-test source gate passed; remote CI pending.
+- **Proved by:** RED failed at 240; local 661-test source gate and CI `31704132994` passed on Windows/Ubuntu/artifact.
 - **Related files:** `pala_workbench_bootstrap.py`, `test_pala_semgrep.py`, `requirements-win-amd64-cp3*.lock`.
 - **Date:** 2026-08-13
-- **Status:** fix implemented (`configured-not-verified` by remote CI)
+- **Status:** fixed (`passed`)
 
 Historical incidents remain in Git/Failure Intelligence; new failures stay here.
