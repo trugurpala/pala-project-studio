@@ -146,7 +146,8 @@ class SemgrepContractTests(unittest.TestCase):
         flattened = " ".join(command)
         self.assertIn("--metrics off", flattened)
         self.assertIn("--disable-version-check", flattened)
-        self.assertIn("--config C:\\Pala\\rules.yml", flattened)
+        config_index = command.index("--config")
+        self.assertEqual(command[config_index + 1], str(Path("C:/Pala/rules.yml")))
         self.assertIn("--exclude .tools", flattened)
         for forbidden in ("login", "cloud", "registry", "auto"):
             self.assertNotIn(forbidden, flattened.casefold())
@@ -270,7 +271,8 @@ class SemgrepContractTests(unittest.TestCase):
                 )
 
             final = root / "state" / "workbench" / "security_static" / "versions" / "1.172.0"
-            self.assertEqual(created, [final / "venv"])
+            self.assertEqual(len(created), 1)
+            self.assertEqual(created[0].resolve(), (final / "venv").resolve())
             self.assertEqual(result["state"], "exact")
             self.assertTrue((final / "pala-install.json").is_file())
             self.assertFalse(any("stage" in str(path) for path in created))

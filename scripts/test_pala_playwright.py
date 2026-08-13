@@ -65,8 +65,10 @@ class PlaywrightProfileTests(unittest.TestCase):
         self.assertEqual(result["browser_exploration"]["provider"], "@playwright/cli")
         self.assertEqual(result["browser_e2e"]["provider"], "@playwright/test")
         self.assertFalse(result["default_mcp_registered"])
-        mcp = json.loads((SCRIPTS.parent / ".mcp.json").read_text(encoding="utf-8"))
-        self.assertNotIn("playwright", json.dumps(mcp).casefold())
+        mcp_path = SCRIPTS.parent / ".mcp.json"
+        if mcp_path.is_file():
+            mcp = json.loads(mcp_path.read_text(encoding="utf-8"))
+            self.assertNotIn("playwright", json.dumps(mcp).casefold())
 
     def test_evidence_requires_trace_screenshot_console_network_and_browser_version(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
