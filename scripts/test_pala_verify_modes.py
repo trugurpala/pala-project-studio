@@ -32,6 +32,15 @@ def load_verify():
 
 
 class VerifyModeTests(unittest.TestCase):
+    def test_source_gate_keeps_bounded_headroom_for_real_windows_bootstrap(self) -> None:
+        verify = load_verify()
+        workflow = (ROOT / ".github" / "workflows" / "quality.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertGreaterEqual(verify.CONTRACT_TEST_TIMEOUT_SECONDS, 360)
+        self.assertLessEqual(verify.CONTRACT_TEST_TIMEOUT_SECONDS, 600)
+        self.assertIn("timeout-minutes: 10", workflow)
+
     def test_verify_installed_mode_exits_zero_on_copy_bundle(self) -> None:
         verify = load_verify()
         with tempfile.TemporaryDirectory(prefix="pala-verify-installed-") as temp:

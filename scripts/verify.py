@@ -19,7 +19,7 @@ SCRIPTS = ROOT / "scripts"
 PACKAGER = SCRIPTS / "build_portable.py"
 # Windows hosted runners can be slower than the local Python environment for
 # the full contract suite; retain a bounded fail-closed timeout with headroom.
-CONTRACT_TEST_TIMEOUT_SECONDS = 240
+CONTRACT_TEST_TIMEOUT_SECONDS = 420
 
 
 def announce(message: str) -> None:
