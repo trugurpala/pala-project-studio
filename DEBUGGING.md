@@ -51,5 +51,30 @@ transcripts, tokens, or real customer data. Evidence labels are `passed`,
 - **Date:** 2026-08-13
 - **Status:** fixed
 
+### INC-20260813-m74-public-bootstrap-and-routing
+
+- **Symptoms:** A clean public Codex profile installed/enabled `1.1.1`, but
+  isolated Doctor returned exit `2`, `healthy=false`, `plugin_ready=false`, and
+  no Workbench state. CodeGraph was absent and Semgrep blocked. Exact `paneli
+  aç` passed once but asked which panel was intended in a second empty
+  workspace. The installed-skill self-test reached `PACKAGE_READY` anyway.
+- **Root cause:** The public URL flow installs the Codex plugin only; it does not
+  bootstrap the Pala bundle/Workbench. The skill description does not make the
+  no-project panel intent a deterministic routing trigger, and completion can omit required core
+  health checks from its generated Quality contract.
+- **Fix criteria:** From a genuinely empty Codex and Pala state, the single URL
+  instruction installs plugin plus required Pala core providers, second install
+  is a proved no-op, Doctor exits `0`, and exact `paneli aç` always invokes one
+  complete Control Center. Product completion must remain blocked whenever a
+  required core provider is absent or blocked.
+- **Proved by:** public release readback SHA-256 = `passed`; public plugin
+  inventory = installed/enabled `1.1.1`; isolated `pala_installer.py doctor`
+  exit `2`; empty-workspace native panel retry = `blocked`; installed Decision
+  Log Mini Quality = `passed` while CodeGraph=`absent` and Semgrep=`blocked`.
+- **Related files:** `artifacts/release-1.1.1/public-install-canary.json`, `scripts/pala_installer.py`, `scripts/pala_product_cli.py`,
+  `skills/pala-project-finisher/SKILL.md`.
+- **Date:** 2026-08-13
+- **Status:** open (`blocked`)
+
 Verified historical incidents remain available in Git history and in Failure
 Intelligence. New reproducible failures are recorded here only while active.

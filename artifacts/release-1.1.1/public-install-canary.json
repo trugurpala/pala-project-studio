@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "release": "1.1.1",
+  "status": "blocked",
+  "public_readback": {
+    "latest": "v1.1.1",
+    "tag_commit": "ca7211a672531cec1cdfe674b28b2288cd849a13",
+    "asset_count": 3,
+    "zip_sha256": "89061A4E2B51A8C6042AAF33C6D9538702923DD3D42B21094B15D1002D54E128",
+    "checksum": "passed",
+    "evidence_manifest": "passed"
+  },
+  "codex_public_install": {
+    "status": "passed",
+    "version": "1.1.1",
+    "installed": true,
+    "enabled": true,
+    "marketplace_current": true,
+    "marketplace_commit": "ca7211a672531cec1cdfe674b28b2288cd849a13",
+    "normal_browser_open_count": 0
+  },
+  "second_install": {
+    "status": "blocked",
+    "version_drift": false,
+    "observed": "Codex reported another add at the same version; a transactional no-op was not proved"
+  },
+  "doctor": {
+    "status": "blocked",
+    "exit_code": 2,
+    "healthy": false,
+    "plugin_ready": false,
+    "version_ready": false,
+    "workbench": "absent",
+    "codegraph": "absent",
+    "semgrep": "blocked"
+  },
+  "control_center": {
+    "first_public_workspace": "passed",
+    "required_markers": "6/6",
+    "open_invocations": 1,
+    "isolated_empty_workspace_repeat": "blocked",
+    "observed": "Codex asked which panel was intended instead of selecting Pala"
+  },
+  "installed_skill_self_test": {
+    "skill_discovered": "pala-project-studio:pala-project-finisher",
+    "sample": "disposable-decision-log-mini",
+    "tests": "5/5 passed",
+    "quality": "1/1 passed",
+    "canonical_task": "DONE",
+    "product_state": "PACKAGE_READY",
+    "environment_status": "configured-not-verified",
+    "codegraph": "absent",
+    "semgrep": "blocked"
+  },
+  "normal_profile_mutated": false,
+  "credentials_recorded": false,
+  "blockers": [
+    "Natural public installation did not bootstrap the Pala bundle or required Workbench providers, so Doctor was unhealthy.",
+    "Exact no-project panel intent did not route to Pala deterministically in an isolated empty workspace.",
+    "Product completion allowed PACKAGE_READY while required core capability health was not verified."
+  ]
+}

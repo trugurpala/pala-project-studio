@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "passed",
-  "observed_at": "2026-08-13T06:41:01Z",
+  "observed_at": "2026-08-13T09:43:28Z",
   "repository": {
     "full_name": "trugurpala/pala-project-studio",
     "visibility": "public",
@@ -32,10 +32,10 @@
     "credential_material": "not-recorded"
   },
   "latest_release": {
-    "tag": "v1.1.0",
-    "title": "Pala 1.1.0",
-    "published_at": "2026-08-13T06:41:01Z",
-    "commit": "621802e869f83631804660f0a1f754daf819f8e0"
+    "tag": "v1.1.1",
+    "title": "Pala 1.1.1",
+    "published_at": "2026-08-13T09:43:28Z",
+    "commit": "ca7211a672531cec1cdfe674b28b2288cd849a13"
   },
   "tags": [
     "v0.3.3",
@@ -48,7 +48,8 @@
     "v0.8.0",
     "v0.8.1",
     "v1.0.0",
-    "v1.1.0"
+    "v1.1.0",
+    "v1.1.1"
   ],
   "pull_requests": {
     "open": [],
@@ -72,8 +73,8 @@
     "latest_quality_run": {
       "status": "passed",
       "conclusion": "success",
-      "head_sha": "621802e869f83631804660f0a1f754daf819f8e0",
-      "url": "https://github.com/trugurpala/pala-project-studio/actions/runs/31674469025"
+      "head_sha": "ca7211a672531cec1cdfe674b28b2288cd849a13",
+      "url": "https://github.com/trugurpala/pala-project-studio/actions/runs/31687614687"
     }
   },
   "wiki": {"status": "not-applicable", "enabled": false},
