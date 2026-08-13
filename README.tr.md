@@ -10,7 +10,7 @@ Codex'e şunu yaz:
 
 > https://github.com/trugurpala/pala-project-studio eklentisini kur ve guncel oldugunu dogrula.
 
-Güncel sürüm: **1.1.0**
+Güncel sürüm: **1.1.1**
 
 ## Pala ne yapar?
 

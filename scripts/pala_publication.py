@@ -218,7 +218,7 @@ def current_publication_matrix(root: Path) -> dict[str, Any]:
         "release-policy": "policies/release.json",
         "quality-policy": "policies/core-quality.json",
         "design-tokens": "design/tokens.json",
-        "release-notes": "docs/RELEASE_1.1.0.md",
+        "release-notes": f"docs/RELEASE_{expected}.md",
     }
     matrix = version_matrix(root, expected, surfaces=surfaces)
     plugin_version = _base_version(plugin.get("version"))

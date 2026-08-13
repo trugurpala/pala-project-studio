@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "ticket": "M74-T1",
+  "scenario": "installed Pala with no registered project through the real report-generation path",
+  "command": "py -3 -m unittest scripts.test_pala_control_center.ControlCenterTests.test_real_report_path_bootstraps_control_center_without_project_contract -v",
+  "status": "blocked",
+  "exit_code": 1,
+  "observed": {
+    "html_generated": true,
+    "legacy_status_shell_present": true,
+    "control_center_fragment_present": false,
+    "missing_first_assertion": "Pala 1.1.1"
+  },
+  "root_cause": "public_status required a canonical ProductContract and the report replaced the owner fragment with an empty string after ValueError",
+  "sanitized": true
+}

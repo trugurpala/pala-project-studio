@@ -16,15 +16,15 @@ class ReleaseTruthTests(unittest.TestCase):
     def test_truth_is_a_coherent_candidate_or_verified_public_release(self) -> None:
         truth = release_truth(ROOT)
         self.assertEqual(truth["authority"], "product-identity.json")
-        self.assertEqual(truth["product_version"], "1.1.0")
+        self.assertEqual(truth["product_version"], "1.1.1")
         if truth["remote_publish"] == "passed":
             self.assertEqual(truth["build_release_state"], "VERIFIED")
             self.assertEqual(truth["remote_observed_state"], "PUBLIC RELEASED")
-            self.assertEqual(truth["last_published_version"], "1.1.0")
+            self.assertEqual(truth["last_published_version"], "1.1.1")
         else:
             self.assertEqual(truth["build_release_state"], "LOCAL RELEASE CANDIDATE VERIFIED")
-            self.assertEqual(truth["remote_observed_state"], "NOT PUBLISHED AS 1.1.0")
-            self.assertEqual(truth["last_published_version"], "1.0.0")
+            self.assertEqual(truth["remote_observed_state"], "NOT PUBLISHED AS 1.1.1")
+            self.assertEqual(truth["last_published_version"], "1.1.0")
             self.assertEqual(truth["remote_publish"], "not-run")
         self.assertEqual(truth["real_remote_deploy"], "not-run")
 
@@ -43,8 +43,8 @@ class ReleaseTruthTests(unittest.TestCase):
     def test_current_publication_matrix_has_no_required_version_drift(self) -> None:
         matrix = current_publication_matrix(ROOT)
         self.assertEqual(matrix["status"], "passed")
-        self.assertEqual(matrix["release_truth"]["product_version"], "1.1.0")
-        self.assertEqual(matrix["release_truth"]["plugin_base_version"], "1.1.0")
+        self.assertEqual(matrix["release_truth"]["product_version"], "1.1.1")
+        self.assertEqual(matrix["release_truth"]["plugin_base_version"], "1.1.1")
         artifact = json.loads((ROOT / "artifacts" / "release" / "publication-matrix.json").read_text(encoding="utf-8"))
         self.assertEqual(artifact["required_drift"], [])
 

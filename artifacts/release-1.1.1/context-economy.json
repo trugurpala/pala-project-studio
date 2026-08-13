@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "release": "1.1.1",
+  "status": "passed",
+  "profile": "isolated-candidate",
+  "skills_invoked": 1,
+  "skills": ["pala-project-finisher"],
+  "progressive_disclosure": "passed",
+  "minimum_packet_first": true,
+  "relevant_capability_context_only": [
+    "code-intelligence",
+    "security",
+    "browser",
+    "quality"
+  ],
+  "duplicate_full_context_observed": false,
+  "repeated_full_repo_read_observed": false,
+  "new_m74_dependency_added_to_pala": false
+}

@@ -178,7 +178,7 @@ class ProductionProductFlowTests(unittest.TestCase):
             write_report(self.project, output)
         html = output.read_text(encoding="utf-8")
         for label in (
-            "Pala 1.0 Owner Cockpit",
+            "Pala 1.1.1 Owner Cockpit",
             "Project",
             "State",
             "Acceptance",
@@ -275,18 +275,18 @@ class ProductIdentityAndArtifactTests(unittest.TestCase):
         project = (ROOT / "PROJECT.md").read_text(encoding="utf-8")
         goal = (ROOT / "GOAL.md").read_text(encoding="utf-8")
 
-        self.assertEqual(identity["product_version"], "1.1.0")
+        self.assertEqual(identity["product_version"], "1.1.1")
         self.assertEqual(identity["plugin_version"], plugin["version"])
-        self.assertEqual(identity["python_package_version"], "1.1.0")
-        self.assertEqual(identity["artifact_name"], "pala-project-studio-1.1.0.zip")
+        self.assertEqual(identity["python_package_version"], "1.1.1")
+        self.assertEqual(identity["artifact_name"], "pala-project-studio-1.1.1.zip")
         if identity["remote_publish"] == "passed":
             self.assertEqual(identity["build_release_state"], "VERIFIED")
             self.assertEqual(identity["remote_observed_state"], "PUBLIC RELEASED")
-            self.assertEqual(identity["last_published_version"], "1.1.0")
+            self.assertEqual(identity["last_published_version"], "1.1.1")
         else:
             self.assertEqual(identity["build_release_state"], "LOCAL RELEASE CANDIDATE VERIFIED")
-            self.assertEqual(identity["remote_observed_state"], "NOT PUBLISHED AS 1.1.0")
-            self.assertEqual(identity["last_published_version"], "1.0.0")
+            self.assertEqual(identity["remote_observed_state"], "NOT PUBLISHED AS 1.1.1")
+            self.assertEqual(identity["last_published_version"], "1.1.0")
             self.assertEqual(identity["remote_publish"], "not-run")
         for document in (readme, project, goal):
             self.assertIn(identity["product_version"], document)

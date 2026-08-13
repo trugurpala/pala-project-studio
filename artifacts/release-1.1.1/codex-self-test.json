@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "release": "1.1.1",
+  "status": "passed",
+  "profile": "isolated-candidate",
+  "project": "disposable-service-desk-mini",
+  "installed_skill_discovered": "pala-project-studio:pala-project-finisher",
+  "workflow": {
+    "task_ticket": "M1-T2",
+    "task_contract": "DONE",
+    "workflow_store": "completed",
+    "dirty": false,
+    "acceptance": "6/6",
+    "quality": "passed"
+  },
+  "quality_check_ids": [
+    "integration:service-desk-acceptance",
+    "browser:service-desk-browser-acceptance",
+    "security:service-desk-semgrep",
+    "integration:service-desk-codegraph-freshness",
+    "unit:test",
+    "browser:test:browser"
+  ],
+  "controlled_failure": {
+    "status": "passed",
+    "initial_runner_exit_code": 1,
+    "repair_runner_exit_code": 0,
+    "early_done_blocked": true,
+    "surface_drift_detected_and_repaired": true
+  },
+  "capabilities": {
+    "codegraph": {
+      "version": "1.5.0",
+      "freshness": "passed"
+    },
+    "semgrep": {
+      "version": "1.172.0",
+      "status": "passed",
+      "findings": 0
+    },
+    "playwright": {
+      "version": "1.62.1",
+      "status": "passed",
+      "headless": true,
+      "viewports": ["375x812", "1440x900"]
+    },
+    "optional_context7": "absent-core-healthy",
+    "optional_serena": "absent-core-healthy"
+  },
+  "visible_browser_open_count": 0,
+  "normal_profile_mutated": false,
+  "credentials_recorded": false
+}

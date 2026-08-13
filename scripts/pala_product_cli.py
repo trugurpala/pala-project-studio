@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Thin public Pala 1.0 facade over existing product and runtime authorities."""
+"""Thin public Pala facade over existing product and runtime authorities."""
 
 from __future__ import annotations
 
@@ -67,18 +67,70 @@ def _owner_snapshot(record: dict[str, object]) -> dict[str, object]:
     }
 
 
-def public_status(root: Path, project_id: str | None = None) -> dict[str, object]:
-    record = (
-        load_project_contract(root, project_id)
-        if project_id
-        else load_current_project_contract(root)
+def _product_version(root: Path) -> str:
+    """Read the current UI identity from the product contract, never a renderer literal."""
+    candidates = (
+        Path(root).resolve() / "product-identity.json",
+        Path(__file__).resolve().parent.parent / "product-identity.json",
     )
+    for path in dict.fromkeys(candidates):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        version = payload.get("product_version") if isinstance(payload, dict) else None
+        if isinstance(version, str) and version.strip():
+            return version.strip()
+    return "unknown"
+
+
+def _bootstrap_owner_snapshot(root: Path, *, unreadable: bool) -> dict[str, object]:
+    version = _product_version(root)
+    if unreadable:
+        state = f"Pala {version} hazir. Proje durumu okunamadi."
+        blocker = "Pala proje durumunu okuyamadi."
+    else:
+        state = f"Pala {version} hazir. Henuz aktif proje yok."
+        blocker = "Yok."
+    return {
+        "product_version": version,
+        "project": "Pala",
+        "state": state,
+        "acceptance_verified": 0,
+        "acceptance_total": 1,
+        "quality": "not-run",
+        "environment": "local",
+        "delivery": "not-run",
+        "live_verification": "not-run",
+        "blocker": blocker,
+        "next_action": "Yeni veya mevcut bir proje acilmasini bekliyor.",
+        "owner_request": "Hicbir sey.",
+        "bootstrap_state": "project-unreadable" if unreadable else "no-active-project",
+    }
+
+
+def public_status(root: Path, project_id: str | None = None) -> dict[str, object]:
+    try:
+        record = (
+            load_project_contract(root, project_id)
+            if project_id
+            else load_current_project_contract(root)
+        )
+    except (OSError, ValueError, json.JSONDecodeError):
+        snapshot = _bootstrap_owner_snapshot(root, unreadable=True)
+        return {"project_state": "UNREADABLE", "owner_cockpit": snapshot}
     if record is None:
-        raise ValueError("canonical product contract not found")
+        snapshot = _bootstrap_owner_snapshot(root, unreadable=False)
+        return {"project_state": "NO_ACTIVE_PROJECT", "owner_cockpit": snapshot}
     snapshot = _owner_snapshot(record)
+    snapshot["product_version"] = _product_version(root)
+    snapshot["bootstrap_state"] = "active-project"
     from pala_milestone_truth import current_milestones
 
-    snapshot["milestones"] = current_milestones(root)
+    try:
+        snapshot["milestones"] = current_milestones(root)
+    except (OSError, ValueError, json.JSONDecodeError):
+        snapshot["milestones"] = {}
     return {**record, "owner_cockpit": snapshot}
 
 

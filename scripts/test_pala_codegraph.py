@@ -24,6 +24,7 @@ from pala_codegraph import (
     mcp_server_record,
 )
 from pala_codegraph_mcp import build_command as build_mcp_command, main as mcp_main
+from pala_codegraph_runner import main as runner_main
 from pala_quality_discovery import DISCOVERY_SKIP_DIRS, IGNORED_CHANGE_PREFIXES
 from pala_state_core import IGNORED_DISCOVERY_DIRS
 from pala_workbench_install import ArtifactSpec, install_zip_transaction, inventory
@@ -213,6 +214,24 @@ class WorkbenchTransactionTests(unittest.TestCase):
 
 
 class CodeGraphContractTests(unittest.TestCase):
+    def test_quality_runner_requires_current_graph_and_supports_explicit_state_root(self) -> None:
+        with patch(
+            "pala_codegraph_runner.run_lifecycle",
+            return_value={"status": "passed", "freshness": "current"},
+        ) as lifecycle:
+            self.assertEqual(
+                runner_main(["--project", ".", "--state-root", "C:/Pala"]),
+                0,
+            )
+        self.assertEqual(lifecycle.call_args.args[1], "pre-quality")
+        self.assertEqual(lifecycle.call_args.kwargs["state_root"], Path("C:/Pala").resolve())
+
+        with patch(
+            "pala_codegraph_runner.run_lifecycle",
+            return_value={"status": "blocked", "freshness": "stale"},
+        ):
+            self.assertEqual(runner_main(["--state-root", "C:/Pala"]), 2)
+
     def test_mcp_launcher_uses_only_the_pala_runtime_and_propagates_exit_status(self) -> None:
         runtime = {
             "node": Path("C:/Pala/node.exe"),

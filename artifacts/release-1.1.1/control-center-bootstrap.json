@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "release": "1.1.1",
+  "status": "passed",
+  "states": {
+    "no_active_project": "passed",
+    "active_project": "passed",
+    "unreadable_project": "passed"
+  },
+  "explicit_open": {
+    "paneli_accented": {
+      "status": "passed",
+      "open_count": 1
+    },
+    "paneli_ascii": {
+      "status": "passed",
+      "open_count": 1
+    },
+    "ordinary_report": {
+      "status": "passed",
+      "open_count": 0
+    }
+  },
+  "required_text": [
+    "Pala 1.1.1",
+    "PALA CONTROL CENTER",
+    "Neredeyiz?",
+    "Pala ne yapiyor?",
+    "Problem var mi?",
+    "Sizden ne gerekiyor?"
+  ],
+  "evidence": "scripts.test_pala_control_center"
+}

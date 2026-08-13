@@ -112,6 +112,7 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / ".github" / "workflows" / "quality.yml",
         plugin_root / "docs" / "README.md",
         plugin_root / "docs" / "RELEASE_1.1.0.md",
+        plugin_root / "docs" / "RELEASE_1.1.1.md",
         plugin_root / "docs" / "ARCHITECTURE.md",
         plugin_root / "docs" / "QUALITY_ENGINE.md",
         plugin_root / "docs" / "CODEX_SCOPE_AND_LIMITS.md",

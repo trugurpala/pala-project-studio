@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "release": "1.1.1",
+  "status": "passed",
+  "source_verify": {
+    "command": "py -3 scripts/verify.py",
+    "exit_code": 0,
+    "tests": 643,
+    "skipped": 1
+  },
+  "coverage": {
+    "status": "passed",
+    "line_percent": 75.22185246810871,
+    "minimum_percent": 75
+  },
+  "validators": {
+    "plugin": "passed",
+    "skill": "passed"
+  },
+  "profiles": {
+    "source": "passed",
+    "portable": "passed",
+    "installed": "passed"
+  },
+  "capabilities": {
+    "codegraph_freshness": "passed",
+    "semgrep_security": "passed",
+    "playwright_control_center": "passed",
+    "failure_intelligence": "passed",
+    "release_truth": "passed",
+    "windows_install_upgrade": "passed",
+    "retired_remnants": 0
+  },
+  "artifact": {
+    "name": "pala-project-studio-1.1.1.zip",
+    "entries": 190,
+    "sha256": "89061A4E2B51A8C6042AAF33C6D9538702923DD3D42B21094B15D1002D54E128",
+    "second_build_sha256": "89061A4E2B51A8C6042AAF33C6D9538702923DD3D42B21094B15D1002D54E128",
+    "reproducible": true
+  }
+}

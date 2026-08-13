@@ -60,7 +60,7 @@ def publication_matrix(root: Path) -> dict[str, object]:
 def drift_lint(root: Path) -> dict[str, object]:
     truth = release_truth(root)
     readme = (root / "README.md").read_text(encoding="utf-8")
-    release_notes = (root / "docs" / "RELEASE_1.1.0.md").read_text(encoding="utf-8")
+    release_notes = (root / "docs" / f"RELEASE_{truth['product_version']}.md").read_text(encoding="utf-8")
     plugin = _json(root / ".codex-plugin" / "plugin.json")
     findings: list[str] = []
     if str(truth["product_version"]) not in readme:

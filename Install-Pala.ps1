@@ -1,5 +1,5 @@
 <#
-    Pala 1.1.0 installer entry point. The machine-readable ReleaseTruth lives in
+    Pala 1.1.1 installer entry point. The machine-readable ReleaseTruth lives in
     product-identity.json; this entry point does not own a second version.
     Pala Project Studio icin tek Windows giris noktasi.
     Ornek: powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1

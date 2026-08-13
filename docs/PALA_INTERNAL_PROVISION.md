@@ -35,7 +35,7 @@ py -3 scripts\pala_catalog.py summary
 Durum sayfası:
 
 ```powershell
-py -3 scripts\pala_report.py --cwd . --open
+py -3 scripts\pala_report.py --cwd .
 ```
 
 ## PowerShell kapısı

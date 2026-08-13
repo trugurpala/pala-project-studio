@@ -133,7 +133,7 @@ packet. Soft “hatırlıyorum” kanıt sayılmaz.
 
 Dağıtım sınırları: [PALA_EVERYWHERE.md](PALA_EVERYWHERE.md).
 Kapsam: [CODEX_SCOPE_AND_LIMITS.md](CODEX_SCOPE_AND_LIMITS.md).
-Local candidate (owner): [RELEASE_1.1.0.md](RELEASE_1.1.0.md).
+Local candidate (owner): [RELEASE_1.1.1.md](RELEASE_1.1.1.md).
 
 ## Bilerek yok
 

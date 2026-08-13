@@ -161,5 +161,5 @@ Ayrıntı: kök [KUR.md](../KUR.md).
 
 See also: [PALA_EVERYWHERE.md](PALA_EVERYWHERE.md),
 [CODEX_SCOPE_AND_LIMITS.md](CODEX_SCOPE_AND_LIMITS.md),
-[RELEASE_1.1.0.md](RELEASE_1.1.0.md). The published `1.0.0` notes remain
-[current release notes](RELEASE_1.1.0.md).
+[RELEASE_1.1.1.md](RELEASE_1.1.1.md). The published `1.1.0` notes remain
+[historical release notes](RELEASE_1.1.0.md).

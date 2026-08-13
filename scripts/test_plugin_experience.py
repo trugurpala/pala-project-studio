@@ -80,19 +80,19 @@ class UserExperienceContractTests(unittest.TestCase):
         readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
         project = (PLUGIN_ROOT / "PROJECT.md").read_text(encoding="utf-8")
         goal = (PLUGIN_ROOT / "GOAL.md").read_text(encoding="utf-8")
-        release = (PLUGIN_ROOT / "docs" / "RELEASE_1.1.0.md").read_text(
+        release = (PLUGIN_ROOT / "docs" / "RELEASE_1.1.1.md").read_text(
             encoding="utf-8"
         )
         self.assertEqual(manifest["version"], identity["plugin_version"])
-        self.assertIn("Current version: **1.1.0**", readme)
+        self.assertIn("Current version: **1.1.1**", readme)
         self.assertNotIn("Yerel yayın adayı **0.8.2**", readme)
         self.assertIn(identity["product_version"], project)
         self.assertIn(identity["product_version"], goal)
-        self.assertIn("pala-project-studio-1.1.0.zip", release)
+        self.assertIn("pala-project-studio-1.1.1.zip", release)
 
     def test_release_notes_name_the_versioned_portable_asset(self) -> None:
         readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
-        release = (PLUGIN_ROOT / "docs" / "RELEASE_1.1.0.md").read_text(
+        release = (PLUGIN_ROOT / "docs" / "RELEASE_1.1.1.md").read_text(
             encoding="utf-8"
         )
         manifest = json.loads(
@@ -326,6 +326,14 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertIn("1–3 short lines", skill)
         self.assertIn("user's language", skill)
 
+    def test_skill_opens_control_center_only_for_explicit_panel_intent(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        first_surface = skill.split("2. Read", maxsplit=1)[0]
+        self.assertIn("pala_report.py --cwd .` first", first_surface)
+        self.assertIn("paneli aç", first_surface)
+        self.assertIn('--open --intent "<exact intent>"', first_surface)
+        self.assertNotIn("pala_report.py --cwd . --open` first", first_surface)
+
     def test_task_modes_prevent_unrequested_writes_and_runtime_work(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         normalized = " ".join(skill.split())
@@ -530,6 +538,7 @@ class UserExperienceContractTests(unittest.TestCase):
         )
         self.assertIn(PLUGIN_ROOT / "docs" / "FORK_PACK.md", files)
         self.assertIn(PLUGIN_ROOT / "docs" / "RELEASE_1.1.0.md", files)
+        self.assertIn(PLUGIN_ROOT / "docs" / "RELEASE_1.1.1.md", files)
         self.assertIn(PLUGIN_ROOT / "docs" / "ARCHITECTURE.md", files)
         self.assertIn(PLUGIN_ROOT / "docs" / "QUALITY_ENGINE.md", files)
         self.assertNotIn(PLUGIN_ROOT / "docs" / "RELEASE_0_8_0_CHECKLIST.md", files)
@@ -712,6 +721,7 @@ class PortablePackageContractTests(unittest.TestCase):
             self.assertIn("pala-project-studio/README.md", names)
             self.assertIn("pala-project-studio/README.tr.md", names)
             self.assertIn("pala-project-studio/docs/RELEASE_1.1.0.md", names)
+            self.assertIn("pala-project-studio/docs/RELEASE_1.1.1.md", names)
             self.assertIn("pala-project-studio/docs/ARCHITECTURE.md", names)
             self.assertIn("pala-project-studio/docs/QUALITY_ENGINE.md", names)
             self.assertIn("pala-project-studio/PROJECT.md", names)
@@ -757,6 +767,7 @@ class PortablePackageContractTests(unittest.TestCase):
             "pala-project-studio/scripts/verify.py",
             "pala-project-studio/README.tr.md",
             "pala-project-studio/docs/RELEASE_1.1.0.md",
+            "pala-project-studio/docs/RELEASE_1.1.1.md",
             "pala-project-studio/docs/ARCHITECTURE.md",
             "pala-project-studio/docs/QUALITY_ENGINE.md",
             "pala-project-studio/workbench/semgrep/requirements-win-amd64.lock",

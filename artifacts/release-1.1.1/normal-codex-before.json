@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "ticket": "M74-T1",
+  "observed_at": "2026-08-13",
+  "codex_cli_version": "0.147.0",
+  "pala": {
+    "installed": true,
+    "enabled": true,
+    "plugin_id": "pala-project-studio@pala-project-studio",
+    "reported_base_version": "1.0.0",
+    "reported_full_version": "1.0.0",
+    "marketplace": "pala-project-studio",
+    "marketplace_source": "https://github.com/trugurpala/pala-project-studio.git",
+    "marketplace_type": "git",
+    "marketplace_commit": "05f582e49191d8ad2aa443a6830f897b4bc7de51",
+    "current_main_at_observation": "c0092382941751c7d38e01eef2cae92fc758bb2f",
+    "marketplace_current": false,
+    "duplicate_registrations": 0,
+    "runtime_visible": true,
+    "discovered_skills": [
+      "pala-project-finisher"
+    ],
+    "mcp_registration": "absent"
+  },
+  "unrelated_plugins": {
+    "installed_count": 10,
+    "mutated": false
+  },
+  "mutation_performed": false,
+  "sanitized": true
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "release": "1.1.1",
+  "status": "passed",
+  "profile": "fresh-isolated-candidate-final",
+  "plugin": {
+    "installed": true,
+    "enabled": true,
+    "version": "1.1.1",
+    "cache_status": "current",
+    "plugin_ready": true,
+    "version_ready": true
+  },
+  "second_install": {
+    "status": "ready",
+    "changed": false
+  },
+  "doctor": {
+    "healthy": true,
+    "pala_core": "hazir",
+    "code_intelligence": "hazir",
+    "security": "hazir",
+    "control_center": "hazir",
+    "retired_remnants": 0
+  },
+  "optional_absence": {
+    "serena": "core-healthy",
+    "context7": "core-healthy"
+  },
+  "control_center": {
+    "no_project_markers": "6/6",
+    "ordinary_browser_open_count": 0,
+    "explicit_open_regression_count": 1
+  },
+  "runtime_self_audit": "passed",
+  "normal_profile_mutated": false,
+  "credentials_recorded": false
+}

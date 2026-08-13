@@ -6,7 +6,7 @@
 2. [First session](VIBE_FIRST_SESSION.md)
 3. [Architecture and capability registry](ARCHITECTURE.md)
 4. [Quality Engine and release evidence](QUALITY_ENGINE.md)
-5. [Pala 1.1.0 release notes](RELEASE_1.1.0.md)
+5. [Pala 1.1.1 release notes](RELEASE_1.1.1.md)
 6. [Security boundaries](../SECURITY.md)
 7. [Support](../SUPPORT.md)
 

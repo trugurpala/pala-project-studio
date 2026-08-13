@@ -77,9 +77,10 @@ def render_owner_cockpit(snapshot: dict[str, object], *, fragment: bool = False)
         f'<section class="signal"><h2>{escape(label)}</h2><p>{escape(str(value))}</p></section>'
         for label, value in labels
     )
+    version = _control_value(snapshot, "product_version", "unknown")
     section = (
         '<section class="pala-product-cockpit" aria-labelledby="pala-product-cockpit-title">'
-        '<h2 id="pala-product-cockpit-title">Pala 1.0 Owner Cockpit</h2>'
+        f'<h2 id="pala-product-cockpit-title">Pala {version} Owner Cockpit</h2>'
         f'<div class="grid">{cards}</div></section>'
     )
     control_center = render_control_center(snapshot)
@@ -115,6 +116,7 @@ def render_control_center(snapshot: dict[str, object]) -> str:
         "nothing", "hicbir sey", "hiçbir şey", "no owner action is required before local verification."
     }
     owner_request_text = "Sizden gereken:\nHicbir sey." if no_request else f"Sizden gereken:\n{owner_request}"
+    version = _control_value(snapshot, "product_version", "unknown")
     milestones = snapshot.get("milestones")
     milestones = milestones if isinstance(milestones, dict) else {}
     m70 = milestones.get("M70-T3")
@@ -163,6 +165,7 @@ def render_control_center(snapshot: dict[str, object]) -> str:
     return (
         '<section class="pala-control-center" aria-labelledby="cc-title">'
         '<h2 id="cc-title" aria-label="Pala Control Center">PALA CONTROL CENTER</h2>'
+        f'<p class="pala-version">Pala {version}</p>'
         f'<nav aria-label="Control Center sections" class="cc-nav">{links}</nav>'
         f'{panels}{advanced}'
         '<style>'

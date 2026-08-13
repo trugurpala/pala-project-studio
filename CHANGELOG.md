@@ -5,6 +5,18 @@ All notable changes to Pala Project Studio are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The canonical product identity and Git tags use `X.Y.Z`.
 
+## [1.1.1] - 2026-08-13
+
+### Fixed
+
+- Control Center now renders a truthful product-level bootstrap when no project
+  is registered and remains visible when project state cannot be read.
+- Current owner renderers read the release version from canonical product
+  identity instead of retaining a hard-coded cockpit version.
+- Explicit `paneli aç` and ASCII `paneli ac` requests open exactly one current
+  Control Center while install, update, repair, Doctor, hooks, skills, and
+  completion flows remain browser-silent.
+
 ## [1.1.0] - 2026-08-13
 
 ### Added

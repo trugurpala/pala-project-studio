@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "ticket": "M74-T1",
+  "source_profile": "normal Codex runtime before candidate installation",
+  "manifest": {
+    "present": true,
+    "reported_version": "1.0.0",
+    "skills_path": "./skills/"
+  },
+  "skills": [
+    "pala-project-finisher"
+  ],
+  "hooks": {
+    "present": true,
+    "events": [
+      "SessionStart",
+      "PreToolUse",
+      "PreCompact",
+      "SessionEnd",
+      "Stop"
+    ],
+    "automatic_network_test_build": false
+  },
+  "mcp": {
+    "registered_in_installed_plugin": false,
+    "required_for_core": false
+  },
+  "capability_policy": {
+    "core_workflow": "required",
+    "code_intelligence": "required for applicable implementation tasks with direct-source fallback",
+    "security": "required for applicable implementation tasks",
+    "browser": "project-profile only",
+    "serena": "optional lazy fallback",
+    "context7": "optional external"
+  },
+  "codex_boundary": "Skills provide workflow instructions; hooks provide bounded reminders; neither expands user permissions or overrides sandbox and approval controls.",
+  "sanitized": true
+}

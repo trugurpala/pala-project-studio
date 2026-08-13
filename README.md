@@ -10,7 +10,7 @@ Codex'e sunu yaz:
 
 > https://github.com/trugurpala/pala-project-studio eklentisini kur ve guncel oldugunu dogrula.
 
-Current version: **1.1.0**
+Current version: **1.1.1**
 
 [![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -78,7 +78,7 @@ Providers are advisory; they cannot mark work complete. Telemetry, shared
 daemons, silent global PATH mutation, and automatic helper UI are disabled.
 
 Read [architecture](docs/ARCHITECTURE.md), [Quality Engine](docs/QUALITY_ENGINE.md),
-and [Pala 1.1.0 release notes](docs/RELEASE_1.1.0.md).
+and [Pala 1.1.1 release notes](docs/RELEASE_1.1.1.md).
 
 ## License
 
