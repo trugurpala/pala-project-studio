@@ -1,29 +1,23 @@
-# Açık Kaynak Kaydı
+# Open-source inventory
 
-- Pala Project Studio kaynak kodu kullanıcıya aittir ve MIT lisansıyla dağıtılacaktır.
-- Python standart kütüphanesi dışında runtime bağımlılığı yoktur.
-- Codex plugin ve skill biçimleri OpenAI'nin güncel resmî belgelerine göre uygulanır; OpenAI kaynak kodu pakete kopyalanmaz.
-- GitHub CI, pakete kopyalanmayan MIT lisanslı `actions/checkout` v7.0.1 ve
-  `actions/setup-python` v7.0.0 adımlarını doğrulanmış commit SHA'larıyla kullanır.
-- `code-review-graph` 2.3.7 isteğe bağlı, ayrı kurulan yerel kod zekâsı
-  entegrasyonudur. Kaynak kodu Pala paketine kopyalanmaz; Pala yalnız güvenli
-  adaptör, kurulum ve yönlendirme sağlar.
+Pala Project Studio is distributed under the MIT License. Material third-party
+runtime and tool decisions are versioned, integrity-checked, and summarized in
+`artifacts/governance/third-party-inventory.json` and
+`THIRD_PARTY_NOTICES.md`.
 
-## 0.4 değerlendirmesi
+## Current managed Workbench
 
-| Kaynak | Doğrulanan sürüm | Lisans | Karar | Gerekçe |
-| --- | --- | --- | --- | --- |
-| `rtk-ai/rtk` | v0.44.2 | Apache-2.0 | Yönetilen CLI | Uzun komut çıktısını daraltır; Codex entegrasyonu yerine Pala'nın kanıtlı dar adaptörü kullanılır. |
-| `tirth8205/code-review-graph` | v2.3.7 | MIT | Yönetilen CLI | Büyük repo etki analizinde kullanılır; kendi Codex hook/MCP kurucusu çalıştırılmaz. |
-| `Fission-AI/OpenSpec` | v1.7.0 | MIT | Mevcut projeyle uyum | Pala'nın plan sahibi olduğu projeye ikinci artifact/komut sistemi zorla eklenmez. |
-| `othmanadi/planning-with-files` | v3.9.0 | MIT | İlke uyarlaması | Plan, hook, compaction ve completion sahipliği Pala ile çakışır; dayanıklılık fikirleri testlere alınır. |
-| `nilbuild/developer-roadmap` | 4.0 release; aktif master | Lisans metni ayrıca incelenecek | Referans | Çalıştırılabilir araç değil; mimari/kalite kapsam kontrolünde seçici kullanılır. |
-| `ruvnet/ruflo` | v3.34.0 | MIT | 0.4 dışında | Ayrı MCP, daemon, hafıza, hook ve geniş ajan yüzeyi tek-kapı güvenilirliğini azaltır. |
-| `Graphify-Labs/graphify` | v0.9.33 | Apache-2.0 | Yönetilen yerel CLI | Kod AST'si ve belge grafiği Pala adaptöründen çalışır; Graphify'nin Codex skill/hook kurucusu çalıştırılmaz. |
-| `oraios/serena` | v1.6.1 | MIT | Yönetilen salt-okunur MCP | Sembol/referans zekâsı Pala sarmalayıcısında, bellek ve düzenleme araçları kapalıdır. |
-| `DeusData/codebase-memory-mcp` | v0.9.0 | MIT | Yönetilen tek-atımlık CLI | Büyük/çok dilli grafikte yalnız `cli` komutları, kök sınırı ve Pala verisi kullanılır. |
-| `ollama/ollama`, `qwen3:4b-instruct` | v0.32.6, 4B | MIT, Apache-2.0 | Pala sahiplikli yerel semantik | Geçici loopback süreci ve ayrı model deposu; bulut backend'i veya kullanıcı model deposu kullanılmaz. |
+| Source | Version | License | Use |
+| --- | --- | --- | --- |
+| `colbymchenry/codegraph` | 1.5.0 | MIT | Required local structural code capability |
+| `semgrep/semgrep` | 1.172.0 | LGPL-2.1-or-later | Required isolated local security capability |
+| `microsoft/playwright` | 1.62.1 | Apache-2.0 | Explicit project-profile browser evidence |
+| `oraios/serena` | 1.7.0 | MIT | Lazy symbol-precision fallback |
+| `upstash/context7` | 4.0.2 | MIT | Optional external documentation capability |
 
-Sürümler araştırma anındaki kabul adaylarıdır. Kurulumda kullanılan kesin
-release, asset SHA-256, lisans metni ve indirme kaynağı ayrı makine-okunur kilit
-dosyasında tutulacak; yeni sürüm kendiliğinden güvenilmiş sayılmayacaktır.
+Pala does not run third-party updaters, enable telemetry, mutate global PATH,
+install shared daemons, or grant any provider edit/completion authority.
+
+GitHub Actions use SHA-pinned official actions. No third-party source code,
+credentials, proprietary assets, or customer data are copied into the release
+without an explicit license and provenance record.

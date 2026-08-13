@@ -1,96 +1,84 @@
-# Pala Project Studio
+# Pala
 
-Pala is a **Provider-Independent Local Software Delivery OS** for planning,
-coordinating, verifying, and packaging AI-assisted software projects.
+**Provider-Independent Local Software Delivery OS**
 
-Pala keeps project intent, task ownership, quality evidence, failure memory,
-and release truth local and inspectable. It helps an owner move from an idea to
-a verified package without inventing capabilities or silently publishing work.
+Pala turns a software idea or an existing repository into a durable plan,
+bounded execution, verified quality evidence, and a release-ready package. It
+keeps the owner in control while AI providers remain replaceable.
 
-Current product version: **1.0.0**
-Plugin version: **1.0.0**
-Release channel: **public release**
-Portable asset: `pala-project-studio-1.0.0.zip`
-Remote release: [v1.0.0](https://github.com/trugurpala/pala-project-studio/releases/tag/v1.0.0),
-with the [latest 1.0.0 asset](https://github.com/trugurpala/pala-project-studio/releases/latest/download/pala-project-studio-1.0.0.zip).
+Codex'e sunu yaz:
 
-![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)
-[![Release](https://img.shields.io/badge/release-v1.0.0-2ea44f)](https://github.com/trugurpala/pala-project-studio/releases/tag/v1.0.0)
+> https://github.com/trugurpala/pala-project-studio eklentisini kur ve guncel oldugunu dogrula.
+
+Current version: **1.1.0**
+
+[![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Docs](https://img.shields.io/badge/docs-index-0A66C2)](docs/README.md)
 
-## Install
+## What Pala does
 
-The primary path is the Codex-native CLI:
+- **Kod anlayışı:** selects fresh structural context and falls back safely to
+  direct source inspection.
+- **Güvenlik:** runs bounded local checks without granting a scanner completion
+  authority.
+- **Tarayıcı doğrulama:** captures mechanical browser evidence only when the
+  selected project requires it.
+- **Quality Engine:** maps real exit-code-zero checks to acceptance criteria;
+  it is the only verification authority.
+- **Failure Intelligence:** retains verified fixes without storing secrets,
+  transcripts, or customer data.
+- **ReleaseTruth:** separates local build truth, publication truth, and deploy
+  truth.
+- **Control Center:** provides one read-only owner view and opens only after an
+  explicit request.
 
-```powershell
-codex plugin marketplace add trugurpala/pala-project-studio
-codex plugin add pala-project-studio@pala-project-studio
-```
+## Professional delivery posture
 
-For a local checkout, replace the marketplace URL with the checkout path. The
-portable ZIP is an extract-only toolkit; it is not a Plugins ZIP-upload.
-ZIP Codex Plugins'e yüklenmez; onu çıkartıp yerel kurulum aracını çalıştırın.
+Pala keeps one canonical task active, preserves project-specific instructions,
+and runs narrow checks during implementation plus full gates at release
+boundaries. It never treats a soft “done” as evidence.
+
+Commit, push, pull request, tag, release, visibility, billing, and deployment
+are separate owner-authorized actions. Hooks never start tests, builds, network
+requests, or GitHub mutations.
+
+## Local-first and private
+
+Project state and evidence stay local by default. Pala does not enlarge a
+model's context window or quota. It selects only relevant context and excludes
+credentials, `.env` values, transcripts, caches, generated browser state, and
+machine-local installation data from packages.
+
+## Install and update
+
+The same natural-language request handles a clean install, repair, or safe
+update. Pala inventories the existing installation, verifies ownership and
+integrity, stages changes, runs health checks, activates atomically, and rolls
+back on failure. A second install is a no-op when the exact healthy version is
+already present.
+
+For an extracted portable package:
+
+ZIP Codex Plugins'e yüklenmez; extracted portable paket yerel installer ile
+çalıştırılır.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 ```
 
-Read the [zero-knowledge install guide](docs/VIBE_INSTALL.md), then the
-[first ten minutes](docs/VIBE_FIRST_SESSION.md). After installation, review
-`/hooks` and open a new Codex conversation.
+See [installation](docs/VIBE_INSTALL.md), [first session](docs/VIBE_FIRST_SESSION.md),
+[security](SECURITY.md), and the [documentation index](docs/README.md).
 
-## Start a project
+## Advanced technical details
 
-Tell Pala what you want to build or ask it to continue an existing project.
-Pala discovers the applicable instructions, keeps one canonical task active,
-runs the relevant quality gates, and reports the evidence needed for closure.
+The managed capability registry currently uses CodeGraph 1.5.0 and Semgrep
+1.172.0 as required local defaults, Playwright 1.62.1 as a project profile,
+Serena 1.7.0 as a lazy fallback, and Context7 4.0.2 as optional external.
+Providers are advisory; they cannot mark work complete. Telemetry, shared
+daemons, silent global PATH mutation, and automatic helper UI are disabled.
 
-Pala does:
-
-- turn intent into a durable ProductSpec and bounded task plan;
-- coordinate local AI workers without creating a second task authority;
-- require real verification evidence before a task is DONE;
-- remember verified failure resolutions without storing secrets or transcripts;
-- prepare a reproducible portable release and explain owner decisions plainly.
-
-Pala never, without explicit owner authority:
-
-- commits, pushes, creates PRs, tags, or publishes releases;
-- changes repository visibility, billing, protections, or spending settings;
-- deploys to production or a hosting provider;
-- claims a test, build, release, or deployment that was not run.
-
-## GitHub publication
-
-When an owner asks Pala to publish a project, the generic flow is:
-
-`quality -> hygiene -> secret scan -> version consistency -> documentation -> publication preflight -> cost/risk -> owner authority -> publish -> remote read-back`
-
-Normal owner output answers: where we are, what Pala is doing, whether there is
-a problem, and what the owner must do. Technical policy IDs, commands, exit
-codes, and evidence references remain available under Advanced.
-
-For this repository, the canonical identity is in
-[product-identity.json](product-identity.json), the current release notes are
-[docs/RELEASE_1.0.0.md](docs/RELEASE_1.0.0.md), and the document index is
-[docs/README.md](docs/README.md).
-
-## Safety and boundaries
-
-Pala is local-first. It does not enlarge model context or usage quotas. Hooks
-do not run tests, builds, network calls, or GitHub mutations. Real production
-deployment is separate evidence and is not part of the Pala 1.0 GitHub release.
-
-See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md),
-[SUPPORT.md](SUPPORT.md), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-## Safe expert workers
-
-Optional local helpers such as Graphify, Serena, codebase-memory, and Ollama
-remain bounded Pala workers. They do not replace Pala's task, evidence, or
-owner-authorization authorities. Divan is the project's development
-infrastructure, not a second runtime authority.
+Read [architecture](docs/ARCHITECTURE.md), [Quality Engine](docs/QUALITY_ENGINE.md),
+and [Pala 1.1.0 release notes](docs/RELEASE_1.1.0.md).
 
 ## License
 

@@ -1,0 +1,55 @@
+{
+  "schema": "pala.release.final-local-rc.v1",
+  "status": "PALA 1.1.0 CLEAN MAIN RELEASE PREP VERIFIED",
+  "version": "1.1.0",
+  "git": {
+    "base_head": "05f582e49191d8ad2aa443a6830f897b4bc7de51",
+    "branch": "main",
+    "origin_main_at_baseline": "05f582e49191d8ad2aa443a6830f897b4bc7de51",
+    "history_rewritten": false
+  },
+  "cleanup": {
+    "kept": 18,
+    "simplified": 13,
+    "moved_to_history": 0,
+    "removed_from_current_tree": 53
+  },
+  "quality": {
+    "ticket": "M73-T1-PREPUBLIC",
+    "required": 23,
+    "passed": 23,
+    "status": "passed"
+  },
+  "tests_passed": 636,
+  "tests_skipped": 1,
+  "coverage_percent": 75.22185246810871,
+  "coverage_threshold_percent": 75,
+  "zip": {
+    "filename": "pala-project-studio-1.1.0.zip",
+    "size_bytes": 365345,
+    "entry_count": 188,
+    "sha256": "87627713383E729A9C233EB50DF7A1D357F19EB297CFB6319E26F1D868981299",
+    "reproducibility": "passed"
+  },
+  "verification": {
+    "source": "passed",
+    "portable": "passed",
+    "installed_profile": "passed",
+    "official_plugin_validator": "passed",
+    "official_skill_validator": "passed",
+    "codegraph": "1.5.0 exact/current/passed",
+    "semgrep_security": "1.172.0 exact/passed; coverage passed; findings 0; errors 0",
+    "playwright": "1.62.1 Chromium 151.0.7922.34 passed; evidence validated; automatic UI false",
+    "doctor": "healthy/passed",
+    "retired_active_helper_remnants": 0
+  },
+  "final_clean_user_install_canary": "not-run-by-owner-stop-boundary",
+  "release_truth": {
+    "build_release_state": "LOCAL RELEASE CANDIDATE VERIFIED",
+    "remote_observed_state": "NOT PUBLISHED AS 1.1.0",
+    "last_published_version": "1.0.0",
+    "remote_publish": "not-run",
+    "real_remote_deploy": "not-run"
+  },
+  "sanitized": true
+}

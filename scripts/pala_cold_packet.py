@@ -19,6 +19,7 @@ from pathlib import Path
 
 from pala_cold_packet_git import git_surface
 from pala_cold_packet_packet import build_cold_packet as _build_cold_packet
+from pala_milestone_truth import current_milestones
 from pala_state_core import workflow_path
 from pala_tokens import approx_tokens as _estimate_tokens
 
@@ -479,6 +480,7 @@ def _cold_packet_operations() -> dict[str, object]:
         "detect_stale_context": detect_stale_context,
         "detect_worktree_conflict": detect_worktree_conflict,
         "format_packet_text": format_packet_text,
+        "current_milestones": current_milestones,
         "git_surface": git_surface,
         "parallel_checkpoint_fields": parallel_checkpoint_fields,
         "select_documents_for_profile": select_documents_for_profile,
@@ -525,6 +527,11 @@ def format_packet_text(
         f"next={packet.get('next_action')}",
         f"freshness={packet.get('state_freshness')} source={packet.get('evidence_source')}",
     ]
+    milestones = packet.get("milestones")
+    if isinstance(milestones, dict):
+        m70 = milestones.get("M70-T3")
+        if isinstance(m70, dict):
+            lines.append(f"milestone=M70-T3={m70.get('task_status') or 'BACKLOG'}")
     if packet.get("stale_context"):
         lines.append("STALE-CONTEXT: do not apply prior Pala state")
         for reason in packet.get("stale_reasons") or []:

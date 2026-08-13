@@ -1,130 +1,47 @@
 # Pala Project Studio
 
-## PALA 1.0 canonical product goal
+Pala is a **Provider-Independent Local Software Delivery OS** for people who
+want an AI-assisted software project to remain understandable, resumable,
+verifiable, and publishable without giving one provider control of the product.
 
-PALA 1.0 is a **Provider-Independent Local Software Delivery OS**: a
-local-first, single-host product that helps people and replaceable AI
-developers plan, execute, verify, package, and prepare software delivery while
-keeping completion evidence-gated and external actions owner-authorized.
+Current identity: `1.1.0`. Machine-readable identity lives in
+`product-identity.json`.
 
-Current identity is `product_version=1.0.0` and `plugin_version=1.0.0`; the
-machine-readable contract is `product-identity.json`. This public release is
-being reconciled through M69; real remote deploy remains `not-run`.
+## Primary outcome
 
-The historical Codex project-memory/plugin description below remains valid as
-the product's original surface, but it is superseded as the complete product
-definition by
-`docs/plans/active/PALA-1.0-product-completion.md`.
+A user can describe a new product or point Pala at an existing repository.
+Pala discovers the effective instructions, turns intent into durable scope,
+claims one canonical task, selects only needed capabilities, implements within
+the authorized surface, maps mechanical quality evidence to acceptance, and
+prepares a reproducible package.
 
-## Ürün amacı
+## Product capabilities
 
-Pala Project Studio, Codex'in mevcut bir yazılım projesini veya yeni bir ürün
-fikrini doğru kapsamda keşfetmesini, uygulanabilir ticket'lara ayırmasını, aktif
-işi gerçekten yürütmesini ve sonucu kanıtla kapatmasını sağlayan kurulabilir bir
-Codex eklentisidir.
+- **Kod anlayışı:** fresh structural context with direct-source fallback.
+- **Güvenlik:** bounded local analysis plus project-native security authority.
+- **Tarayıcı doğrulama:** project-profile evidence without automatic UI.
+- **Quality Engine:** the sole completion-evidence authority.
+- **Failure Intelligence:** verified, sanitized failure memory.
+- **ReleaseTruth:** separate build, publication, and deployment truth.
+- **Control Center:** one read-only owner surface in Turkish-first language.
 
-## Ana kullanıcı sonucu
+## Trust boundaries
 
-Kullanıcı, büyük ve çok fazlı bir projeyi her oturumda yeniden anlatmadan
-sürdürebilmeli; Codex yalnız aktif iş için gerekli bağlamı okumalı, dar
-geliştirme döngüsünde hızlı kalmalı ve milestone sonunda tam doğrulamayı
-atlamamalıdır.
+- TaskContract owns task semantics and DONE eligibility.
+- WorkflowStore owns persistence and leases.
+- The Pala Quality Engine owns verification evidence.
+- Generated status, cockpit, handoff, and cold packets are read models.
+- Providers are advisory and never decide completion.
+- Hooks never run tests, builds, network calls, or remote mutations.
+- Commit, push, PR, tag, release, visibility, billing, and deploy are separate
+  owner-authorized actions.
+- Credentials, transcripts, customer data, caches, and machine-local state do
+  not enter source or release packages.
 
-## 0.4 tek-kapı kullanıcı sözleşmesi
+## Supported platform
 
-Kullanıcı Pala'yı bir kez kurduktan sonra ayrı yardımcı araç adlarını öğrenmek
-veya her sohbette ayrı skill çağırmak zorunda kalmamalıdır. Normal bir yazılım
-isteği Pala'nın yönlendirici skill'ini örtük olarak etkinleştirebilmeli; Pala
-mevcut proje, risk ve araç durumuna göre yalnız gereken uzmanı veya yerel aracı
-seçmelidir.
+The managed Workbench target is Windows x64. Unsupported platforms are reported
+truthfully and use safe fallbacks rather than appearing healthy.
 
-Kurulum tek, görüş bildirmeyen bir Windows akışıdır. Aynı komut:
-
-1. mevcut Codex, Pala, Git, Python, Node, `uv`, MCP ve yardımcı araç durumunu
-   keşfeder;
-2. doğru sürüm zaten varsa `zaten hazır` diye raporlar ve yeniden kurmaz;
-3. eksik veya Pala'ya ait eski parçaları sabitlenmiş sürüm ve doğrulanmış
-   bütünlük bilgisiyle kurar;
-4. kullanıcıya ait mevcut ayarları, kimlik bilgilerini ve aynı adlı yabancı
-   entegrasyonları ezmez;
-5. doctor sonucunu ve gerekiyorsa yeni sohbet sınırını doğal Türkçe ile açıklar.
-
-Pala her oturum başlangıcında yalnız yerel ve hızlı sağlık/güncellik durumunu
-okur. Ağ kullanan sürüm sorgusu hook içinde çalışmaz; Pala'nın ilk ilgili iş
-adımında süreli önbellekle en fazla günde bir kez yapılır. Böylece her oturum
-güncellik durumunu görürken çevrimdışı kullanım, başlangıç hızı ve hook güveni
-korunur.
-
-Güncellik sorgusu yalnız bilgi verir; paket indirme veya kurulum başlatmaz.
-Gerçek yükseltme, yeni resmi portable paketin `Update` moduyla yapılır. Resmi
-eski Pala manifesti güvenle tanınır; değiştirilmiş kullanıcı ağacı ve aynı
-isimli yabancı entegrasyon fail-closed korunur. Destek matrisi ve oturum/uzman
-sınırları `docs/PALA_UPDATE_COMPATIBILITY.md` içinde tek kaynaktır.
-
-## Yönetilen araç politikası
-
-- `RTK`, yalnız eşdeğerlik testlerinden geçen güvenli ve salt-okunur komutlarda
-  Pala'nın `PreToolUse` adaptörüyle kullanılabilir. Belirsiz, bileşik veya
-  durumu değiştiren komutlar aynen bırakılır.
-- `code-review-graph`, büyük veya çapraz modüllü incelemelerde Pala adaptöründen
-  çağrılır. Kendi Codex hook, skill veya MCP kurulumunu yaparak ikinci bir
-  orkestratör oluşturmaz.
-- Context7 ve Playwright mevcutsa korunur; eksikse Codex'in desteklediği MCP
-  komutlarıyla eklenir. Aynı isimli farklı kullanıcı ayarı sessizce değiştirilmez.
-- OpenSpec bulunan projelerle birlikte çalışılır. Pala'nın kalıcı plan/durum
-  sahibi olduğu projelere ikinci bir plan sistemi zorla eklenmez.
-- `planning-with-files`ın dayanıklı dosya hafızası ve tamamlanma kapısı
-  ilkeleri Pala'nın kendi durum modelinde uygulanır; çakışan hook ve plan
-  dosyaları ayrıca kurulmaz.
-- `developer-roadmap` mimari ve kalite kapsam kontrolünde başvuru kaynağıdır,
-  çalıştırılabilir bağımlılık değildir.
-- Ruflo 0.4 çekirdeğine alınmaz; ayrı ajan, daemon, hafıza ve MCP sahipliği
-  Pala'nın tek-kapı ve küçük güven yüzeyi hedefiyle çelişir.
-
-## Temel akış
-
-1. Projeyi ve geçerli talimat zincirini salt okunur keşfet.
-2. Mevcut ürün, plan, durum, karar ve Git kanıtını uzlaştır.
-3. Yalnız aktif ticket'ı ayrıntılandır ve uygulamaya başla.
-4. Dar testlerle ilerle; ilgili ticket kapısını çalıştır.
-5. Durumu, gerçek doğrulama kanıtını ve tek sonraki işi checkpoint et.
-6. Milestone sonunda tam kalite/runtime kapısını çalıştır.
-7. Açık yetki varsa yerel commit, GitHub push/PR veya release işlemini ayrı ayrı gerçekleştir.
-
-## Değişmez sınırlar
-
-- Eklenti modelin bağlam penceresini, kullanım kotasını veya token bütçesini büyütmez.
-- Token katkısı, gereksiz belge ve hook çıktısını ana bağlama taşımamakla sınırlıdır.
-- Hook'lar test/build/ağ/GitHub mutasyonu çalıştırmaz; yalnız kısa durum bağlamı ve güvenli devam uyarısı sağlar.
-- GitHub isteğe bağlı kalıcılık ve işbirliği yüzeyidir; gizli anahtar veya transcript deposu değildir.
-- Kullanıcı yetkisi olmadan commit, push, PR, release, deploy, repo oluşturma veya görünürlük değişikliği yapılmaz.
-- Haricî sağlayıcılar ve güncel Codex davranışı için kurulu uzman skill/connector ve resmî kaynaklar kullanılır.
-
-## Git ve GitHub'a alınabilenler
-
-- Plugin manifesti, skill, referanslar, hook tanımı ve deterministik scriptler.
-- Testler, CI, paketleme kuralları, ürün/plan/durum/karar belgeleri.
-- Hedef projelerde secretsız `.codex/pala-project.json`; proje politikası açıkça
-  gerektiriyorsa gözden geçirilmiş `.codex/pala-workflow.json`.
-- Gerçek komut adları, sonuç özetleri, süreler ve commit kimlikleri.
-
-## Git ve GitHub'a alınmayanlar
-
-- Token, parola, API anahtarı, OAuth verisi, `.env`, credential veya kişisel veri.
-- Sohbet transcriptleri, ham model düşüncesi, hook spill çıktıları ve plugin cache'i.
-- Gerçek müşteri/kart/kimlik/banka verisi veya hassas belge içeriği.
-- Kullanıcının açıkça paylaşmadığı özel proje içeriği.
-
-## Tamamlanma ölçütü
-
-- Pala durum eskimesini güvenilir biçimde algılar ve yeniden planlama yerine uzlaştırma ister.
-- SessionStart bağlamı kısa, secretsız ve aktif ticket odaklıdır.
-- Doğrulama katmanları dar/ticket/milestone/release olarak nettir.
-- Ölçülmemiş performans iddiası sözleşme testiyle engellenir.
-- Kullanıcıya gösterilebilir ticket'larda secretsız owner-demo handoff'u ve
-  yalnız gerçek tarayıcı kabulünden gelen görsel kanıt güncellenir.
-- Plugin ve skill doğrulayıcıları, birim testleri ve portable paket testi geçer.
-- Eklenti GitHub checkout'u veya portable ZIP'den desteklenen Codex CLI
-  akışıyla temiz kullanıcı profilinde kurulur ve yeni oturumda keşfedilir.
-- Kurulum belirli bir bilgisayar, kullanıcı yolu veya kişisel katalog
-  varsaymaz; mevcut kullanıcı kayıtlarını keşfeder ve çakışmaları korur.
+Advanced provider, lifecycle, integrity, and fallback contracts are documented
+in `docs/ARCHITECTURE.md`.

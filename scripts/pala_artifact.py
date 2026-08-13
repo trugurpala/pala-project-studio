@@ -11,10 +11,11 @@ REQUIRED_FILES = (
     "hooks/hooks.json",
     "scripts/verify.py",
     "scripts/pala_self_audit.py",
-    "docs/PALA_0_9_0_OPERATING_SYSTEM.md",
+    "docs/ARCHITECTURE.md",
 )
 FORBIDDEN_NAMES = (".sqlite", "credentials.json", "id_rsa")
 IGNORED_ARTIFACT_PARTS = {
+    ".codegraph",
     ".git",
     ".codex",
     ".venv",

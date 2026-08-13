@@ -1,0 +1,19 @@
+rules:
+  - id: pala.python.subprocess-shell-true
+    message: Avoid shell=True; pass a fixed argv sequence to subprocess APIs.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+  - id: pala.python.dynamic-eval
+    message: Dynamic eval can execute untrusted code; use a typed parser instead.
+    severity: ERROR
+    languages: [python]
+    pattern: eval(...)
+  - id: pala.javascript.dynamic-eval
+    message: Dynamic evaluation can execute untrusted code; use explicit parsing.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)

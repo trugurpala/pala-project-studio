@@ -31,6 +31,9 @@ def run_codex_json(arguments: list[str]) -> dict[str, object]:
     return _codex_bridge.run_codex_json(arguments, resolver=resolve_codex_executable)
 
 
+run_codex_json._pala_real_codex_runner = True
+
+
 def _transaction_operations() -> dict[str, object]:
     return {
         "atomic_write_json": atomic_write_json,
@@ -67,6 +70,25 @@ def doctor_installation(
     bundle = doctor_bundle(source, install_root, state_root)
     expected_version = str(manifest(source)["version"])
     codex = codex_status(install_root, expected_version, invoke=invoke)
+    capabilities = (
+        codex_capabilities()
+        if invoke is run_codex_json
+        else codex_capabilities(invoke=invoke)
+    )
+    codex["capabilities"] = {
+        name: getattr(capabilities, name)
+        for name in (
+            "marketplace_add",
+            "marketplace_list",
+            "marketplace_upgrade",
+            "marketplace_remove",
+            "plugin_add",
+            "plugin_list",
+            "plugin_remove",
+            "json_mode",
+        )
+    }
+    codex["capabilities_source"] = capabilities.source
     version_info = sys.version_info
     if hasattr(version_info, "__iter__"):
         major, minor, micro = list(version_info)[:3]
@@ -84,6 +106,19 @@ def doctor_installation(
     node_path = shutil.which("node")
     uv_path = shutil.which("uv")
     project = project_doctor(install_root, project_root)
+    workbench = None
+    if (state_root / "workbench").exists():
+        try:
+            from pala_workbench_doctor import doctor as workbench_doctor
+
+            task_requires_browser = (project_root / "playwright.config.ts").is_file()
+            workbench = workbench_doctor(
+                state_root,
+                project_root,
+                task_requires_browser=task_requires_browser,
+            )
+        except (ImportError, OSError, ValueError, RuntimeError) as error:
+            workbench = {"healthy": False, "status": "attention_required", "error": type(error).__name__}
     plugin_ready = bool(
         bundle["healthy"]
         and codex.get("healthy")
@@ -91,28 +126,42 @@ def doctor_installation(
         and git_path
         and resolved is not None
     )
-    expert_prerequisites_ready = bool(node_path and uv_path)
     adapters = bundle.get("adapters", {})
     if not isinstance(adapters, dict):
         adapters = {}
-    managed_experts = (
-        "code-review-graph",
-        "codebase-memory",
-        "graphify",
-        "ollama",
-        "serena",
-    )
-    experts_ready = bool(
-        expert_prerequisites_ready
-        and all(
-            isinstance(adapters.get(name), dict)
-            and adapters[name].get("state") == "ready"
-            for name in managed_experts
-        )
-    )
-    healthy = plugin_ready
+    healthy = bool(plugin_ready and (workbench is None or workbench.get("healthy")))
     hooks_next = hooks_next_step_message(project)
     plugin_payload = bundle["plugin"]
+    update_cache = read_json(update_cache_path(state_root))
+    installed_bundle_version = (
+        plugin_payload.get("installed_version")
+        if isinstance(plugin_payload, dict)
+        else None
+    )
+    codex_plugin_version = codex.get("installed_version")
+    marketplace_snapshot_version = codex.get("marketplace_snapshot_version")
+    source_base_version = base_version(expected_version)
+    installed_bundle_base_version = base_version(installed_bundle_version)
+    codex_plugin_base_version = base_version(codex_plugin_version)
+    expected_base_version = base_version(expected_version)
+    cache_status = (
+        "stale"
+        if codex.get("cache_stale")
+        else ("current" if codex.get("marketplace_registered") else "unknown")
+    )
+    if codex.get("status") == "ready":
+        marketplace_refresh_status = "not-needed"
+    elif codex.get("marketplace_owned") and codex.get("marketplace_source_type") == "git":
+        marketplace_refresh_status = "required"
+    elif codex.get("status") in {"external_conflict", "unavailable"}:
+        marketplace_refresh_status = "blocked"
+    else:
+        marketplace_refresh_status = "not-applicable"
+    version_ready = bool(
+        installed_bundle_base_version == expected_base_version
+        and codex_plugin_base_version == expected_base_version
+        and codex.get("healthy")
+    )
     plugin_next = plugin_drift_next_step_message(
         plugin_payload if isinstance(plugin_payload, dict) else None
     )
@@ -144,8 +193,6 @@ def doctor_installation(
         "schema_version": SCHEMA_VERSION,
         "healthy": healthy,
         "plugin_ready": plugin_ready,
-        "experts_ready": experts_ready,
-        "expert_prerequisites_ready": expert_prerequisites_ready,
         "status": "ready" if healthy else "attention_required",
         "hooks_next_step": hooks_next,
         "plugin_next_step": plugin_next,
@@ -153,7 +200,25 @@ def doctor_installation(
         "self_audit": self_audit,
         "shared_store": shared_store,
         "plugin": bundle["plugin"],
-        "adapters": adapters,
+        "source_version": expected_version,
+        "source_base_version": source_base_version,
+        "expected_version": expected_version,
+        "expected_base_version": expected_base_version,
+        "installed_bundle_version": installed_bundle_version,
+        "installed_bundle_base_version": installed_bundle_base_version,
+        "codex_plugin_version": codex_plugin_version,
+        "codex_plugin_base_version": codex_plugin_base_version,
+        "marketplace_snapshot_version": marketplace_snapshot_version,
+        "latest_checked_version": (
+            update_cache.get("available_version")
+            if isinstance(update_cache, dict)
+            else None
+        ),
+        "marketplace_source_type": codex.get("marketplace_source_type"),
+        "marketplace_refresh_status": marketplace_refresh_status,
+        "cache_status": cache_status,
+        "version_ready": version_ready,
+        "capability_contracts": adapters,
         "codex": codex,
         "python": {
             "ready": python_ready,
@@ -179,7 +244,8 @@ def doctor_installation(
         "node": {"ready": bool(node_path), "executable": node_path},
         "uv": {"ready": bool(uv_path), "executable": uv_path},
         "project": project,
-        "update_cache": read_json(update_cache_path(state_root)),
+        "workbench": workbench,
+        "update_cache": update_cache,
         "state_file": bundle["state_file"],
     }
 

@@ -6,6 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pala_owner_cockpit import render_control_center, render_owner_cockpit
+from pala_control_center_open import open_if_explicit
 
 
 class ControlCenterTests(unittest.TestCase):
@@ -47,6 +48,28 @@ class ControlCenterTests(unittest.TestCase):
         self.assertIn("GitHub publication is ready for the owner's approval.", pending)
         self.assertIn("Publication stopped safely.", blocked)
         self.assertIn("published and remote-verified", published)
+
+    def test_turkish_owner_cards_and_exact_no_request_text(self) -> None:
+        html = render_control_center(self.snapshot)
+        for heading in ("Neredeyiz?", "Pala ne yapiyor?", "Problem var mi?", "Sizden ne gerekiyor?"):
+            self.assertIn(heading, html)
+        self.assertIn("Sizden gereken:\nHicbir sey.", html)
+        self.assertIn("PALA CONTROL CENTER", html)
+
+    def test_only_explicit_panel_intent_refreshes_and_opens_exactly_once(self) -> None:
+        events: list[str] = []
+        refresh = lambda: events.append("refresh") or Path("panel.html")
+        opener = lambda _path: events.append("open")
+        for intent in ("install", "doctor", "rapor", "open", ""):
+            self.assertFalse(open_if_explicit(intent, refresh=refresh, opener=opener))
+        self.assertEqual(events, [])
+        for intent in ("paneli aç", "paneli ac", "  PANELİ   AÇ  "):
+            self.assertTrue(open_if_explicit(intent, refresh=refresh, opener=opener))
+        self.assertEqual(events, ["refresh", "open"] * 3)
+
+    def test_public_open_instruction_uses_turkish_owner_phrase(self) -> None:
+        report_source = (Path(__file__).resolve().parent / "pala_report.py").read_text(encoding="utf-8")
+        self.assertIn('explicit intent "paneli aç" is required', report_source)
 
 
 if __name__ == "__main__":

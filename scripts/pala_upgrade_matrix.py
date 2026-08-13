@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -17,6 +18,10 @@ from pathlib import Path, PurePosixPath
 
 
 RELEASES = {
+    "0.4.4": {
+        "url": "https://github.com/trugurpala/pala-project-studio/releases/download/v0.4.4/pala-project-studio-0.4.4.zip",
+        "sha256": "F092D2066CE15BC6900C40B09B8AEDDB2939AB779C7178C9DED61092CD254B4F",
+    },
     "0.8.0": {
         "url": "https://github.com/trugurpala/pala-project-studio/releases/download/v0.8.0/pala-project-studio-0.8.0.zip",
         "sha256": "3EA17A1CEFF7DEEBF906D03184D9B9F09F800B4B64B4AD0D880AD30C22A6916E",
@@ -24,6 +29,10 @@ RELEASES = {
     "0.8.1": {
         "url": "https://github.com/trugurpala/pala-project-studio/releases/download/v0.8.1/pala-project-studio-0.8.1-final.zip",
         "sha256": "69325B6EE96D59498EC269286449CB25352FB45B9CC6267DC064D8356848FF53",
+    },
+    "1.0.0": {
+        "url": "https://github.com/trugurpala/pala-project-studio/releases/download/v1.0.0/pala-project-studio-1.0.0.zip",
+        "sha256": "13173D29431FFAD84038141F8191B10041AC353314A24831B37064F2FAD1306C",
     },
 }
 
@@ -64,8 +73,8 @@ def candidate_version(root: Path) -> str:
     path = root / ".codex-plugin" / "plugin.json"
     value = json.loads(path.read_text(encoding="utf-8"))
     version = str(value.get("version", ""))
-    if version.split("+", 1)[0] != "0.9.0":
-        raise ValueError("upgrade candidate must have version 0.9.0")
+    if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?", version):
+        raise ValueError("upgrade candidate must have a release version")
     return version
 
 
@@ -121,21 +130,48 @@ def seed_managed(installer, old_root: Path, install_root: Path, state_root: Path
     )
 
 
-def run_case(installer, candidate: Path, old_root: Path, workspace: Path, *, legacy: bool) -> dict[str, object]:
+def run_case(
+    installer,
+    candidate: Path,
+    old_root: Path,
+    workspace: Path,
+    *,
+    legacy: bool,
+    target_version: str,
+) -> dict[str, object]:
     suffix = "legacy" if legacy else "managed"
     case_root = workspace / suffix
     install_root = case_root / "local" / "Pala" / "marketplace"
     state_root = case_root / "local" / "Pala"
-    marker = state_root / "project-memory-preserved.json"
+    state_markers = {
+        "canonical_user_state": state_root / "runtime" / "canonical-user-state.json",
+        "project_catalog": state_root / "catalog" / "pala-catalog.json",
+        "failure_intelligence": state_root / "runtime" / "failure-intelligence.json",
+    }
     if legacy:
         installer.copy_bundle(old_root, install_root)
     else:
         seed_managed(installer, old_root, install_root, state_root)
-    marker.parent.mkdir(parents=True, exist_ok=True)
-    marker.write_text('{"owner":"user","keep":true}\n', encoding="utf-8")
+    for name, marker in state_markers.items():
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(
+            json.dumps({"owner": "user", "surface": name, "keep": True}) + "\n",
+            encoding="utf-8",
+        )
     before = json.loads((install_root / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
     report = installer.install_bundle(candidate, install_root, state_root)
     after = json.loads((install_root / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
+    second = installer.install_bundle(candidate, install_root, state_root)
+    doctor_healthy = bool(
+        installer.doctor_bundle(candidate, install_root, state_root)["healthy"]
+    )
+    state_preservation = {
+        name: bool(
+            marker.is_file()
+            and json.loads(marker.read_text(encoding="utf-8")).get("keep") is True
+        )
+        for name, marker in state_markers.items()
+    }
     required_missing = [
         str(path).replace("\\", "/")
         for path in installer.REQUIRED_FILES
@@ -144,10 +180,12 @@ def run_case(installer, candidate: Path, old_root: Path, workspace: Path, *, leg
     expected_status = "migrated" if legacy else "updated"
     passed = bool(
         report.get("status") == expected_status
-        and str(after).split("+", 1)[0] == "0.9.0"
-        and marker.is_file()
+        and str(after).split("+", 1)[0] == target_version.split("+", 1)[0]
+        and all(state_preservation.values())
         and not required_missing
-        and installer.doctor_bundle(candidate, install_root, state_root)["healthy"]
+        and doctor_healthy
+        and second.get("status") == "ready"
+        and second.get("changed") is False
     )
     return {
         "mode": suffix,
@@ -155,7 +193,12 @@ def run_case(installer, candidate: Path, old_root: Path, workspace: Path, *, leg
         "installer_status": report.get("status"),
         "from_version": before,
         "to_version": after,
-        "state_marker_preserved": marker.is_file(),
+        "state_marker_preserved": all(state_preservation.values()),
+        "state_preservation": state_preservation,
+        "second_ensure_current_status": second.get("status"),
+        "second_ensure_current_changed": second.get("changed"),
+        "doctor_healthy": doctor_healthy,
+        "codex_scope": "not-mutated-isolated-bundle-canary",
         "required_missing": required_missing,
     }
 
@@ -179,10 +222,28 @@ def run_matrix(candidate: Path, cache: Path) -> dict[str, object]:
                     "size": archive.stat().st_size,
                 }
             )
-            rows.append(run_case(installer, candidate, extracted, workspace / f"case-{old_version}", legacy=False))
+            rows.append(
+                run_case(
+                    installer,
+                    candidate,
+                    extracted,
+                    workspace / f"case-{old_version}",
+                    legacy=False,
+                    target_version=version,
+                )
+            )
             rows[-1]["source_release"] = old_version
-            if old_version == "0.8.0":
-                rows.append(run_case(installer, candidate, extracted, workspace / "case-legacy", legacy=True))
+            if old_version in {"0.4.4", "0.8.0"}:
+                rows.append(
+                    run_case(
+                        installer,
+                        candidate,
+                        extracted,
+                        workspace / f"case-{old_version}-legacy",
+                        legacy=True,
+                        target_version=version,
+                    )
+                )
                 rows[-1]["source_release"] = old_version
     passed = all(row["status"] == "passed" for row in rows)
     return {

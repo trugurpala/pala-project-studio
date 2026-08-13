@@ -1,6 +1,9 @@
 __pycache__/
 *.py[cod]
 .code-review-graph/
+.codegraph/
+.mcp.json
+.coverage
 .pytest_cache/
 .ruff_cache/
 .venv/
@@ -19,6 +22,11 @@ reports/pdf_ingest_scratch/
 artifacts/wip/
 artifacts/quality/
 artifacts/final/
+artifacts/install-field/
+artifacts/workbench/
+artifacts/Pala_1_Arastirma_M61-M68.pdf
+artifacts/Pala_Project_Studio_Kisa_Kitap.pdf
+reports/PALA_AJANS_PILOT_TEKLIF.pdf
 node_modules/
 playwright-report/
 test-results/

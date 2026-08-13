@@ -37,7 +37,7 @@ matters.
 
 For Pala's local Delivery Quality Engine (discover → ledger → explicit record →
 status), use `scripts/pala_quality.py` and
-`docs/PALA_0_9_QUALITY_ENGINE.md`. Hooks never run gates.
+`docs/QUALITY_ENGINE.md`. Hooks never run gates.
 
 ## Verification before done
 

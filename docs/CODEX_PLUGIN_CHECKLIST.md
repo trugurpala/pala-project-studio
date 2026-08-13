@@ -4,7 +4,7 @@ Evidence labels only: `passed` | `not-run` | `blocked` | `configured-not-verifie
 
 | Row | Surface | Evidence |
 | --- | --- | --- |
-| Manifest `.codex-plugin/plugin.json` | Source `0.8.1+codex.*` | `passed` (prep; GitHub tag `not-run`) |
+| Manifest `.codex-plugin/plugin.json` | Source `1.1.0` | `passed` (local candidate; public remains `v1.0.0`) |
 | Marketplace `.agents/plugins/marketplace.json` | Local `./` single plugin | `passed` |
 | Hooks convention `hooks/hooks.json` | SessionStart + statusMessage | `passed` |
 | Skill body size | Thin skill; detail in `references/kontrol-et.md` | contract tests |

@@ -222,6 +222,7 @@ def build_cold_packet(
         "capability": state["capability"],
         "context_records": [{key: value for key, value in item.items() if key != "text"} for item in records],
         "generated_at": operations["_utc_now"](),
+        "milestones": operations["current_milestones"](state["root"]),
     }
     text = operations["format_packet_text"](packet, max_bytes=max_bytes)
     packet["text"] = text

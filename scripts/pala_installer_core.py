@@ -47,11 +47,18 @@ _host_path = _codex_bridge._host_path
 resolve_windows_codex_candidates = _codex_bridge.resolve_windows_codex_candidates
 resolve_codex_executable = _codex_bridge.resolve_codex_executable
 comparable_path = _codex_bridge.comparable_path
+base_version = _codex_bridge.base_version
 resolve_codex_home = _codex_bridge.resolve_codex_home
 
 
 def run_codex_json(arguments: list[str]) -> dict[str, object]:
     return _codex_bridge.run_codex_json(arguments, resolver=resolve_codex_executable)
+
+
+def codex_capabilities(*, invoke=run_codex_json):
+    if invoke is run_codex_json or getattr(invoke, "_pala_real_codex_runner", False):
+        return _codex_bridge.probe_codex_capabilities()
+    return _codex_bridge.CodexCapabilities.all_supported()
 
 
 def trusted_legacy_pala(entry: dict[str, object]) -> bool:
@@ -84,7 +91,7 @@ def codex_status(
 ) -> dict[str, object]:
     return _codex_bridge.codex_status(
         install_root, expected_version, owner=OWNER,
-        plugin_id=PLUGIN_ID,
+        plugin_id=PLUGIN_ID, official_repository=OFFICIAL_REPOSITORY,
         trusted_legacy=trusted_legacy_pala,
         cache_matches=codex_runtime_cache_matches,
         invoke=invoke,
@@ -97,11 +104,15 @@ def ensure_codex_install(
     *,
     dry_run: bool = False,
     invoke=run_codex_json,
+    capabilities=None,
 ) -> dict[str, object]:
+    if capabilities is None:
+        capabilities = codex_capabilities(invoke=invoke)
     return _codex_bridge.ensure_codex_install(
         install_root, expected_version, owner=OWNER,
-        plugin_id=PLUGIN_ID,
+        plugin_id=PLUGIN_ID, official_repository=OFFICIAL_REPOSITORY,
         status_check=codex_status,
+        capabilities=capabilities,
         dry_run=dry_run,
         invoke=invoke,
     )
@@ -265,39 +276,35 @@ def doctor_bundle(source: Path, install_root: Path, state_root: Path) -> dict[st
 
 
 def adapter_inventory(source: Path, state_root: Path | None = None) -> dict[str, dict[str, object]]:
-    """Report optional tools without probing, installing, or changing user configuration."""
+    """Project the current capability contracts without mutating runtime state."""
     try:
-        adapter_path = Path(__file__).with_name("pala_adapters.py")
-        spec = importlib.util.spec_from_file_location("pala_installer_adapters", adapter_path)
+        workbench_path = Path(__file__).with_name("pala_workbench.py")
+        spec = importlib.util.spec_from_file_location("pala_installer_workbench", workbench_path)
         if spec is None or spec.loader is None:
-            raise ValueError("adapter module unavailable")
+            raise ValueError("workbench capability registry unavailable")
         module = importlib.util.module_from_spec(spec)
-        sys.modules["pala_installer_adapters"] = module
+        sys.modules["pala_installer_workbench"] = module
         spec.loader.exec_module(module)
-        lock = module.load_managed_tools_lock(source / "managed-tools.lock.json")
+        contracts = module.default_registry().contracts
     except (OSError, ValueError, ImportError):
-        return {"lock": {"state": "failed", "detail": "managed tools lock unavailable"}}
-    inventory: dict[str, dict[str, object]] = {}
-    expert_module = None
-    if state_root is not None:
-        try:
-            expert_path = Path(__file__).with_name("pala_expert_installer.py")
-            expert_spec = importlib.util.spec_from_file_location("pala_installer_experts", expert_path)
-            if expert_spec is not None and expert_spec.loader is not None:
-                expert_module = importlib.util.module_from_spec(expert_spec)
-                sys.modules["pala_installer_experts"] = expert_module
-                expert_spec.loader.exec_module(expert_module)
-        except (OSError, ImportError):
-            expert_module = None
-    for name, entry in lock.items():
-        state = "missing"
-        detail = "optional adapter is not installed"
-        if expert_module is not None and "sha256" in entry:
-            inspected = expert_module.inspect_binary(name, entry, state_root)
-            state = str(inspected["state"])
-            detail = "Pala-owned artifact integrity verified" if state == "ready" else "Pala-owned artifact is missing or conflicted"
-        inventory[name] = {"state": state, "changed": False, "detail": detail, "version": entry["version"]}
-    return inventory
+        return {
+            "registry": {
+                "state": "failed",
+                "changed": False,
+                "detail": "workbench capability registry unavailable",
+            }
+        }
+    return {
+        contract.capability_id: {
+            "state": "declared",
+            "changed": False,
+            "detail": contract.category,
+            "provider": contract.provider,
+            "version": contract.version,
+            "required_for_core_health": contract.required_for_core_health,
+        }
+        for contract in contracts
+    }
 
 
 def hooks_next_step_message(project: dict[str, object] | None) -> str:

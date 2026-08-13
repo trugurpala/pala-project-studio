@@ -14,7 +14,15 @@ Tam kurulum mitleri / hata tablosu: [VIBE_INSTALL.md](VIBE_INSTALL.md).
    - **Evet** → **birincil kapı** (aşağıdaki 2 CLI komutu).
    - **Yok / tam Doctor toolkit** → [Çevrimdışı / tam kurulum](#çevrimdışı--tam-kurulum).
 
-## 2) Birincil kapı — 2 Codex CLI komutu
+## 2) Birincil kapı — doğal dil kurulumu
+
+Normal kullanıcı Codex'e “`https://github.com/trugurpala/pala-project-studio`
+eklenti­sini kur ve güncel olduğunu doğrula” demelidir. Pala mevcut Git
+marketplace snapshot'ını inceler, gerekirse yeniler, plugin cache'ini yeniden
+kurar ve Doctor ile temel sürümleri doğrular.
+
+İleri CLI akışı yalnız kurulu Codex yardımında desteklendiği doğrulandıktan
+sonra kullanılmalıdır:
 
 Marketplace ve eklenti adı: `pala-project-studio`
 → kurulum kimliği `pala-project-studio@pala-project-studio`.
@@ -125,7 +133,7 @@ packet. Soft “hatırlıyorum” kanıt sayılmaz.
 
 Dağıtım sınırları: [PALA_EVERYWHERE.md](PALA_EVERYWHERE.md).
 Kapsam: [CODEX_SCOPE_AND_LIMITS.md](CODEX_SCOPE_AND_LIMITS.md).
-Release (owner): [RELEASE_1.0.0.md](RELEASE_1.0.0.md).
+Local candidate (owner): [RELEASE_1.1.0.md](RELEASE_1.1.0.md).
 
 ## Bilerek yok
 

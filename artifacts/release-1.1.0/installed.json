@@ -1,0 +1,29 @@
+{
+  "schema": "pala.release.installed.v1",
+  "status": "passed",
+  "installed_from": "pala-project-studio-1.1.0.zip",
+  "installed_base_version": "1.1.0",
+  "version_ready": true,
+  "isolated_installed_profile_verify": "passed",
+  "final_clean_user_install_canary": "not-run-by-owner-stop-boundary",
+  "pala_core": "healthy",
+  "codegraph": {
+    "version": "1.5.0",
+    "state": "exact",
+    "health": "passed",
+    "integrity": "sha256:d6798622b4f44ee6757c94335f437ee27a9ff7d3537b554cb6a2b3baf11bc4a1"
+  },
+  "semgrep": {
+    "version": "1.172.0",
+    "state": "exact",
+    "health": "passed",
+    "integrity": "sha256:e32868faeb67b241bbd3fabd82a12fba4b467464dedde9da285b9bf78e808ba3"
+  },
+  "playwright_project_profile": "passed",
+  "serena_absent_allowed": true,
+  "context7_absent_allowed": true,
+  "retired_active_helper_remnants": 0,
+  "doctor": "healthy",
+  "automatic_browser_open": false,
+  "sanitized": true
+}

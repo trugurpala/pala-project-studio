@@ -1,11 +1,9 @@
-# Pala 1.0 canonical goal
+# Goal
 
-Current goal: deliver `1.0.0` of the **PALA Provider-Independent
-Local Software Delivery OS**. The locked completion contract is
-[`docs/RELEASE_1.0.0.md`](docs/RELEASE_1.0.0.md).
+Deliver Pala `1.1.0` as a clean, public, reproducible release of the
+Provider-Independent Local Software Delivery OS.
 
-Pala turns user intent into a durable ProductSpec, capability-backed plan,
-canonical TaskContract execution, Quality Engine evidence, package-ready
-projection, and owner-readable cockpit. TaskContract, WorkflowStore, and the
-existing Pala Quality Engine remain the only completion authorities. Remote
-publish is the M69 publication workflow; real remote deploy remains `not-run`.
+Completion requires a product-first repository, canonical acceptance mapped to
+fresh Quality Engine evidence, coverage at or above 75%, deterministic package
+reproduction, green GitHub Actions on the exact release commit, public asset
+readback, and truthful separation of publication from deploy.

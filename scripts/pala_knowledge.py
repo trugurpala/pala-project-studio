@@ -8,6 +8,7 @@ from urllib.parse import urlsplit
 KNOWLEDGE_PATHS = ("ARCHITECTURE.md", "docs/adr", "docs/plans/active", "docs/plans/completed", "docs/operations", "docs/generated")
 MARKDOWN_LINK_RE = re.compile(r"(?<!\!)\[[^\]]*\]\(([^)]+)\)")
 IGNORED_MARKDOWN_PARTS = {
+    ".codegraph",
     ".git",
     ".codex",
     ".venv",
@@ -78,7 +79,7 @@ def lint_markdown_links(root: Path, artifact_root: Path | None = None) -> dict[s
                 source_name = str(source.relative_to(base)).replace("\\", "/")
                 item = {"source": source_name, "target": target, "reason": "missing"}
                 # Historical plans/contracts are reported but never rewritten or made a release blocker.
-                if source_name.startswith("docs/superpowers/") or source_name == "docs/PALA_0_5_MEMORY_CONTRACT.md":
+                if source_name.startswith("docs/history/"):
                     stale.append(item)
                 else:
                     missing.append(item)

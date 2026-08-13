@@ -49,4 +49,4 @@ Provision yüzeyi Python CLI'dır; tek kurulum kapısı Install-Pala olarak kal�
 - Cloud DB / Claude / ChatGPT tek tık kurulum yok
 - Ölçülmemiş % hız iddiası yok
 
-See also: `docs/PALA_0_6_STATUS_SURFACE.md`, ADR-012 katalog.
+See also: `docs/ARCHITECTURE.md`, ADR-012 katalog.

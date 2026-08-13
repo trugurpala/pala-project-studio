@@ -74,6 +74,56 @@
       ]
     },
     {
+      "id": "semgrep-local",
+      "kind": "security",
+      "argv": [
+        "py",
+        "-3",
+        "scripts/pala_semgrep_runner.py",
+        "--project",
+        "."
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "workbench-adversarial",
+      "kind": "migration",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_workbench_adversarial",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "repo-cleanup",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_repo_cleanup",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
       "id": "ruff-m47-changed",
       "kind": "lint",
       "argv": [

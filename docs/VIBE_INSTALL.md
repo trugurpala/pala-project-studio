@@ -8,6 +8,22 @@ vaat etmez. Kanıt etiketleri yalnız:
 İlk 10 dakika akışı: [VIBE_FIRST_SESSION.md](VIBE_FIRST_SESSION.md).
 Kısa ZIP kapısı: kök [KUR.md](../KUR.md).
 
+## Tek normal kurulum cümlesi
+
+Codex'e şunu yazın:
+
+```text
+https://github.com/trugurpala/pala-project-studio eklentisini kur ve güncel olduğunu doğrula.
+```
+
+Pala'nın beklenen davranışı:
+
+`marketplace exists → Git snapshot refresh/upgrade → plugin install/reinstall → version verify → Doctor → new Codex conversation`
+
+Kullanıcının marketplace root, plugin cache veya manifest ayrıntılarını bilmesi
+gerekmez. `marketplace add` başarılı dönse bile mevcut Git snapshot stale
+olabilir; bu tek başına kurulum kanıtı değildir.
+
 ## Önce karar ağacı
 
 1. **ChatGPT Work / Codex** veya **Codex CLI** açık mı?
@@ -27,7 +43,7 @@ Kısa ZIP kapısı: kök [KUR.md](../KUR.md).
 | Cursor’da “Pala Codex plugin kurulu” | **Yok.** Cursor ince rule/skill + ortak `pala.sqlite`; Codex hook parity yok. |
 | Doctor `hook_safety=passed` = `/hooks` güveni bitti | **Yok.** `hook_safety` dosya kontrolü; trust Codex Work’te manuel. |
 | Soft “bitti / ok / hızlı” | Kanıt sayılmaz. Etiket kullan. |
-| 0.8.0 indirdim, kaynak 0.8.1 — hangisi? | GitHub’da yayımlı indirme hâlâ **0.8.0** olabilir; kaynak ağaç **0.8.1** hazırlığı. Tag/release owner işi. |
+| Kaynak, bundle ve Codex sürümleri farklı görünüyor | `+codex.*` build metadata'sını ayırıp temel sürümü karşılaştırın; Doctor source, expected, bundle, plugin ve marketplace snapshot kimliklerini birlikte raporlar. |
 
 ## Önkoşullar
 
@@ -39,7 +55,7 @@ Kısa ZIP kapısı: kök [KUR.md](../KUR.md).
 - ExecutionPolicy Bypass korkutucu görünür; yalnız `Install-Pala.ps1` / `Kur.cmd`
   için tek seferlik çalıştırma bayrağıdır — ürün “güvenlik kapat” demek değildir
 
-## Birincil kapı — Codex-native CLI (2 komut)
+## İleri kapı — Codex-native CLI
 
 Marketplace adı ve eklenti adı: `pala-project-studio`
 (`plugin@marketplace` → `pala-project-studio@pala-project-studio`).
@@ -84,8 +100,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Doctor
 ```
 
-3. Kurucu desteklenen `codex plugin marketplace add` / `codex plugin add`
-   akışını bağlar; kişisel marketplace JSON’unu elle bozmaz.
+3. Kurucu Codex yardımını okur; mevcut Git marketplace'ini gerektiğinde yeniler,
+   plugin'i yeniden kurar ve sürümü doğrular. Kişisel marketplace JSON'unu elle
+   bozmaz.
 4. Aynı üç GUI adımı: `/hooks` → güven → yeni sohbet.
 
 Ayrıntı: kök [KUR.md](../KUR.md).
@@ -94,7 +111,9 @@ Ayrıntı: kök [KUR.md](../KUR.md).
 
 | Kontrol | Anlamı |
 | --- | --- |
-| Doctor `plugin_ready` / `healthy` | Python, Git, Codex CLI, plugin envanteri (çekirdek) |
+| Doctor `plugin_ready` / `healthy` | Python, Git, Codex CLI, plugin envanteri ve marketplace/cache durumunun çekirdek sonucu |
+| Doctor `version_ready` | Source/bundle/Codex plugin temel sürümleri beklenen sürümle eşleşir ve Codex sağlıklıdır |
+| Doctor `marketplace_refresh_status` | Git snapshot yenilemesi: `not-needed`, `required`, `blocked` veya `not-applicable` |
 | Doctor `plugin=drifted` | source≠install fingerprint; **healthy sayma** → Repair/Update/marketplace sync |
 | Doctor `hook_safety` | `hooks.json` + `pala_hook.py` + workflow dosya sağlığı |
 | Codex `/hooks` trust | İnsan tıklaması; UI adımı |
@@ -124,13 +143,14 @@ Ayrıntı: kök [KUR.md](../KUR.md).
 | Doctor yeşil, presence yok | Önce cwd **kayıtlı mı** bak; kayıtlıysa `/hooks` trust |
 | Plugin kurulu, SessionStart boş | Kayıtsız klasör — bozuk değil; Pala register et |
 | `plugin=drifted` / `healthy=False` | `Install-Pala -Mode Repair` veya Update / marketplace sync |
-| 0.8.0 vs 0.8.1 karışıklığı | İndirme linki hâlâ 0.8.0 ise o asset’i kullan; kaynak 0.8.1 = henüz tag yoksa `not-run` |
+| Sürüm veya cache karışıklığı | `Install-Pala.ps1 -Mode Doctor` çalıştırın; `marketplace add` tek başına güncellik kanıtı değildir. |
 
 ## Güncelleme fiilleri
 
 - Codex: `codex plugin marketplace` / plugin upgrade akışları (host CLI)
 - Pala toolkit: `Install-Pala.ps1 -Mode Update` (ZIP/source kökünden)
-- İkisi aynı cümle değil; vibe ilk kurulumda **add** yeter
+- Normal kurulum cümlesi: “Pala'yı kur ve güncel olduğunu doğrula.” `add`,
+  refresh, reinstall ve Doctor adımları bu isteğin parçasıdır.
 
 ## Dağıtım sınırı
 
@@ -141,4 +161,5 @@ Ayrıntı: kök [KUR.md](../KUR.md).
 
 See also: [PALA_EVERYWHERE.md](PALA_EVERYWHERE.md),
 [CODEX_SCOPE_AND_LIMITS.md](CODEX_SCOPE_AND_LIMITS.md),
-[RELEASE_1.0.0.md](RELEASE_1.0.0.md).
+[RELEASE_1.1.0.md](RELEASE_1.1.0.md). The published `1.0.0` notes remain
+[current release notes](RELEASE_1.1.0.md).

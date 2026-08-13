@@ -1,5 +1,5 @@
 <#
-    Pala 1.0.0 installer metadata. The machine-readable ReleaseTruth lives in
+    Pala installer entry point. The machine-readable ReleaseTruth lives in
     product-identity.json; this entry point does not own a second version.
     .SYNOPSIS
     Pala Project Studio'yu atomik ve idempotent bicimde yonetir.
@@ -7,8 +7,7 @@
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [ValidateSet("Install", "Doctor", "Repair", "Update", "Uninstall", "Status")]
-    [string]$Mode = "Install",
-    [switch]$InstallExperts
+    [string]$Mode = "Install"
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,9 +19,6 @@ if (-not $env:PYTHONUTF8) { $env:PYTHONUTF8 = "1" }
 
 $pluginRoot = Split-Path -Path $PSScriptRoot -Parent
 $core = Join-Path $PSScriptRoot "pala_installer.py"
-$expertCore = Join-Path $PSScriptRoot "pala_expert_installer.py"
-$expertLock = Join-Path $pluginRoot "managed-tools.lock.json"
-$palaStateRoot = Join-Path ([Environment]::GetFolderPath("LocalApplicationData")) "Pala"
 
 function Resolve-PalaPython {
     $launcher = Get-Command py -ErrorAction SilentlyContinue
@@ -30,18 +26,6 @@ function Resolve-PalaPython {
     $python = Get-Command python -ErrorAction SilentlyContinue
     if ($python) { return @($python.Source) }
     throw "Python bulunamadi. Pala icin Python 3.10 veya ustu gereklidir."
-}
-
-function Invoke-PalaNativeCapture([string]$FilePath, [string[]]$Arguments) {
-    $previousErrorAction = $ErrorActionPreference
-    try {
-        $ErrorActionPreference = "Continue"
-        $output = (& $FilePath @Arguments 2>&1 | Out-String)
-        $exitCode = $LASTEXITCODE
-    } finally {
-        $ErrorActionPreference = $previousErrorAction
-    }
-    return [pscustomobject]@{ Output = $output; ExitCode = $exitCode }
 }
 
 function Extract-PalaJson([string]$Text) {
@@ -103,12 +87,21 @@ function Show-PalaGuiNextSteps([pscustomobject]$Payload) {
 }
 
 function Show-PalaResult([pscustomobject]$Payload) {
+    if ($null -ne $Payload.version) {
+        $displayVersion = "$($Payload.version)".Split("+")[0]
+        Write-Host "[Pala] Pala $displayVersion"
+    }
     if ($null -ne $Payload.healthy -and $null -ne $Payload.codex -and $null -ne $Payload.plugin) {
         $pluginStatus = $Payload.plugin.status
         $codexStatus = $Payload.codex.status
         Write-Host "[Pala] Doctor: healthy=$($Payload.healthy), plugin=$pluginStatus, codex=$codexStatus"
+        if ($null -ne $Payload.source_version) { Write-Host "[Pala] Source=$($Payload.source_version) (base=$($Payload.source_base_version)), beklenen=$($Payload.expected_version) (base=$($Payload.expected_base_version)), bundle=$($Payload.installed_bundle_version), Codex plugin=$($Payload.codex_plugin_version)" }
+        if ($null -ne $Payload.marketplace_source_type) { Write-Host "[Pala] Marketplace kaynak=$($Payload.marketplace_source_type), refresh=$($Payload.marketplace_refresh_status), cache=$($Payload.cache_status), version-ready=$($Payload.version_ready)" }
         if ($null -ne $Payload.plugin_ready) {
-            Write-Host "[Pala] Cekirdek(plugin_ready)=$($Payload.plugin_ready), uzmanlar(experts_ready)=$($Payload.experts_ready), uzman-onkosullari=$($Payload.expert_prerequisites_ready)"
+            Write-Host "[Pala] Cekirdek(plugin_ready)=$($Payload.plugin_ready)"
+        }
+        if ($null -ne $Payload.workbench) {
+            Write-Host "[Pala] Professional Workbench=$($Payload.workbench.status)"
         }
         Write-Host "[Pala] Python=$($Payload.python.ready), Git=$($Payload.git.ready), Codex CLI=$($Payload.codex_cli.ready), Node=$($Payload.node.ready), uv=$($Payload.uv.ready)"
         if ($null -ne $Payload.codex_cli.hint -and "$($Payload.codex_cli.hint)".Trim().Length -gt 0) {
@@ -133,9 +126,9 @@ function Show-PalaResult([pscustomobject]$Payload) {
     }
     switch ($Payload.status) {
         "ready" { Write-Host "[Pala] Zaten hazir; dosyalar degistirilmedi." }
-        "installed" { Write-Host "[Pala] Kurulum tamamlandi." }
-        "migrated" { Write-Host "[Pala] Onceki Pala kurulumu guvenle guncellendi ve yonetim kaydi olusturuldu." }
-        "updated" { Write-Host "[Pala] Guncelleme tamamlandi." }
+        "installed" { Write-Host "[Pala] Pala hazir." }
+        "migrated" { Write-Host "[Pala] Pala guncellendi; onceki kurulum guvenle tasindi." }
+        "updated" { Write-Host "[Pala] Pala guncellendi." }
         "repaired" { Write-Host "[Pala] Bozuk Pala kurulumu onarildi." }
         "uninstalled" { Write-Host "[Pala] Pala'ya ait kurulum kaldirildi." }
         "absent" { Write-Host "[Pala] Kaldirilacak Pala kurulumu yok." }
@@ -148,50 +141,6 @@ function Show-PalaResult([pscustomobject]$Payload) {
         default {
             Write-Host "[Pala] Sonuc: $($Payload.status)"
         }
-    }
-}
-
-function Invoke-PalaExperts([string]$Action) {
-    if (-not (Test-Path -LiteralPath $expertCore -PathType Leaf) -or -not (Test-Path -LiteralPath $expertLock -PathType Leaf)) {
-        throw "Pala uzman isci kurulumu bulunamadi."
-    }
-    $expertArgs = @()
-    if ($pythonCommand.Count -gt 1) { $expertArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
-    $expertArgs += @($expertCore, $Action, "--lock", $expertLock, "--state-root", $palaStateRoot)
-    if ($WhatIfPreference) { $expertArgs += "--dry-run" }
-    $expertRaw = (& $executable @expertArgs 2>&1 | Out-String).Trim()
-    $expertExit = $LASTEXITCODE
-    try {
-        $expertPayload = Parse-PalaJson $expertRaw
-    } catch {
-        throw "Pala uzman isci sonucu okunamadi."
-    }
-    Write-Host "[Pala] Uzman isciler: $($expertPayload.state)"
-    if ($expertExit -ne 0) {
-        Write-Host "[Pala] Uzman isciler istege baglidir; cekirdek Pala durumu etkilenmedi. Ayrinti icin Doctor calistirin."
-    }
-    return [pscustomobject]@{ Payload = $expertPayload; ExitCode = $expertExit }
-}
-
-function Invoke-PalaLocalModel {
-    $ollama = Join-Path $palaStateRoot "experts\ollama\0.32.6\expanded\ollama.exe"
-    if (-not (Test-Path -LiteralPath $ollama -PathType Leaf)) {
-        throw "Pala'ya ait Ollama ikilisi bulunamadi."
-    }
-    $env:OLLAMA_HOST = "127.0.0.1:11435"
-    $env:OLLAMA_MODELS = Join-Path $palaStateRoot "experts\ollama\0.32.6\models"
-    $env:OLLAMA_KEEP_ALIVE = "0"
-    $listResult = Invoke-PalaNativeCapture $ollama @("list")
-    if ($listResult.ExitCode -ne 0) {
-        Start-Process -FilePath $ollama -ArgumentList "serve" -WindowStyle Hidden | Out-Null
-        Start-Sleep -Seconds 2
-        $listResult = Invoke-PalaNativeCapture $ollama @("list")
-    }
-    if ($listResult.ExitCode -ne 0) { throw "Pala Ollama loopback sunucusu baslatilamadi." }
-    if ($listResult.Output -notmatch "qwen3:4b-instruct\s+0edcdef34593") {
-        Write-Host "[Pala] Yerel Qwen3 modeli hazirlaniyor."
-        $pullResult = Invoke-PalaNativeCapture $ollama @("pull", "qwen3:4b-instruct")
-        if ($pullResult.ExitCode -ne 0) { throw "Pala Qwen3 modeli indirilemedi." }
     }
 }
 
@@ -255,18 +204,7 @@ Show-PalaResult $payload
 if ($exitCode -ne 0) { exit $exitCode }
 
 if ($Mode -in @("Install", "Update", "Repair")) {
-    $expertInstall = $null
-    if ($InstallExperts) {
-        $expertInstall = Invoke-PalaExperts "install"
-    } else {
-        Write-Host "[Pala] Uzman isciler varsayilan olarak kurulmaz; gerekirse -InstallExperts ile acikca isteyin."
-    }
     if (-not $WhatIfPreference) {
-    if ($InstallExperts -and $expertInstall.ExitCode -eq 0) {
-        Invoke-PalaLocalModel
-    } elseif ($InstallExperts) {
-        Write-Host "[Pala] Basarisiz uzman kurulumundan sonra yerel model baslatilmadi."
-    }
     $doctorArgs = @()
     if ($pythonCommand.Count -gt 1) { $doctorArgs += $pythonCommand[1..($pythonCommand.Count - 1)] }
     $doctorArgs += @($core, "doctor", "--source", $pluginRoot, "--project-root", (Get-Location).Path)
@@ -280,17 +218,12 @@ if ($Mode -in @("Install", "Update", "Repair")) {
     }
     Show-PalaResult $doctor
     if ($doctorExit -ne 0) { exit $doctorExit }
-    if ($InstallExperts) {
-        Invoke-PalaExperts "doctor" | Out-Null
-    }
     if ($Mode -eq "Install") {
         Show-PalaGuiNextSteps $doctor
     } else {
         Write-Host "[Pala] Yeni skill ve hook'larin yuklenmesi icin yeni bir Codex sohbeti acin."
     }
     }
-} elseif ($Mode -eq "Doctor") {
-    Invoke-PalaExperts "doctor" | Out-Null
 }
 
 exit 0

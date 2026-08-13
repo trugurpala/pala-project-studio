@@ -275,9 +275,14 @@ class ProductIdentityAndArtifactTests(unittest.TestCase):
         project = (ROOT / "PROJECT.md").read_text(encoding="utf-8")
         goal = (ROOT / "GOAL.md").read_text(encoding="utf-8")
 
-        self.assertEqual(identity["product_version"], "1.0.0")
+        self.assertEqual(identity["product_version"], "1.1.0")
         self.assertEqual(identity["plugin_version"], plugin["version"])
-        self.assertEqual(identity["artifact_name"], "pala-project-studio-1.0.0.zip")
+        self.assertEqual(identity["python_package_version"], "1.1.0")
+        self.assertEqual(identity["artifact_name"], "pala-project-studio-1.1.0.zip")
+        self.assertEqual(identity["build_release_state"], "LOCAL RELEASE CANDIDATE VERIFIED")
+        self.assertEqual(identity["remote_observed_state"], "NOT PUBLISHED AS 1.1.0")
+        self.assertEqual(identity["last_published_version"], "1.0.0")
+        self.assertEqual(identity["remote_publish"], "not-run")
         for document in (readme, project, goal):
             self.assertIn(identity["product_version"], document)
         self.assertIn(identity["plugin_version"], readme)

@@ -33,7 +33,8 @@ Forced bootstrap order every Implementation session:
 7. Git status (`--short --branch`)
 
 Run `context --cwd .` and follow `read_order`. Do not trust chat history over these files.
-See [project-memory-contract.md](project-memory-contract.md) and `docs/PALA_0_5_MEMORY_CONTRACT.md`.
+See [project-memory-contract.md](project-memory-contract.md) and
+`docs/ARCHITECTURE.md`.
 
 The product document owns users, outcome, scope, non-goals, architecture,
 trust boundaries, and definition of done. The plan owns ordered milestones and

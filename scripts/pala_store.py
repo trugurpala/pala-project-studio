@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -300,6 +301,11 @@ class WorkflowStore:
                 if isinstance(record, dict) and record.get("dirty") is True and isinstance(record.get("task_contract"), dict):
                     candidates.append(dict(record["task_contract"]))
         return candidates[0] if len(candidates) == 1 else None
+
+    def ticket_record(self, ticket: str) -> dict[str, object] | None:
+        """Return an isolated canonical ticket snapshot for read-only consumers."""
+        record = self._read_ticket(ticket)
+        return copy.deepcopy(record) if isinstance(record, dict) else None
 
     def heartbeat(self, session: str, event: str) -> ClaimResult:
         if event not in {"session_start", "session_end", "pre_compact"}:

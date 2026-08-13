@@ -23,6 +23,7 @@ if str(SCRIPT_DIR) not in sys.path:
 
 import pala_view
 from pala_authority import shared_state_root
+from pala_control_center_open import open_if_explicit
 
 REPORT_REL = Path(".codex/pala-status.html")
 FRESH_DAYS = 2
@@ -497,6 +498,7 @@ def main() -> int:
     parser.add_argument("--cwd", default=".")
     parser.add_argument("--out", default="")
     parser.add_argument("--open", action="store_true")
+    parser.add_argument("--intent", default="")
     parser.add_argument("--cache", default="")
     args = parser.parse_args()
     root = Path(args.cwd).resolve()
@@ -504,8 +506,13 @@ def main() -> int:
     cache = Path(args.cache) if args.cache else None
     target = write_report(root, out, cache_path=cache)
     sys.stdout.write(format_report_output(target))
-    if args.open:
-        open_report(target)
+    if args.open and not open_if_explicit(
+        args.intent,
+        refresh=lambda: target,
+        opener=open_report,
+    ):
+        print('Control Center not opened: explicit intent "paneli aç" is required.', file=sys.stderr)
+        return 2
     return 0
 
 

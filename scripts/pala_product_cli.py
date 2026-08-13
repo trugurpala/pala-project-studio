@@ -76,6 +76,9 @@ def public_status(root: Path, project_id: str | None = None) -> dict[str, object
     if record is None:
         raise ValueError("canonical product contract not found")
     snapshot = _owner_snapshot(record)
+    from pala_milestone_truth import current_milestones
+
+    snapshot["milestones"] = current_milestones(root)
     return {**record, "owner_cockpit": snapshot}
 
 

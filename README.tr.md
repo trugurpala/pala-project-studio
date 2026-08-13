@@ -1,68 +1,57 @@
-# Pala Project Studio
+# Pala
 
-Pala, yapay zeka destekli yazilim projelerini planlayan, koordine eden,
-dogrulayan ve paketleyen **Provider-Independent Local Software Delivery OS**
-uygulamasidir.
+**Provider-Independent Local Software Delivery OS**
 
-Surum: **1.0.0**
-Tasima paketi: `pala-project-studio-1.0.0.zip`
+Pala, bir yazılım fikrini veya mevcut projeyi kalıcı plana, sınırlı uygulamaya,
+doğrulanmış kalite kanıtına ve yayınlanabilir pakete dönüştürür. Kullanıcı
+kontrolünü korur; AI sağlayıcıları değiştirilebilir kalır.
 
-## Pala nedir?
+Codex'e şunu yaz:
 
-Pala kullanici fikrini ProductSpec'e, sinirli gorevlere ve gercek dogrulama
-kanitlarina baglar. Proje durumu, gorev sahipligi, kalite kaniti, bilinen hata
-cozumleri ve yayin kimligi yerel ve incelenebilir kalir.
+> https://github.com/trugurpala/pala-project-studio eklentisini kur ve guncel oldugunu dogrula.
 
-## Nasil kurulur?
+Güncel sürüm: **1.1.0**
 
-Codex icin once GitHub marketplace'ini ekleyip eklentiyi kurun:
+## Pala ne yapar?
 
-```powershell
-codex plugin marketplace add trugurpala/pala-project-studio
-codex plugin add pala-project-studio@pala-project-studio
-```
+- Kod anlayışı için güncel ve gerekli bağlamı seçer.
+- Yerel güvenlik kontrollerini sınırlı ve kanıta bağlı çalıştırır.
+- Proje gerektiriyorsa gerçek tarayıcı doğrulaması üretir.
+- Quality Engine ile gerçek test sonuçlarını kabul maddelerine bağlar.
+- Failure Intelligence ile doğrulanmış hata çözümlerini güvenle hatırlar.
+- ReleaseTruth ile yerel paket, public yayın ve deploy gerçeğini ayırır.
+- Tek, salt-okunur PALA CONTROL CENTER üzerinden kullanıcı durumunu gösterir.
 
-Tasima ZIP'ini cikartip tam yerel arac setini kullanmak icin:
+## Güvenli teslim
+
+Pala aynı anda tek canonical görevi yürütür. Dar geliştirme kontrollerini ve
+release sınırındaki tam kapıları birbirinden ayırır. Test çalışmadıysa `passed`
+demez; commit, push, PR, tag, yayın ve deploy işlemlerini açık yetki olmadan
+yapmaz.
+
+Durum ve kanıt yerel kalır. Credential, `.env`, transcript, cache, gerçek
+müşteri verisi ve makineye özel kurulum durumu pakete girmez. Hook'lar test,
+build, ağ veya GitHub mutasyonu başlatmaz.
+
+## Kurulum ve güncelleme
+
+Aynı doğal dil isteği temiz kurulum, onarım ve güvenli güncellemeyi yönetir.
+Pala mevcut kurulumu ve sahipliği denetler, bütünlüğü doğrular, değişikliği
+geçici alanda hazırlar, health kontrolünden sonra atomik etkinleştirir ve
+hata durumunda geri alır. Sağlıklı exact sürüm zaten varsa ikinci kurulum
+no-op olur.
+
+Portable paket çıkarıldıysa:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1
 ```
 
-Kurulumdan sonra `/hooks` guven ayarini inceleyin ve yeni bir Codex sohbeti
-acip Pala'ya projenizi anlatin.
+Devam: [kurulum](docs/VIBE_INSTALL.md), [ilk oturum](docs/VIBE_FIRST_SESSION.md),
+[güvenlik](SECURITY.md), [belgeler](docs/README.md), [English README](README.md).
 
-## Ilk proje nasil baslatilir?
+## İleri teknik ayrıntılar
 
-"Bir su takip uygulamasi yapmak istiyorum" veya "Bu projeyi kaldigi yerden
-devam ettir" demeniz yeterlidir. Pala mevcut talimatlari okur, tek canonical
-gorevi secer, gerekli kalite kapilarini calistirir ve sonucu kanitla kapatir.
-
-## Pala neyi kendi yapar?
-
-- ProductSpec ve bounded task plani hazirlar.
-- AI worker'lara sinirli yerel is verir.
-- Test, build ve kalite kanitlarini kaydeder.
-- Dogrulanmis hata cozumlerini gizli veri saklamadan yeniden kullanir.
-- Surum tutarliligini, secret taramasini ve reproducible paketi kontrol eder.
-
-## Ne zaman kullaniciya sorar?
-
-Commit, push, PR, merge, tag, GitHub Release, repository visibility, billing,
-koruma kurallari ve hosting/deploy dis aksiyonlardir. Pala bunlari kendiliginden
-yapmaz; acik owner yetkisi olmadan uzaktaki durumu degistirmez.
-
-## GitHub yayininda ne olur?
-
-Kalite -> repository hygiene -> secret taramasi -> surum tutarliligi ->
-dokumantasyon -> yayin on kontrolu -> maliyet/risk -> owner yetkisi -> yayin ->
-remote read-back zinciri izlenir. Son adimda GitHub'daki tag, Release, asset,
-README ve ana dal gercekten okunup ReleaseTruth ile karsilastirilir.
-
-## Hata tekrar ederse Pala ne yapar?
-
-Pala hatayi normalize eder, hassas degerleri redakte eder, Failure Intelligence
-icinden uyumlu ve VERIFIED bir cozum arar. Tekrarlanan basarisiz tarifleri
-sonsuzca denemez. Uretim deploy'u Pala 1.0 GitHub yayin kanitinin parcasi degildir.
-
-Detay: [English README](README.md), [kurulum](docs/VIBE_INSTALL.md),
-[guvenlik](SECURITY.md), [belge dizini](docs/README.md).
+Provider sürümleri, provenance, integrity, freshness ve lifecycle politikaları
+[mimari belgesinde](docs/ARCHITECTURE.md) yer alır. Bu araçlar advisory kalır;
+tamamlanma kararını yalnız Quality Engine verir.

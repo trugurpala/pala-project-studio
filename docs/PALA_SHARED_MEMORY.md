@@ -74,5 +74,5 @@ Contract tests: `scripts/test_pala_shared_memory.py`.
 
 - ADR-017 in `DECISIONS.md`
 - `docs/PALA_EVERYWHERE.md`
-- `docs/PALA_0_5_MEMORY_CONTRACT.md`
-- `docs/PALA_0_7_LOCAL_STORE.md`
+- `docs/ARCHITECTURE.md`
+- `docs/QUALITY_ENGINE.md`

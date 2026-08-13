@@ -8,7 +8,15 @@ Bu klasörü ZIP’ten açtıysan: Codex Plugins’e ZIP yükleme. Sıra:
 2. Codex Work → `/hooks` → Pala’ya **güven**
 3. **Yeni sohbet** aç → yazılım işini söyle
 
-Birincil (ZIP’siz) kapı — Codex CLI:
+Birincil (ZIP'siz) kapı — Codex doğal dil kurulumu:
+
+```text
+https://github.com/trugurpala/pala-project-studio eklentisini kur ve güncel olduğunu doğrula.
+```
+
+Pala mevcut marketplace'i yeniler, plugin'i gerektiğinde yeniden kurar ve
+Doctor ile sürümü doğrular. İleri CLI yalnız kurulu Codex yardımında destek
+olduğu doğrulandıktan sonra kullanılır:
 
 ```powershell
 codex plugin marketplace add C:\path\to\pala-project-studio

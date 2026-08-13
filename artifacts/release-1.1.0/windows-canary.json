@@ -1,0 +1,25 @@
+{
+  "schema": "pala.release.windows-canary.v1",
+  "status": "not-run",
+  "candidate": "pala-project-studio-1.1.0.zip",
+  "candidate_sha256": "87627713383E729A9C233EB50DF7A1D357F19EB297CFB6319E26F1D868981299",
+  "reason": "Owner stop boundary: final clean-user install canary runs only after public release verification.",
+  "prior_local_rc_matrix": "passed-but-superseded-by-current-tree-cleanup",
+  "cases": {
+    "A": {"status": "not-run"},
+    "B": {
+      "status": "not-run",
+      "from": "official published 0.4.4",
+      "official_sha256": "F092D2066CE15BC6900C40B09B8AEDDB2939AB779C7178C9DED61092CD254B4F"
+    },
+    "C": {
+      "status": "not-run",
+      "from": "official published 1.0.0",
+      "official_sha256": "13173D29431FFAD84038141F8191B10041AC353314A24831B37064F2FAD1306C"
+    },
+    "D": {"status": "not-run"},
+    "E": {"status": "not-run"},
+    "F": {"status": "not-run"}
+  },
+  "sanitized": true
+}

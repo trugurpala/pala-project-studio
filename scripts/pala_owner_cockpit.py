@@ -110,6 +110,21 @@ def render_control_center(snapshot: dict[str, object]) -> str:
     blocker = _control_value(snapshot, "blocker", "No known problem")
     next_action = _control_value(snapshot, "next_action", "Nothing")
     owner_request = _control_value(snapshot, "owner_request", "Nothing")
+    owner_request_raw = str(snapshot.get("owner_request") or "Nothing").strip().casefold()
+    no_request = owner_request_raw in {
+        "nothing", "hicbir sey", "hiçbir şey", "no owner action is required before local verification."
+    }
+    owner_request_text = "Sizden gereken:\nHicbir sey." if no_request else f"Sizden gereken:\n{owner_request}"
+    milestones = snapshot.get("milestones")
+    milestones = milestones if isinstance(milestones, dict) else {}
+    m70 = milestones.get("M70-T3")
+    m70 = m70 if isinstance(m70, dict) else {}
+    milestone_line = (
+        f'<p>Milestone M70-T3: <strong>{escape(str(m70.get("task_status") or "not-run"))}</strong> '
+        f'({escape(str(m70.get("workflow_lifecycle") or "unknown"))}).</p>'
+        if m70
+        else ""
+    )
     release_state = str(snapshot.get("release_status") or "pending").casefold()
     if release_state in {"published", "public released", "passed"}:
         release_message = "GitHub publication is published and remote-verified."
@@ -120,7 +135,7 @@ def render_control_center(snapshot: dict[str, object]) -> str:
     else:
         release_message = "GitHub publication is ready for the owner's approval."
     sections = (
-        ("home", "Home", f"<p><strong>{project}</strong> is <b>{state}</b>.</p><p>Quality: {quality}. Known problems: {blocker}.</p><p>You need to do: {owner_request}.</p>"),
+        ("home", "Home", f'<div class="cc-owner-grid"><article><h4>Neredeyiz?</h4><p><strong>{project}</strong>: {state}</p></article><article><h4>Pala ne yapiyor?</h4><p>{next_action}</p></article><article><h4>Problem var mi?</h4><p>{blocker}</p></article><article><h4>Sizden ne gerekiyor?</h4><pre>{owner_request_text}</pre></article></div>{milestone_line}<p>Quality: {quality}.</p>'),
         ("projects", "Projects", f"<p>Project: {project}</p>"),
         ("current-work", "Current Work", f"<p>Now: {next_action}</p>"),
         ("known-problems", "Known Problems", f"<p>{blocker}</p>"),
@@ -139,11 +154,15 @@ def render_control_center(snapshot: dict[str, object]) -> str:
         '<details id="cc-advanced" class="cc-advanced"><summary>Advanced technical evidence</summary>'
         f'<p>Task state: {_control_value(snapshot, "state")}</p>'
         f'<p>Evidence references: {_control_value(snapshot, "evidence_refs", "None")}</p>'
+        f'<p>Providers: {_control_value(snapshot, "providers", "not-run")}</p>'
+        f'<p>Exact versions: {_control_value(snapshot, "provider_versions", "not-run")}</p>'
+        f'<p>Provenance/freshness: {_control_value(snapshot, "provenance_freshness", "not-run")}</p>'
+        f'<p>Telemetry/daemon: {_control_value(snapshot, "telemetry_daemon", "disabled/not-run")}</p>'
         '</details>'
     )
     return (
         '<section class="pala-control-center" aria-labelledby="cc-title">'
-        '<h2 id="cc-title">Pala Control Center</h2>'
+        '<h2 id="cc-title" aria-label="Pala Control Center">PALA CONTROL CENTER</h2>'
         f'<nav aria-label="Control Center sections" class="cc-nav">{links}</nav>'
         f'{panels}{advanced}'
         '<style>'
@@ -153,6 +172,9 @@ def render_control_center(snapshot: dict[str, object]) -> str:
         '.cc-nav a:focus-visible,.cc-advanced summary:focus-visible{outline:3px solid #2f6fed;outline-offset:2px;}'
         '.cc-panel{padding:1rem;margin:.75rem 0;border:1px solid #d8e0eb;border-radius:.6rem;}'
         '.cc-panel p{line-height:1.5;overflow-wrap:anywhere;}'
+        '.cc-owner-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.75rem;}'
+        '.cc-owner-grid article{border:1px solid #d8e0eb;border-radius:.5rem;padding:.75rem;}'
+        '.cc-owner-grid pre{white-space:pre-wrap;font:inherit;}'
         '.cc-advanced{margin-top:1rem;padding:1rem;background:#f4f7fb;}'
         '@media (max-width:600px){.cc-nav a{min-height:2.75rem;box-sizing:border-box;}.cc-panel{margin-inline:0;}}'
         '@media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important;}}'

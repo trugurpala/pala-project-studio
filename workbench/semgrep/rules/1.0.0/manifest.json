@@ -1,0 +1,19 @@
+{
+  "schema": "pala.semgrep.rules.v1",
+  "version": "1.0.0",
+  "license": "MIT",
+  "ownership": "pala-project-studio",
+  "network_policy": "local-only",
+  "files": [
+    {
+      "path": "pala-minimal.yml",
+      "sha256": "a6b58e9c967dd37deab353a727d41e6ac3e890c7eaf8f6de75be7dbfb9b70dd0",
+      "rule_ids": [
+        "pala.python.subprocess-shell-true",
+        "pala.python.dynamic-eval",
+        "pala.javascript.dynamic-eval"
+      ],
+      "languages": ["python", "javascript", "typescript"]
+    }
+  ]
+}

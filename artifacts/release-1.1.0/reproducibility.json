@@ -1,0 +1,15 @@
+{
+  "schema": "pala.release.reproducibility.v1",
+  "status": "passed",
+  "version": "1.1.0",
+  "artifact": "pala-project-studio-1.1.0.zip",
+  "size_bytes": 365345,
+  "entry_count": 188,
+  "sha256": "87627713383E729A9C233EB50DF7A1D357F19EB297CFB6319E26F1D868981299",
+  "build_a_sha256": "87627713383E729A9C233EB50DF7A1D357F19EB297CFB6319E26F1D868981299",
+  "build_b_sha256": "87627713383E729A9C233EB50DF7A1D357F19EB297CFB6319E26F1D868981299",
+  "identical": true,
+  "canonical_order": "passed",
+  "normalized_metadata": "passed",
+  "sanitized": true
+}

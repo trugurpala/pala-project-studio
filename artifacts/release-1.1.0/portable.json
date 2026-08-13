@@ -1,0 +1,21 @@
+{
+  "schema": "pala.release.portable.v1",
+  "status": "passed",
+  "artifact": "pala-project-studio-1.1.0.zip",
+  "sha256": "87627713383E729A9C233EB50DF7A1D357F19EB297CFB6319E26F1D868981299",
+  "product_version": "1.1.0",
+  "plugin_version": "1.1.0",
+  "artifact_self_audit": "passed",
+  "portable_contract": "passed",
+  "unsafe_entries": 0,
+  "missing_mandatory_files": 0,
+  "forbidden_files": 0,
+  "retired_runtime_entries": 0,
+  "local_path_or_secret_findings": 0,
+  "workbench_semgrep_assets": "passed",
+  "control_center_self_contained": true,
+  "automatic_browser_open": false,
+  "official_skill_validator": "passed",
+  "official_plugin_validator": "passed",
+  "sanitized": true
+}

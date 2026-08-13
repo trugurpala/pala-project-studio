@@ -148,6 +148,7 @@ BACKEND_COMPOSER_PACKAGES = (
     "yiisoft/yii2",
 )
 IGNORED_DISCOVERY_DIRS = {
+    ".codegraph",
     ".git",
     ".next",
     ".nx",

@@ -1,0 +1,19 @@
+{
+  "schema": "pala.release.source.v1",
+  "status": "passed",
+  "version": "1.1.0",
+  "quality_ticket": "M73-T1-PREPUBLIC",
+  "quality_required": 23,
+  "quality_passed": 23,
+  "tests_passed": 636,
+  "tests_skipped": 1,
+  "coverage_percent": 75.22185246810871,
+  "coverage_threshold_percent": 75,
+  "full_source_verify": "passed",
+  "code_audit": "passed",
+  "ruff": "passed",
+  "mypy_critical": "passed",
+  "bandit_high_findings": 0,
+  "dependency_known_vulnerabilities": 0,
+  "sanitized": true
+}

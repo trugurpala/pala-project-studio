@@ -5,9 +5,25 @@ All notable changes to Pala Project Studio are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The canonical product identity and Git tags use `X.Y.Z`.
 
-## [Unreleased]
+## [1.1.0] - 2026-08-13
 
-No unreleased user-facing changes are recorded.
+### Added
+
+- `1.1.0` adds the Professional Workbench capability registry with required
+  CodeGraph and Semgrep providers, project-profile Playwright, lazy Serena,
+  and optional external Context7.
+- Control Center and Doctor expose capability-oriented, read-only local truth.
+- Transactional capability installation, rollback, truthful offline behavior,
+  foreign-asset preservation, and deterministic release packaging.
+
+### Changed
+
+- Public documentation is product-first; provider and canonical-runtime details
+  live in Advanced documentation.
+- Current root status and roadmap files are concise runtime contracts instead
+  of milestone diaries.
+- Retired helper runtimes and historical development plans are absent from the
+  current tree while Git history remains unchanged.
 
 ## [1.0.0] - 2026-08-12
 

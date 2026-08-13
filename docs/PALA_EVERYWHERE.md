@@ -19,7 +19,9 @@ Resmi sıra ([Codex Plugins](https://developers.openai.com/codex/plugins)):
 
 ### Kapı A — Saf Codex CLI (birincil)
 
-Python kurucu olmadan (Codex CLI PATH’teyse). Kimlik:
+Normal istek: “Pala'yı kur ve güncel olduğunu doğrula.” Pala, Python kurucu
+olmadan da Codex CLI mevcutsa Git marketplace snapshot'ını, plugin cache'ini
+ve Doctor sonucunu birlikte yönetir. İleri CLI kimliği:
 `pala-project-studio@pala-project-studio`.
 
 ```powershell
@@ -47,12 +49,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-Pala.ps1 -Mode Doc
 
 Kurucu Codex’i PATH’te bulamazsa bilinen Windows konumlarını da tarar
 (`%LOCALAPPDATA%\OpenAI\Codex\bin\...\codex.exe`, `%APPDATA%\npm\codex.cmd`).
-Arka planda yine desteklenen `codex plugin marketplace add` /
-`codex plugin add` kullanılır.
+Arka planda kurulu Codex yardımında desteklenen marketplace refresh/upgrade ve
+plugin reinstall işlemleri kullanılır; `marketplace add` tek başına güncellik
+kanıtı değildir.
 
 Doctor ayrımı:
 
 - `plugin_ready` / `healthy` — çekirdek (Python≥3.10, Git, Codex CLI, plugin)
+- `version_ready` — source, bundle, Codex plugin ve marketplace snapshot temel
+  sürümleri uyumlu
 - `expert_prerequisites_ready` — isteğe bağlı uzman kurulumu için Node + uv
 - `experts_ready` — Pala'ya ait beş yönetilen uzman worker gerçekten doğrulandı
 - `hook_safety` — dosya kontrolü; **≠** Codex `/hooks` UI trust

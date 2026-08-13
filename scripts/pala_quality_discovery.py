@@ -21,6 +21,7 @@ DANGEROUS_SCRIPT = re.compile(
 )
 DISCOVERY_SKIP_DIRS = frozenset(
     {
+        ".codegraph",
         ".git",
         ".hg",
         ".svn",
@@ -46,6 +47,7 @@ DISCOVERY_SKIP_DIRS = frozenset(
     }
 )
 IGNORED_CHANGE_PREFIXES = (
+    ".codegraph/",
     ".codex/plugin-data/",
     ".pala/runtime/",
     ".pala/tmp/",

@@ -1,45 +1,32 @@
-# Code Intelligence and Review Graphs
+# Code intelligence and Professional Workbench routing
 
-Use structural code intelligence when a repository is large or unfamiliar,
-the change crosses modules, review impact is unclear, or repeated broad scans
-would waste context. For a small or obvious edit, direct `git diff`, `rg`, and
-focused file reads are usually cheaper and more precise.
+Use structural code intelligence when a repository is unfamiliar, the change
+crosses modules, impact is unclear, or repeated broad scans would waste
+context. Direct `git diff`, `rg`, and focused source reads remain the safe
+fallback. Small or obvious changes normally stay on that direct path.
 
-## Bounded workflow
+## CodeGraph workflow
 
-1. Resolve `pala_code_intel.py` from Pala scripts (marketplace/repo; not
-   skill-relative paths from project cwd), then run `status --cwd <project>`.
-2. If `code-review-graph` and a local graph are available, update/build only
-   when authorized, then use `review` to identify changed symbols, dependents,
-   execution flows, and likely test gaps.
-3. Treat graph output as a candidate context slice, not proof. Verify every
-   finding against source, diff, tests, configuration, and runtime behavior.
-4. If unavailable or stale, continue with `git diff`, `rg`, package metadata,
-   and focused source reads. Report the graph as blocked tooling, not a failed
-   project.
+1. Resolve `pala_codegraph.py` from the installed Pala bundle and run the
+   bounded lifecycle stage for the current project.
+2. At takeover run `init/sync/status`; before context run
+   `sync/status/explore`; after implementation run `sync/status` plus impact;
+   before Quality verify freshness.
+3. Use only the Pala-owned CodeGraph 1.5.0 artifact and Pala MCP wrapper. Do not
+   run third-party installers, updaters, watchers, telemetry, or shared daemons.
+4. Treat graph output as advisory context, never Quality evidence. Verify
+   findings against current source, diff, configuration, tests, and runtime.
+5. If the graph is missing, stale, or fails, continue with direct source
+   inspection and report the capability truthfully.
 
 Do not claim token savings, impact recall, risk, or coverage unless measured in
-the current repository. Graph-derived blast radius can produce false positives,
-and small changes may cost more context than direct reads.
+the current repository. Graph candidates can contain false positives.
+`.codegraph/` is generated state and must not be made a
+canonical project authority or silently added to a project `.gitignore`.
 
-`code-review-graph` is optional external software and is not bundled. Installing
-it or changing MCP configuration requires authorization. Its local database is
-stored under `.code-review-graph/`; never place secrets, private source excerpts,
-or production data in Pala memory documents.
+## Fallbacks
 
-## Pala-owned expert workers
-
-For a document corpus, symbol navigation, or very large multilingual architecture,
-call `scripts/pala_experts.py` to obtain the deterministic route. Do not invoke a
-similarly named program from `PATH`: its commands resolve only to Pala-owned,
-hash-verified locations under `%LOCALAPPDATA%\Pala\experts`.
-
-- Graphify code extraction writes outside the repository and always uses
-  `--code-only`. Semantic document work is allowed only through Pala's loopback
-  Ollama server and its separate model directory.
-- Serena is a stdio-only, Codex-context MCP worker in `no-memories` plus
-  `planning` mode. Its dashboard, editing, shell, onboarding, and memory tools
-  are unavailable.
-- codebase-memory is one-shot CLI only. It receives the resolved project root
-  through `CBM_ALLOWED_ROOT`; do not start its UI, watcher, daemon, hook, or a
-  persistent indexer.
+Serena 1.7.0 is a lazy, read-only fallback only after CodeGraph and direct
+source inspection are insufficient. It has no memory, dashboard, paid backend,
+or autonomous edit authority. Context7 4.0.2 is explicit optional external and
+does not affect core health. Retired helper stacks are not routing candidates.

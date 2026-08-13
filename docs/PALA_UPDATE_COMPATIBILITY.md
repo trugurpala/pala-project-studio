@@ -29,12 +29,13 @@ değildir.
 - Yeni çekirdek dosyalar portable bundle'ın tam allowlist'i üzerinden aktarılır;
   eksik zorunlu runtime sibling paketi daha staging başlamadan reddettirir.
 
-## Uzmanlar ve oturum sınırı
+## Professional Workbench ve oturum sınırı
 
-Yeni isteğe bağlı uzmanlar normal Install/Repair/Update sırasında indirilmez.
-Yalnız owner açıkça `-InstallExperts` verdiğinde sürüm ve SHA-256 kilitleriyle
-Pala'ya ait ayrı state klasörüne kurulur. Eksik uzman çekirdek Pala kurulumunu
-bozuk göstermez.
+CodeGraph ve Semgrep yalnız Pala'nın checksum/provenance doğrulamalı
+transaction akışıyla, versioned Pala state klasörlerine kurulur. Playwright
+yalnız proje profili gerektirdiğinde kullanılır; Serena lazy fallback, Context7
+ise explicit optional external kalır. Retired helper installer'ı artık current
+kurulum yüzeyi değildir.
 
 Kurulum diskteki plugin ve Codex cache içeriğini yeniler; açık bir sohbetin
 önceden yüklediği skill listesini geriye dönük değiştirdiğini iddia etmez.

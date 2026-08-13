@@ -24,6 +24,7 @@ SECRET_SHAPED_BASENAME = re.compile(
     r"(?i)^(?:id_rsa(?:\.[^.]+)?|credentials(?:\.[^.]+)?|secrets?(?:\.[^.]+)?)$"
 )
 DEMO_CODEX_PREFIX = ("examples", "demo-software-project", ".codex")
+RETIRED_RUNTIME_FILES: set[str] = set()
 
 
 def validate_archive_name(value: str) -> str:
@@ -89,7 +90,6 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "Kur.cmd",
         plugin_root / "KUR.md",
         plugin_root / "LICENSE",
-        plugin_root / "managed-tools.lock.json",
         plugin_root / "OPEN_SOURCE.md",
         plugin_root / "GOAL.md",
         plugin_root / "PROJECT.md",
@@ -111,21 +111,12 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "policies" / "release.json",
         plugin_root / ".github" / "workflows" / "quality.yml",
         plugin_root / "docs" / "README.md",
-        plugin_root / "docs" / "RELEASE_1.0.0.md",
+        plugin_root / "docs" / "RELEASE_1.1.0.md",
+        plugin_root / "docs" / "ARCHITECTURE.md",
+        plugin_root / "docs" / "QUALITY_ENGINE.md",
         plugin_root / "docs" / "CODEX_SCOPE_AND_LIMITS.md",
-        plugin_root / "docs" / "PALA_0_4_SINGLE_DOOR.md",
-        plugin_root / "docs" / "PALA_0_5_MEMORY_CONTRACT.md",
-        plugin_root / "docs" / "PALA_0_6_STATUS_SURFACE.md",
-        plugin_root / "docs" / "PALA_0_7_LOCAL_STORE.md",
-        plugin_root / "docs" / "PALA_0_9_QUALITY_ENGINE.md",
-        plugin_root / "docs" / "PALA_0_9_0_OPERATING_SYSTEM.md",
-        plugin_root / "docs" / "PALA_0_9_BENCHMARK.md",
-        plugin_root / "docs" / "PALA_0_9_1_HARDENING.md",
-        plugin_root / "docs" / "PALA_0_9_2_CODE_QUALITY_CONTROL.md",
-        plugin_root / "docs" / "PALA_0_9_3_MODULARITY.md",
-        plugin_root / "docs" / "PALA_0_9_4_INSTALL_BOUNDARY.md",
-        plugin_root / "docs" / "PALA_0_9_5_INSTALL_INTEGRITY.md",
         plugin_root / "docs" / "PALA_EVERYWHERE.md",
+        plugin_root / "docs" / "PALA_UPDATE_COMPATIBILITY.md",
         plugin_root / "docs" / "PALA_INTERNAL_PROVISION.md",
         plugin_root / "docs" / "VIBE_INSTALL.md",
         plugin_root / "docs" / "VIBE_FIRST_SESSION.md",
@@ -137,7 +128,7 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "portable" / "cursor" / "SKILL.md",
         plugin_root / ".cursor" / "rules" / "pala-memory.mdc",
     ]
-    for directory in ("hooks", "skills"):
+    for directory in ("hooks", "skills", "workbench"):
         candidates.extend(path for path in (plugin_root / directory).rglob("*") if path.is_file())
     demo_root = plugin_root / "examples" / "demo-software-project"
     candidates.extend(path for path in demo_root.rglob("*") if path.is_file())
@@ -148,7 +139,11 @@ def source_files(plugin_root: Path) -> list[Path]:
         path
         for pattern in ("*.py", "*.ps1")
         for path in (plugin_root / "scripts").glob(pattern)
-        if path.is_file() and not path.name.startswith("test_")
+        if (
+            path.is_file()
+            and not path.name.startswith("test_")
+            and path.name not in RETIRED_RUNTIME_FILES
+        )
     )
 
     files: list[Path] = []

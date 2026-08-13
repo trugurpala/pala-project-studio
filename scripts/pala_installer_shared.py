@@ -59,12 +59,11 @@ REQUIRED_FILES = (
     Path("hooks/hooks.json"),
     Path("skills/pala-project-finisher/SKILL.md"),
 )
-PACKAGE_DIRECTORIES = (".agents", ".codex-plugin", "hooks", "scripts", "skills")
+PACKAGE_DIRECTORIES = (".agents", ".codex-plugin", "hooks", "scripts", "skills", "workbench")
 PACKAGE_FILES = (
     "LICENSE",
     "OPEN_SOURCE.md",
     "THIRD_PARTY_NOTICES.md",
-    "managed-tools.lock.json",
     "product-identity.json",
 )
 FORBIDDEN_PARTS = {".git", ".codex", "__pycache__", ".pytest_cache", ".ruff_cache"}

@@ -1,0 +1,18 @@
+{
+  "schema": "pala.release.legacy-audit.v1",
+  "status": "passed",
+  "current_stack": [
+    "Pala Core",
+    "CodeGraph 1.5.0",
+    "Semgrep 1.172.0",
+    "Playwright 1.62.1 PROJECT_PROFILE",
+    "Serena 1.7.0 LAZY_FALLBACK",
+    "Context7 4.0.2 OPTIONAL_EXTERNAL"
+  ],
+  "retired_active_provider_references": 0,
+  "retired_runtime_entries_in_zip": 0,
+  "retired_active_helper_remnants_in_clean_profile": 0,
+  "stale_current_1_0_1_target": false,
+  "historical_records_preserved": true,
+  "sanitized": true
+}

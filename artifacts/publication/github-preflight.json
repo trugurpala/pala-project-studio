@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "passed",
-  "observed_at": "2026-08-12T05:13:43.3352144Z",
+  "observed_at": "2026-08-13T06:30:00Z",
   "repository": {
     "full_name": "trugurpala/pala-project-studio",
     "visibility": "public",
@@ -32,10 +32,10 @@
     "credential_material": "not-recorded"
   },
   "latest_release": {
-    "tag": "v0.8.1",
-    "title": "Pala 0.8.1",
-    "published_at": "2026-08-09T02:14:31Z",
-    "commit": "9cf3b0f96b36949f1807e93b5f142de06d5e4625"
+    "tag": "v1.0.0",
+    "title": "Pala 1.0.0",
+    "published_at": "2026-08-12T06:20:53Z",
+    "commit": "f016df98766a78a5d8fa2ee28c53be5b41e4293a"
   },
   "tags": [
     "v0.3.3",
@@ -46,7 +46,8 @@
     "v0.4.4",
     "v0.7.1",
     "v0.8.0",
-    "v0.8.1"
+    "v0.8.1",
+    "v1.0.0"
   ],
   "pull_requests": {
     "open": [],
