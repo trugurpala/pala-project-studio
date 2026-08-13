@@ -63,4 +63,14 @@ customer data. Labels: `passed|not-run|blocked|configured-not-verified`.
   cross-platform source/portable contracts continue to run on Ubuntu.
 - **Status:** fixed (`passed` local candidate; public canary `not-run`)
 
+### INC-20260813-m75-windows-wheel-lock
+
+- **Symptoms:** Windows CI rejected the hash-locked Semgrep wheelhouse; Ubuntu and installed-artifact gates were green.
+- **Root cause:** the original lock held CPython 3.13 Windows wheel hashes while CI uses CPython 3.12.
+- **Fix criteria:** exact locks and isolated caches for supported CPython 3.10-3.14; fresh install and no-op pass.
+- **Proved by:** focused tests passed; source verify and Windows/Ubuntu CI pending.
+- **Related files:** `pala_workbench_bootstrap.py`, `test_pala_semgrep.py`, `requirements-win-amd64-cp3*.lock`.
+- **Date:** 2026-08-13
+- **Status:** fix implemented (`configured-not-verified` by remote CI)
+
 Historical incidents remain in Git/Failure Intelligence; new failures stay here.

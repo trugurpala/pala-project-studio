@@ -29,6 +29,7 @@ from pala_semgrep import (
     semgrep_environment,
     verify_rule_pack,
 )
+from pala_workbench_bootstrap import _requirements_lock
 from pala_quality import build_quality_plan
 from pala_semgrep_runner import main as runner_main, sanitized_result
 
@@ -119,6 +120,14 @@ class SemgrepContractTests(unittest.TestCase):
         self.assertIn(f"semgrep==1.172.0 --hash=sha256:{expected}", lock)
         self.assertIn("dependency-one==2.0.0 --hash=sha256:", lock)
         self.assertEqual(lock.count("--hash=sha256:"), 2)
+
+    def test_bootstrap_has_an_exact_lock_for_every_supported_python_minor(self) -> None:
+        for minor in range(10, 15):
+            lock = _requirements_lock(ROOT, (3, minor))
+            self.assertEqual(lock.name, f"requirements-win-amd64-cp3{minor}.lock")
+            lines = lock.read_text(encoding="utf-8").splitlines()
+            self.assertGreaterEqual(len(lines), 60)
+            self.assertTrue(all(" --hash=sha256:" in line for line in lines))
 
     def test_local_rule_pack_is_versioned_and_checksum_locked(self) -> None:
         result = verify_rule_pack(ROOT / RULE_PACK)

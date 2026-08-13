@@ -79,9 +79,28 @@ def _wheelhouse_matches(wheelhouse: Path, lock_path: Path) -> bool:
         return False
 
 
-def _resolve_wheelhouse(source: Path, state_root: Path) -> Path:
-    lock_path = source / "workbench" / "semgrep" / "requirements-win-amd64.lock"
-    cache = state_root / "packages" / "workbench" / "semgrep" / SEMGREP_VERSION / "wheelhouse"
+def _requirements_lock(
+    source: Path, python_version: tuple[int, int] | None = None
+) -> Path:
+    """Select the exact Windows wheel lock for the running CPython minor."""
+    major, minor = python_version or (sys.version_info.major, sys.version_info.minor)
+    semgrep_root = source / "workbench" / "semgrep"
+    versioned = semgrep_root / f"requirements-win-amd64-cp{major}{minor}.lock"
+    if versioned.is_file():
+        return versioned
+    return semgrep_root / "requirements-win-amd64.lock"
+
+
+def _resolve_wheelhouse(source: Path, state_root: Path, lock_path: Path) -> Path:
+    interpreter = lock_path.stem.rsplit("-", 1)[-1]
+    cache = (
+        state_root
+        / "packages"
+        / "workbench"
+        / "semgrep"
+        / SEMGREP_VERSION
+        / f"wheelhouse-{interpreter}"
+    )
     candidates = [cache]
     research = _research_root()
     if research is not None:
@@ -152,7 +171,7 @@ def ensure_required_workbench(
     """Ensure CodeGraph and Semgrep as one rollback-capable local transaction."""
     source = Path(source).resolve()
     state_root = Path(state_root).resolve()
-    lock_path = source / "workbench" / "semgrep" / "requirements-win-amd64.lock"
+    lock_path = _requirements_lock(source)
     rule_manifest = source / "workbench" / "semgrep" / "rules" / "1.0.0" / "manifest.json"
     if not lock_path.is_file() or not rule_manifest.is_file():
         return {
@@ -204,12 +223,12 @@ def ensure_required_workbench(
             fetch=lambda _url: _codegraph_payload(state_root),
             health_probe=codegraph_health_probe,
         )
-        wheelhouse = _resolve_wheelhouse(source, state_root)
+        wheelhouse = _resolve_wheelhouse(source, state_root, lock_path)
         semgrep = install_semgrep(
             wheelhouse,
             state_root,
             source / "workbench" / "semgrep" / "rules" / "1.0.0",
-            source / "workbench" / "semgrep" / "requirements-win-amd64.lock",
+            lock_path,
         )
         after = inventory_required_workbench(state_root, source)
         if not after["healthy"]:
