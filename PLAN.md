@@ -73,4 +73,4 @@ current canonical completion evidence; M80 is the ordered release-ready path.
 - **Dosyalar:** view layout/sections, Control Center and real browser text contracts
 - **Bitti sayılır:** UTF-8 byte/render checks, focused UI contracts, full release Quality and branch CI exit 0.
 - **Bağımlılık:** M80-T6
-- **Kanıt:** red-first UTF-8 contract, 54 focused Python contracts, real Chromium and 765-test reproducible source verifier `passed`; replacement branch CI `not-run`
+- **Kanıt:** red-first UTF-8 contract, 54 focused Python contracts, real Chromium, 765-test reproducible source verifier and branch run 31885899213 (8/8) `passed`

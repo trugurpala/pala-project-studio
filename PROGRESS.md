@@ -33,7 +33,7 @@
 - Post-handoff human review found replacement characters and machine-like text
   in visible Control Center labels. M82-T1 now has red-first UTF-8 coverage,
   54 focused Python contracts, fatal lint, a real offline Chromium pass and the
-  765-test reproducible source verifier; replacement branch CI remains `not-run`.
+  765-test reproducible source verifier and branch run 31885899213 passed 8/8.
 
 Branch/commit/push and branch-CI monitoring are authorized. PR, tag, public
 release and deploy remain unauthorized and `not-run`.

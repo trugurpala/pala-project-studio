@@ -67,10 +67,10 @@ Date, Status. Keep data sanitized and use canonical evidence labels.
 - **Symptoms:** Current generated panel renders `??eri?e ge?`, `Pala kontrol ?` and `g?ster` in primary labels.
 - **Root cause:** Replacement characters were committed in view source and rendered-text UTF-8 assertions did not cover them.
 - **Fix criteria:** Primary labels use natural Turkish; UTF-8 bytes and real browser text contain no replacement markers or mojibake.
-- **Proved by:** red-first rendered-text failure; 54 focused Python contracts, fatal lint, real offline Chromium and 765-test reproducible source verifier `passed`; branch CI `not-run`.
+- **Proved by:** red-first rendered-text failure; 54 focused Python contracts, fatal lint, real offline Chromium, 765-test reproducible source verifier and branch run 31885899213 (8/8) `passed`.
 - **Related files:** Control Center layout/sections and UI/browser contracts.
 - **Date:** 2026-08-15
-- **Status:** open (`configured-not-verified`)
+- **Status:** fixed (`passed`)
 
 Historical incidents and public-release evidence remain in Git history and
 Failure Intelligence; only active failures are projected here.
