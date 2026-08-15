@@ -1,7 +1,7 @@
 # Pala current status
 
 - Public baseline: `v1.1.2` (`passed` historical release evidence).
-- Git basis: `codex/pala-1.2.0-release-ready`; release-ready commits through `2ae2c02` are on origin; final browser-launcher remediation is local WIP.
+- Git basis: `codex/pala-1.2.0-release-ready`; functional commit `071dbcd` is on origin and its branch CI is `passed`; later evidence projection does not change the release surface.
 - Canonical authority: TaskContract -> WorkflowStore -> Pala Quality Engine.
 - Canonical active task: `M81-T1`; M80-T5 is checkpointed at 7/8 pending replacement branch CI.
 - External acceptance: `M44-T1` fresh-session hook visibility is `configured-not-verified`.
@@ -15,10 +15,10 @@
 - M80-T2 continuity Quality: `passed` (12/12 required checks, trusted runner, exit 0; 2026-08-15).
 - M80-T3 host/process Quality: `passed` (7/7 required checks, supervised execution, exit 0; 2026-08-15).
 - M80-T4 live Control Center/privacy Quality: `passed` (10/10 required checks, supervised execution, exit 0; 2026-08-15).
-- M80-T5 local package/upgrade evidence was 7/8; the required Windows symlink branch canary passed in run 31883582516 and awaits canonical Quality mapping.
+- M80-T5 source/package/upgrade evidence and the required Windows symlink canary passed; canonical basis freshness remains owned by the Quality ledger.
 - Branch CI run 31882450222 proved deterministic cross-OS hashes and the real upgrade matrix, then `blocked` on symlink archive validation, Playwright cache lookup and POSIX orphan observation.
-- M81 focused fixes: Windows/Linux supervisor 11/11, release candidate 8/8, real Chromium 1/1 and required Ruff checks `passed`; replacement branch CI `not-run`.
-- Run 31883582516 passed 7/8 jobs; only the Ubuntu `py` launcher failed. Cross-platform launcher contracts 7/7, real E2E 1/1 and the 764-test full verifier now `passed`; final branch CI `not-run`.
+- M81 focused fixes: Windows/Linux supervisor 11/11, release candidate 8/8, launcher contracts 7/7, real Chromium 1/1 and required Ruff checks `passed`.
+- Final branch run 31883864441 on `071dbcd` passed all 8/8 jobs: browser, Windows symlink smoke, both OS verifies, real upgrade, deterministic builds and exact cross-OS hashes.
 - M76--M79 code is imported local WIP. Its historical `DONE`, count and release claims are `not-run` until current TaskContract and Quality evidence exist.
 - Remote `main` CI evidence applies only to public baseline; it does not validate imported WIP.
 
@@ -26,8 +26,8 @@
 
 The public `v1.1.2` release remains immutable history. The local 1.2.0 artifact,
 SBOM, inventory, self-verification and upgrade matrix are ready; M80-T5 stays
-incomplete until the passed symlink canary is mapped and final branch CI proves all jobs.
-Push through `2ae2c02` is `passed`; launcher commit/push and final CI are `not-run`.
+incomplete until the passed symlink canary and final required checks are mapped.
+Push through `071dbcd` and its branch CI are `passed`; current completion truth is read from the canonical runtime, not this projection.
 PR, tag, release and deploy remain outside authority and are `not-run`.
 
 Evidence labels: `passed` | `not-run` | `blocked` |

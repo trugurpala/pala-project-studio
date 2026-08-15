@@ -67,10 +67,10 @@ Date, Status. Keep data sanitized and use canonical evidence labels.
 - **Symptoms:** Branch browser job installed Chromium successfully, then failed with `spawnSync py ENOENT` on Ubuntu.
 - **Root cause:** The real generated-page journey invoked the Windows-only `py -3` launcher.
 - **Fix criteria:** The journey selects a deterministic platform Python launcher and exits 0 on Ubuntu and Windows.
-- **Proved by:** run 31883582516 browser job 95009422370 `blocked`; launcher contracts 7/7, real journey 1/1 and full verifier 764 tests `passed`; replacement CI `not-run`.
+- **Proved by:** run 31883582516 browser job 95009422370 `blocked`; launcher contracts 7/7, real journey 1/1, full verifier 764 tests and final branch run 31883864441 `passed`.
 - **Related files:** generated-page Playwright journey and its launcher contract.
 - **Date:** 2026-08-15
-- **Status:** open (`configured-not-verified`)
+- **Status:** fixed (`passed`)
 
 Historical incidents and public-release evidence remain in Git history and
 Failure Intelligence; only active failures are projected here.
