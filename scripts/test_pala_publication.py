@@ -11,6 +11,12 @@ from pala_publication import generic_cost_guard, repository_hygiene, secret_scan
 
 
 class PublicationGovernanceTests(unittest.TestCase):
+    def test_live_repository_secret_scan_passes_without_test_tree_exemption(self) -> None:
+        root = Path(__file__).resolve().parent.parent
+        result = secret_scan(root)
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(result["findings"], [])
+
     def test_current_repository_audit_artifact_is_passed_and_secret_free(self) -> None:
         artifact = Path(__file__).resolve().parent.parent / "artifacts" / "publication" / "repository-audit.json"
         payload = json.loads(artifact.read_text(encoding="utf-8"))
@@ -27,6 +33,20 @@ class PublicationGovernanceTests(unittest.TestCase):
         self.assertEqual(result["status"], "blocked")
         self.assertEqual(result["findings"][0]["rule"], "github-token")
         self.assertNotIn("github_" + "pat_", json.dumps(result))
+
+    def test_runtime_bearer_fixture_still_blocks_without_source_literal(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            header = "Author" + "ization: " + "Bear" + "er "
+            token = "eyJabcdefghijk" + "." + "eyJmnopqrstuv" + ".signature"
+            (root / "fixture.txt").write_text(header + token, encoding="utf-8")
+            result = secret_scan(root)
+        self.assertEqual(result["status"], "blocked")
+        self.assertEqual(
+            result["findings"],
+            [{"rule": "authorization-header", "path": "fixture.txt"}],
+        )
+        self.assertNotIn(token, json.dumps(result))
 
     def test_historical_user_path_is_classified_without_becoming_current_drift(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

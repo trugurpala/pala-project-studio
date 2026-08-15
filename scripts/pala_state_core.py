@@ -11,7 +11,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from pala_authority import shared_state_root
+from pala_authority import (
+    git_common_dir,
+    repository_instance,
+    runtime_repositories_root,
+    shared_state_root,
+)
 
 from pala_state_git import (
     GIT_TIMEOUT_SECONDS,
@@ -117,9 +122,16 @@ PROJECT_MARKERS = (
 )
 
 
-def workflow_path(root: Path) -> Path:
+def workflow_path(root: Path, *, read_only: bool = False) -> Path:
     """Return the generated workflow projection path for this repository."""
     project_root = Path(root).resolve()
+    if read_only and git_common_dir(project_root) is not None:
+        return (
+            runtime_repositories_root()
+            / repository_instance(project_root)
+            / "generated"
+            / "pala-workflow.json"
+        )
     shared = shared_state_root(project_root)
     if shared is not None:
         return shared / "generated" / "pala-workflow.json"
@@ -250,6 +262,185 @@ def write_json(path: Path, payload: dict[str, object]) -> None:
 
 def bounded_strings(values: list[str], *, limit: int) -> list[str]:
     return [item.strip()[:500] for item in values if item.strip()][:limit]
+
+
+def context_receipt_read_model(
+    payload: object,
+    *,
+    expected: object | None = None,
+    expected_snapshot: object | None = None,
+) -> dict[str, object]:
+    """Expose only the bounded receipt projection; never mutate workflow state."""
+    from pala_context_receipt import receipt_summary
+
+    return receipt_summary(
+        payload,
+        expected=expected,
+        expected_snapshot=expected_snapshot,
+    )
+
+
+def refresh_continuity(
+    root: Path,
+    *,
+    task_contract: dict[str, object] | None = None,
+    persist: bool = False,
+    db_path: Path | None = None,
+) -> dict[str, object]:
+    """Build live continuity and optionally persist only validated scalars."""
+    from pala_state_documents import professional_project_profile_report
+
+    project_root = Path(root).resolve()
+    built = build_registered_continuity_context(
+        project_root, task_contract=task_contract
+    )
+    if built is None:
+        manifest = load_manifest(project_root)
+        profile_value = manifest.get("project_profile")
+        profile_model = professional_project_profile_report(None)
+        if isinstance(profile_value, str) and profile_value.strip():
+            profile_path = (project_root / profile_value).resolve()
+            try:
+                payload = json.loads(profile_path.read_text(encoding="utf-8"))
+                if isinstance(payload, dict):
+                    profile_model = professional_project_profile_report(payload)
+            except (OSError, json.JSONDecodeError):
+                pass
+        return {
+            "status": "not-run",
+            "finding": (
+                "ACTIVE_TASK_NOT_AVAILABLE"
+                if isinstance(profile_value, str) and profile_value.strip()
+                else "PROJECT_PROFILE_NOT_CONFIGURED"
+            ),
+            "receipt": {"validation_status": "not-run", "can_complete": False},
+            "profile": profile_model,
+        }
+    context = built
+    target_db = Path(db_path) if db_path is not None else _continuity_db_path()
+    from pala_continuity import persist_context, read_models
+
+    models = read_models(
+        project_id=context.profile.project_id,
+        repository_id=context.snapshot.repository_id,
+        db_path=target_db,
+    )
+    continuity = (
+        persist_context(context, db_path=target_db)
+        if persist
+        else models["continuity"]
+    )
+    if (
+        not persist
+        and continuity.get("validation_status") == "passed"
+        and continuity.get("receipt_id") != context.receipt.receipt_id
+    ):
+        continuity = {
+            **continuity,
+            "validation_status": "blocked",
+            "finding": {
+                "code": "CONTINUITY_RECEIPT_STALE",
+                "status": "blocked",
+                "resolution": "refresh continuity on an explicit lifecycle mutation",
+            },
+            "can_complete": False,
+        }
+    history = models["history"]
+    return {
+        "status": "passed",
+        "profile": professional_project_profile_report(context.profile.to_dict()),
+        "receipt": context.receipt_read_model(),
+        "continuity": continuity,
+        "history": history,
+        "repository_id": context.snapshot.repository_id,
+        "project_id": context.profile.project_id,
+        "can_complete": False,
+    }
+
+
+def build_registered_continuity_context(
+    root: Path,
+    *,
+    task_contract: dict[str, object] | None = None,
+):
+    """Build the ephemeral registered context without persisting its payload."""
+    project_root = Path(root).resolve()
+    manifest = load_manifest(project_root)
+    profile_value = manifest.get("project_profile")
+    if not isinstance(profile_value, str) or not profile_value.strip():
+        return None
+    profile_path = (project_root / profile_value).resolve()
+    try:
+        profile_path.relative_to(project_root)
+    except ValueError as exc:
+        raise ValueError("project profile must remain inside project root") from exc
+    profile_payload = json.loads(profile_path.read_text(encoding="utf-8"))
+    if not isinstance(profile_payload, dict):
+        raise ValueError("project profile must be a JSON object")
+
+    if task_contract is None:
+        from pala_store import WorkflowStore
+
+        task_contract = WorkflowStore(project_root).active_task_contract()
+    if not isinstance(task_contract, dict):
+        return None
+
+    source_refs: list[dict[str, str]] = []
+    documents = manifest.get("documents")
+    if isinstance(documents, dict):
+        for purpose in ("project", "plan", "decisions"):
+            relative_path = documents.get(purpose)
+            if not isinstance(relative_path, str) or not relative_path.strip():
+                continue
+            source = (project_root / relative_path).resolve()
+            try:
+                safe_relative = source.relative_to(project_root).as_posix()
+            except ValueError as exc:
+                raise ValueError("continuity source must remain inside project root") from exc
+            digest = file_sha256(source)
+            if digest:
+                source_refs.append({"path": safe_relative, "digest": digest})
+
+    from pala_continuity import build_context
+
+    next_action = str(task_contract.get("next_action") or "configure-quality")
+    return build_context(
+        project_root,
+        profile_payload=profile_payload,
+        task_contract=task_contract,
+        source_refs=source_refs,
+        capabilities=[],
+        verifications=[],
+        risk_codes=list(context_risk_codes(task_contract)),
+        next_action=next_action,
+    )
+
+
+def context_risk_codes(task_contract: dict[str, object]) -> tuple[str, ...]:
+    blocker = task_contract.get("blocker")
+    return ("active-task-blocked",) if blocker else ()
+
+
+def _continuity_db_path() -> Path:
+    from pala_catalog import db_path
+
+    return db_path()
+
+
+def _refresh_continuity_best_effort(
+    root: Path, record: dict[str, object]
+) -> None:
+    task_contract = record.get("task_contract")
+    if not isinstance(task_contract, dict):
+        return
+    try:
+        refresh_continuity(root, task_contract=task_contract, persist=True)
+    except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+        _record_store_event(
+            root,
+            "continuity",
+            detail=f"continuity refresh not-run: {type(exc).__name__}",
+        )
 
 
 def file_sha256(path: Path) -> str | None:
@@ -403,20 +594,27 @@ def reconciliation_report(
 
 
 def load_workflow(root: Path) -> dict[str, object]:
-    path = workflow_path(root)
+    path = workflow_path(root, read_only=True)
     legacy_path = Path(root).resolve() / WORKFLOW
     if not path.is_file() and legacy_path.is_file():
         path = legacy_path
-    if not path.is_file():
-        try:
-            from pala_store import WorkflowStore
+    try:
+        from pala_store import WorkflowStore
 
-            task = WorkflowStore(root).active_task_contract()
-        except (ImportError, OSError, ValueError):
-            task = None
+        task = WorkflowStore(root).active_task_contract()
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError):
+        task = None
+    if path.is_file():
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict) or payload.get("schema_version") not in (
+            1,
+            WORKFLOW_SCHEMA_VERSION,
+        ):
+            raise ValueError("unsupported Pala workflow schema")
+    else:
         if not isinstance(task, dict):
             raise ValueError(f"workflow state not found: {path}")
-        return {
+        payload = {
             "schema_version": WORKFLOW_SCHEMA_VERSION,
             "projection_of": "v3-task-contract",
             "canonical_state": "v3",
@@ -429,9 +627,24 @@ def load_workflow(root: Path) -> dict[str, object]:
             "verification": task.get("evidence") or [],
             "verification_tier": "not-run",
         }
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if payload.get("schema_version") not in (1, WORKFLOW_SCHEMA_VERSION):
-        raise ValueError("unsupported Pala workflow schema")
+    if isinstance(task, dict):
+        payload.update(
+            {
+                "schema_version": WORKFLOW_SCHEMA_VERSION,
+                "projection_of": "v3-task-contract",
+                "canonical_state": "v3",
+                "active_ticket": task.get("id"),
+                "goal": task.get("goal"),
+                "lifecycle": task.get("status") or "IN_PROGRESS",
+                "next_action": task.get("next_action"),
+                "dirty": True,
+                "needs_reconcile": False,
+                "checkpoint_basis": None,
+                "blockers": [task.get("blocker")] if task.get("blocker") else [],
+                "verification": task.get("evidence") or [],
+                "verification_tier": "not-run",
+            }
+        )
     return payload
 
 
@@ -447,17 +660,15 @@ def _record_store_event(
         import pala_db
         from pala_catalog import db_path, _project_id
 
-        shared = shared_state_root(root)
-        event_db = shared / "events" / "pala.sqlite" if shared is not None else db_path()
         pala_db.add_event(
             kind,
             project_id=_project_id(root),
             project_name=root.name,
             detail=detail,
             evidence=evidence,
-            path=event_db,
+            path=db_path(),
         )
-    except (OSError, ValueError, TypeError, KeyError, ImportError):
+    except (OSError, RuntimeError, ValueError, TypeError, KeyError, ImportError):
         pass
     except Exception as exc:
         if exc.__class__.__module__ == "sqlite3":
@@ -524,6 +735,7 @@ def complete_work(root: Path, ticket: str, session: str):
     result = WorkflowStore(root).complete(ticket, session)
     if result.status != "completed":
         return result
+    _record_store_event(root, "complete", detail=f"{ticket}: canonical task completed")
     try:
         legacy = load_workflow(root)
     except (OSError, ValueError, json.JSONDecodeError):
@@ -537,7 +749,6 @@ def complete_work(root: Path, ticket: str, session: str):
     legacy["needs_reconcile"] = False
     legacy["updated_at"] = datetime.now(timezone.utc).isoformat()
     write_json(workflow_path(root), legacy)
-    _record_store_event(root, "complete", detail=f"{ticket}: legacy active state cleared")
     return result
 
 
@@ -562,6 +773,7 @@ def begin_work(
             raise ValueError("ticket is owned by another active session")
         if result.status == "busy":
             raise ValueError("ticket claim busy; retry begin with the same --session-key")
+        _refresh_continuity_best_effort(root, result.record)
         _record_store_event(
             root,
             "begin",
@@ -588,6 +800,7 @@ def begin_work(
         raise ValueError("ticket is owned by another active session")
     if claim.status == "busy":
         raise ValueError("ticket claim busy; retry begin")
+    _refresh_continuity_best_effort(root, claim.record)
     payload = {
         "schema_version": WORKFLOW_SCHEMA_VERSION,
         "projection_of": "v3-ticket-store",
@@ -772,6 +985,15 @@ def load_manifest(root: Path) -> dict[str, object]:
         raise ValueError("unexpected project-state owner")
     if not isinstance(payload.get("documents"), dict):
         raise ValueError("documents must be an object")
+    project_profile = payload.get("project_profile")
+    if project_profile is not None:
+        if not isinstance(project_profile, str) or not project_profile.strip():
+            raise ValueError("project_profile must be a repository-relative path")
+        resolved = (root / project_profile).resolve()
+        try:
+            resolved.relative_to(root.resolve())
+        except ValueError as exc:
+            raise ValueError("project_profile must remain inside project root") from exc
     return payload
 
 
@@ -813,6 +1035,7 @@ def validate(root: Path) -> int:
 
 def context_report(root: Path, session: str | None = None) -> dict[str, object]:
     manifest = load_manifest(root)
+    active_task_contract: dict[str, object] | None = None
     try:
         workflow = load_workflow(root)
     except (OSError, ValueError, json.JSONDecodeError):
@@ -822,6 +1045,9 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
 
         owned_ticket = WorkflowStore(root).active_for_session(session)
         if owned_ticket is not None:
+            candidate_contract = owned_ticket.get("task_contract")
+            if isinstance(candidate_contract, dict):
+                active_task_contract = candidate_contract
             workflow = {
                 "schema_version": WORKFLOW_SCHEMA_VERSION,
                 "active_ticket": owned_ticket.get("ticket"),
@@ -833,6 +1059,13 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
                 "verification_tier": "not-run",
                 "blockers": [],
             }
+    if active_task_contract is None:
+        try:
+            from pala_store import WorkflowStore
+
+            active_task_contract = WorkflowStore(root).active_task_contract()
+        except (OSError, ValueError, ImportError):
+            active_task_contract = None
     documents = manifest.get("documents")
     safe_documents = documents if isinstance(documents, dict) else {}
     reconciliation = (
@@ -860,6 +1093,21 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
     except (OSError, ValueError, TypeError, ImportError):
         pass
     cold_packet: dict[str, object] | None = None
+    continuity_model: dict[str, object]
+    live_context = None
+    try:
+        live_context = build_registered_continuity_context(
+            root, task_contract=active_task_contract
+        )
+        continuity_model = refresh_continuity(
+            root, task_contract=active_task_contract, persist=False
+        )
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        continuity_model = {
+            "status": "blocked",
+            "finding": "CONTINUITY_READ_MODEL_UNAVAILABLE",
+            "can_complete": False,
+        }
     try:
         from pala_cold_packet import build_cold_packet
 
@@ -869,6 +1117,8 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
             session_id=session,
             documents=safe_documents,
             workflow=workflow if isinstance(workflow, dict) else None,
+            context_receipt=(live_context.receipt if live_context else None),
+            context_expectation=(live_context.expectation if live_context else None),
         )
     except (OSError, ValueError, TypeError, ImportError):
         cold_packet = None
@@ -889,6 +1139,7 @@ def context_report(root: Path, session: str | None = None) -> dict[str, object]:
         },
         "cmd_memory": cmd_memory,
         "cold_packet": cold_packet,
+        "continuity": continuity_model,
         "memory_contract_version": memory.get("memory_contract_version"),
         "active_plan": safe_documents.get("plan"),
         "project": safe_documents.get("project"),

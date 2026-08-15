@@ -177,3 +177,137 @@ Uygulama yüzeyi: `scripts/pala_shared_memory.py` + Doctor `shared_store`
 bloğu. Cursor paketi: `portable/cursor/` (skill + rule); Codex plugin
 davranışını taşımaz. Wave E kanıt/doküman: `docs/PALA_SHARED_MEMORY.md`
 (hit/miss + drift check); `AGENTS.md` tek kaynak, Cursor rule ince kalır.
+
+## ADR-018 — ProjectSnapshot repo/worktree kimliğini ayırır (M76)
+
+Pala canonical uzlaştırması için salt-okunur, sürümlü `ProjectSnapshot`
+kullanır. Repository identity varsa sıralı Git root-commit setinin digest'idir;
+unborn repository yalnız zorunlu fallback olarak normalize common-dir kullanır;
+worktree identity gerçek worktree kökünün ayrı digest'idir. Mutlak makine yolu
+serialize edilmez. Linked worktree adayları aynı repository identity'yi
+paylaşabilir fakat açık bir worktree identity seçilmeden birden fazla adaydan
+tahmin yapılmaz; typed `PROJECT_SNAPSHOT_WORKTREE_AMBIGUOUS` bulgusu üretilir.
+
+Snapshot yalnız bounded `git` sorguları (`shell=False`, timeout) ve dosya
+digestleri okur; catalog/runtime store oluşturmaz. Git timeout veya gözlem
+hatası temiz durum sayılmaz, `unknown` ve blocking finding olur. Remote userinfo
+kalıcı/read-model çıktısına girmeden redakte edilir. Snapshot kanıttır;
+TaskContract, WorkflowStore veya Quality Engine'in yerine geçmez.
+
+## ADR-019 — ProjectProfile açık ve değişmez güvenlik sözleşmesidir (M76)
+
+`ProjectProfile v1` beyan edilmiş scope, stack, risk, Quality, release,
+ownership, security ve data-classification gerçeklerinin sahibidir. Skill
+routing `profiles` yalnız discovery hint olarak kalır; bu sözleşmeyi dolduramaz
+veya geçersiz kılamaz.
+
+Standard, confidential, regulated ve public-release modları explicit,
+fail-closed policy invariant'larına sahiptir. Bilinmeyen alan/değer ile secret,
+kişisel tanımlayıcı ve private machine path şekilleri best-effort coercion yerine
+sanitized typed finding üretir. Değerler frozen tuple-backed nesneler, canonical
+sorted JSON ve SHA-256 digest olarak temsil edilir.
+
+State-document adapter yalnız bounded özet read modelidir; persistence yaratmaz
+ve ikinci authority değildir. Durable profile özetleri ve migration M76-T4'ün
+tek machine-local store kapsamındadır; source, credential, personal identifier,
+private path veya chat saklanmaz.
+
+## ADR-020 — Context Receipt canlı beklentiye bağlı bütünlük kaydıdır (M76)
+
+`Context Receipt v1`, bir `ProjectSnapshot` ile aktif TaskContract, ProjectProfile
+ve proje-göreli kaynak digestlerini tek deterministik, immutable kayıtta bağlar.
+Tüketici yalnız receipt'in kendi beyanına güvenmez: güncel snapshot, task,
+profile ve kaynaklardan kurulan `ContextExpectation` olmadan doğrulama sonucu
+`blocked` kalır. Her mismatch tipli ve sanitize edilmiş bulgu üretir.
+
+Canonical JSON UTF-8, sıralı anahtarlar, compact separator ve standart dışı
+floatları reddeden sözleşmeyle SHA-256 digestlenir. `receipt_id` yalnız içerik
+bütünlüğü fingerprint'idir; imza, üretici kimliği veya authenticity kanıtı
+değildir. Absolute/private path, credential, PII ve transcript şekilleri
+saklanmaz; kaynaklar yalnız göreli path + digesttir.
+
+Cold-packet ve state adapter'ları yalnız 2 KiB altı güvenli özeti sunar,
+`can_complete=false` taşır ve `validation_status` değerini Quality sonucu gibi
+kullanmaz. Receipt TaskContract/WorkflowStore/Quality Engine yerine geçmez ve
+persistence yapmaz; durable receipt/history migration M76-T4 kapsamındadır.
+
+## ADR-021 — Continuity özeti ve Project History tek store'da ayrı authority'dir (M76)
+
+Machine-local `pala.sqlite` schema v2, owner-validated ProjectProfile ve canlı
+Context Receipt'ten yalnız repository/worktree kimliği, digest, profil modu ve
+validation status scalar'larını saklar. Full profile/receipt, source ref, path,
+credential, PII veya transcript durable store'a kopyalanmaz. Ortak privacy-shape
+sahibi bu üç contract tarafından reuse edilir ve typed finding değeri echo etmez.
+
+V1→v2 geçişi `quick_check`, SQLite backup, `BEGIN IMMEDIATE` ve rollback ile
+transactional'dır; duplicate/future/incomplete schema fail-closed kalır.
+Salt-okunur açılış dosya, WAL, migration, scrub veya marker yaratmaz. Project
+History close/reopen kayıtları content-idempotent ve trigger ile append-only'dir;
+transient event pruning bunlara dokunmaz. Diagnostic event'ler aynı machine-local
+store'a yazılır ve aktif repository filtresi olmadan rapora verilmez.
+
+History ve continuity yalnız bounded read modeldir (`can_complete=false`). Project
+closure otomatik ticket-complete hook'u değildir; current receipt ve açık authority
+ref gerektirir. TaskContract, WorkflowStore ve Quality Engine completion zinciri
+değişmez.
+
+## ADR-022 — Host capability ve delegation kanıta bağlı, candidate-only'dir (M77)
+
+Host/provider adı bir yeteneği doğrulamaz. Codex adaptörü yalnız çağıranın
+gözlediği bounded tool/probe envanterinden üretilen immutable Host Capability
+Snapshot'taki `passed` yetenekleri ilan eder; bilinmeyen ve eksik gözlem
+fail-closed kalır. Snapshot deterministiktir, private host verisi saklamaz ve
+completion authority taşımaz.
+
+Alt-ajan sözleşmesi parent TaskContract digest'i, current Context Receipt,
+repository/worktree kimliği, dar read/write/deny scope, acceptance ve Quality
+check ID'lerini bağlar. Çıktı yalnız `awaiting_primary_review` adayıdır. Tek
+ExecutionCoordinator Windows case/separator aliaslarını, kapasiteyi, same-holder
+scope genişletmesini ve writer çatışmalarını yönetir; canonical completion
+zinciri değişmez.
+
+## ADR-023 — Process lifecycle exact owned handle ve OS process group sınırındadır (M77)
+
+Supervisor shell açmadan explicit argv başlatır; komut ve private host path'i
+serialize etmez, yalnız digest ve typed lifecycle evidence üretir. PID tek
+başına ownership kanıtı değildir: stop/restart yalnız supervisor registry'sindeki
+exact child handle ile kabul edilir, arbitrary attach fail-closed kalır.
+
+Windows'ta kill-on-close Job Object, POSIX'te yeni session/process group child
+ağacının sınırıdır. Health/port, startup, timeout, unexpected exit, orphan,
+cancel, restart ve context shutdown bounded'dır. Evidence `can_complete=false`
+kalır; yabancı process/port sahibini öldürmek yasaktır.
+
+## ADR-024 — Failure Intelligence requires a current Quality basis (M78)
+
+The fingerprint binds failure class, command family, tool, platform, scope and
+exit code; Bearer values are fully redacted. Project filtering is exact and
+corrupt rows are isolated. A recipe becomes verified only through exit-zero
+`pala-quality-runner` evidence for the current surface digest. The bounded read
+model remains `can_complete=false`.
+
+## ADR-025 — Control Center is one escaped owner read model (M78)
+
+Queue, receipt, history, Failure Intelligence, profile, host/process and
+security/release surfaces share one bounded owner-first renderer. Raw HTML is
+accepted only with Pala's exact generated marker; private paths and hostile
+private values are hidden. Responsive, keyboard, reduced-motion and offline
+behavior are exercised on the real generated Playwright page. The panel is
+read-only and does not alter TaskContract/WorkflowStore/Quality authority.
+
+## ADR-026 — Final Agency artifact is deterministic and locally sealed (M79)
+
+The local unpublished `1.2.0` candidate ZIP uses fixed member timestamps, normalized relative
+names and sorted source bytes. A CycloneDX 1.5 SBOM is derived only from committed
+lock files; a separate inventory hashes every ZIP member. Windows and Linux CI
+builds must produce the same archive SHA. Manifest, SBOM and inventory contain no
+absolute path, timestamp, credential or completion claim. Remote publish and
+deploy remain `not-run` without separate authority.
+
+## ADR-027 — Upgrade evidence uses published bytes and real SQLite continuity (M79)
+
+The upgrade matrix downloads only SHA-pinned public 0.4.4, 0.8.0, 0.8.1, 1.0.0
+and 1.1.2 assets. Each case installs in a unique temporary profile, verifies
+Doctor and mutation-free second ensure-current, and preserves a real schema-v2
+`pala.sqlite` plus Failure Intelligence row. A fault injected at the transaction
+state-write boundary must restore the exact previous bundle and database hash.

@@ -13,14 +13,14 @@ import json
 import os
 import platform
 import shutil
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pala_authority import repository_instance, runtime_repositories_root
 from pala_cold_packet_git import git_surface
 from pala_cold_packet_packet import build_cold_packet as _build_cold_packet
+from pala_context_receipt import receipt_summary as context_receipt_read_model
 from pala_milestone_truth import current_milestones
-from pala_state_core import workflow_path
 from pala_tokens import approx_tokens as _estimate_tokens
 
 MINIMAL_MAX_BYTES = 2048
@@ -34,7 +34,14 @@ EVIDENCE_SOURCES = (
 
 # Never drop these when trimming a budget profile.
 _PROTECTED_SCOPES = frozenset(
-    {"active_risk", "test_evidence", "open_blocker", "do_not_retry", "stale_context"}
+    {
+        "active_risk",
+        "context_receipt",
+        "test_evidence",
+        "open_blocker",
+        "do_not_retry",
+        "stale_context",
+    }
 )
 
 _DOC_BY_PROFILE: dict[str, tuple[str, ...]] = {
@@ -60,7 +67,7 @@ def _tool_status(present: bool, *, probed: bool = True) -> str:
 
 
 def _load_workflow(root: Path) -> dict[str, object]:
-    path = workflow_path(root)
+    path = _workflow_path(root)
     legacy_path = root / ".codex" / "pala-workflow.json"
     if not path.is_file() and legacy_path.is_file():
         path = legacy_path
@@ -90,6 +97,20 @@ def _load_workflow(root: Path) -> dict[str, object]:
     except (OSError, json.JSONDecodeError):
         return {}
     return payload if isinstance(payload, dict) else {}
+
+
+def _workflow_path(root: Path) -> Path:
+    """Resolve an existing shared projection without importing state owners."""
+    project_root = Path(root).resolve()
+    shared = (
+        runtime_repositories_root()
+        / repository_instance(project_root)
+        / "generated"
+        / "pala-workflow.json"
+    )
+    if shared.is_file() or shared.parent.parent.is_dir():
+        return shared
+    return project_root / ".codex" / "pala-workflow.json"
 
 
 def _status_snippet(root: Path, documents: dict[str, object] | None, *, max_chars: int = 240) -> str:
@@ -477,6 +498,7 @@ def _cold_packet_operations() -> dict[str, object]:
         "apply_doc_budget": apply_doc_budget,
         "capability_manifest": capability_manifest,
         "context_record": context_record,
+        "context_receipt_read_model": context_receipt_read_model,
         "detect_stale_context": detect_stale_context,
         "detect_worktree_conflict": detect_worktree_conflict,
         "format_packet_text": format_packet_text,
@@ -495,6 +517,8 @@ def build_cold_packet(
     documents: dict[str, object] | None = None,
     workflow: dict[str, object] | None = None,
     authority: dict[str, bool] | None = None,
+    context_receipt: object | None = None,
+    context_expectation: object | None = None,
     max_bytes: int | None = None,
 ) -> dict[str, object]:
     """Compatibility facade for packet assembly."""
@@ -505,6 +529,8 @@ def build_cold_packet(
         documents=documents,
         workflow=workflow,
         authority=authority,
+        context_receipt=context_receipt,
+        context_expectation=context_expectation,
         max_bytes=max_bytes,
         operations=_cold_packet_operations(),
     )
@@ -583,7 +609,7 @@ def stamp_workflow_parallel(
     file_scope: list[str] | None = None,
 ) -> dict[str, object]:
     """Write parallel safety fields onto pala-workflow.json (best-effort)."""
-    path = workflow_path(root)
+    path = _workflow_path(root)
     wf = _load_workflow(root)
     if not wf:
         return {}

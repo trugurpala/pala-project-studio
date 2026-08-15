@@ -16,7 +16,7 @@ installer transaction, and accept success only when Doctor reports the plugin,
 runtime bundle, required Workbench, and version healthy.
 The user does not need to know or run these internal steps.
 
-Current version: **1.1.2**
+Current candidate: **1.2.0** (local verification is in progress; public baseline: **1.1.2**)
 
 [![CI](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml/badge.svg)](https://github.com/trugurpala/pala-project-studio/actions/workflows/quality.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -84,7 +84,7 @@ Providers are advisory; they cannot mark work complete. Telemetry, shared
 daemons, silent global PATH mutation, and automatic helper UI are disabled.
 
 Read [architecture](docs/ARCHITECTURE.md), [Quality Engine](docs/QUALITY_ENGINE.md),
-and [Pala 1.1.2 release notes](docs/RELEASE_1.1.2.md).
+and [Pala 1.2.0 candidate notes](docs/RELEASE_1.2.0.md).
 
 ## License
 

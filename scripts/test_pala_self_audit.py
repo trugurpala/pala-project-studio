@@ -55,10 +55,7 @@ class SelfAuditUnitTests(unittest.TestCase):
     def test_agent_tasks_passes_on_repo(self) -> None:
         result = pala_self_audit.audit_agent_tasks(PLUGIN_ROOT)
         self.assertEqual(result["status"], "passed")
-        self.assertIn(
-            result.get("detail", ""),
-            {"no task cards", "cards=0", "cards=1"},
-        )
+        self.assertEqual(result.get("detail"), "cards=7")
 
     def test_runtime_profile_passes_on_copied_bundle(self) -> None:
         from pala_installer import copy_bundle

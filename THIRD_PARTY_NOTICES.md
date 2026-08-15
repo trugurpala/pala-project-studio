@@ -21,6 +21,12 @@ GitHub Actions used by historical workflows:
   `3d3c42e5aac5ba805825da76410c181273ba90b1`, MIT License.
 - `actions/setup-python` v7.0.0,
   `5fda3b95a4ea91299a34e894583c3862153e4b97`, MIT License.
+- `actions/setup-node` v4.4.0,
+  `49933ea5288caeca8642d1e84afbd3f7d6820020`, MIT License.
+- `actions/upload-artifact` v4.6.2,
+  `ea165f8d65b6e75b540449e92b4886f43607fa02`, MIT License.
+- `actions/download-artifact` v4.3.0,
+  `d3f86a106a0bac45b974a628896c90dbdf5c8093`, MIT License.
 
 Optional `code-review-graph` integration:
 

@@ -8,14 +8,21 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
-from build_portable import validate_internal_markdown_links
-from pala_product_e2e import REQUIRED_EVIDENCE_FIELDS, write_evidence_manifest
-from pala_quality import quality_ledger_path
-from pala_report import write_report
-from pala_product import load_project_contract, save_project_contract
-from pala_store import WorkflowStore
-
 SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from build_portable import validate_internal_markdown_links  # noqa: E402, I001
+from pala_host_capability_broker import observe_codex_host  # noqa: E402
+from pala_product import load_project_contract, save_project_contract  # noqa: E402
+from pala_product_e2e import (  # noqa: E402
+    REQUIRED_EVIDENCE_FIELDS,
+    write_evidence_manifest,
+)
+from pala_quality import quality_ledger_path  # noqa: E402
+from pala_report import write_report  # noqa: E402
+from pala_store import WorkflowStore  # noqa: E402
+
 ROOT = SCRIPT_DIR.parent
 FIXTURES = ROOT / "fixtures" / "product-flow"
 
@@ -54,6 +61,17 @@ class ProductionProductFlowTests(unittest.TestCase):
         return payload
 
     def start_product(self) -> dict[str, object]:
+        host_snapshot = self.project / "observed-host-snapshot.json"
+        host_snapshot.write_text(
+            json.dumps(
+                observe_codex_host(
+                    available_tools=["apply_patch"],
+                    evidence_ref="test/observed-host-tools",
+                    max_concurrency=1,
+                ).to_dict()
+            ),
+            encoding="utf-8",
+        )
         return self.product_cli(
             "start",
             "--cwd",
@@ -66,6 +84,10 @@ class ProductionProductFlowTests(unittest.TestCase):
             str(FIXTURES / "natro-capabilities.json"),
             "--provider-candidate",
             str(FIXTURES / "codex-candidate.json"),
+            "--host-snapshot",
+            str(host_snapshot),
+            "--context-receipt-id",
+            "a" * 64,
             "--session-key",
             "product-e2e-session",
         )
@@ -169,7 +191,7 @@ class ProductionProductFlowTests(unittest.TestCase):
     def test_public_cli_persists_resumes_completes_and_wires_owner_report(self) -> None:
         started = self.start_product()
 
-        self.assertEqual(started["status"], "awaiting_quality")
+        self.assertEqual(started["status"], "awaiting_primary_review")
         self.assertEqual(started["provider"], "codex")
         self.assertEqual(started["task_authority"], "TaskContract")
         self.assertIn("php", started["explicit_unknowns"])
@@ -202,7 +224,7 @@ class ProductionProductFlowTests(unittest.TestCase):
             write_report(self.project, output)
         html = output.read_text(encoding="utf-8")
         for label in (
-            "Pala 1.1.2 Owner Cockpit",
+            "Pala 1.2.0 Owner Cockpit",
             "Project",
             "State",
             "Acceptance",
@@ -300,19 +322,20 @@ class ProductIdentityAndArtifactTests(unittest.TestCase):
         project = (ROOT / "PROJECT.md").read_text(encoding="utf-8")
         goal = (ROOT / "GOAL.md").read_text(encoding="utf-8")
 
-        self.assertEqual(identity["product_version"], "1.1.2")
+        self.assertEqual(identity["product_version"], "1.2.0")
         self.assertEqual(identity["plugin_version"], plugin["version"])
-        self.assertEqual(identity["python_package_version"], "1.1.2")
-        self.assertEqual(identity["artifact_name"], "pala-project-studio-1.1.2.zip")
+        self.assertEqual(identity["python_package_version"], "1.2.0")
+        self.assertEqual(identity["artifact_name"], "pala-project-studio-1.2.0.zip")
         if identity["remote_publish"] == "passed":
             self.assertEqual(identity["build_release_state"], "VERIFIED")
             self.assertEqual(identity["remote_observed_state"], "PUBLIC RELEASED")
             self.assertEqual(identity["last_published_version"], "1.1.2")
         else:
             self.assertIn(identity["build_release_state"], {"CONFIGURED_NOT_VERIFIED", "LOCAL RELEASE CANDIDATE VERIFIED"})
-            self.assertEqual(identity["remote_observed_state"], "NOT PUBLISHED AS 1.1.2")
-            self.assertEqual(identity["last_published_version"], "1.1.1")
+            self.assertEqual(identity["remote_observed_state"], "NOT PUBLISHED AS 1.2.0")
+            self.assertEqual(identity["last_published_version"], "1.1.2")
             self.assertEqual(identity["remote_publish"], "not-run")
+        self.assertEqual(identity["current_public_version"], "1.1.2")
         for document in (readme, project, goal):
             self.assertIn(identity["product_version"], document)
         self.assertIn(identity["plugin_version"], readme)

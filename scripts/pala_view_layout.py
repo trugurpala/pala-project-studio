@@ -115,6 +115,16 @@ def _mapping(value: object, default: dict[str, object] | None = None) -> dict[st
 
 def _context(model: dict[str, object]) -> dict[str, object]:
     freshness = model.get("freshness_level")
+    owner_html = model.get("owner_cockpit_html")
+    owner_html = owner_html if isinstance(owner_html, str) else ""
+    owner_folded = owner_html.casefold()
+    if (
+        not owner_html.startswith('<section class="pala-product-cockpit"')
+        or "<script" in owner_folded
+        or "javascript:" in owner_folded
+        or " onerror=" in owner_folded
+    ):
+        owner_html = ""
     return {
         "root_name": str(model.get("root_name") or "project"), "root_path": str(model.get("root_path") or ""),
         "stamp": str(model.get("stamp") or ""), "coherence": _mapping(model.get("coherence")),
@@ -122,6 +132,7 @@ def _context(model: dict[str, object]) -> dict[str, object]:
         "progress": _mapping(model.get("progress"), {"ready": 0, "total": 7, "missing": []}),
         "projects": model.get("projects") if isinstance(model.get("projects"), list) else [],
         "events": model.get("events") if isinstance(model.get("events"), list) else [],
+        "project_history": _mapping(model.get("project_history"), {"items": [], "validation_status": "not-run", "can_complete": False}),
         "provisions": model.get("provisions") if isinstance(model.get("provisions"), list) else [],
         "update": model.get("update") if isinstance(model.get("update"), dict) else None,
         "update_checked_at": model.get("update_checked_at"), "next_action": model.get("next_action"),
@@ -129,7 +140,7 @@ def _context(model: dict[str, object]) -> dict[str, object]:
         "freshness_level": freshness if isinstance(freshness, str) and freshness else "stale",
         "quality": model.get("quality"), "delivery": model.get("delivery"),
         "store_path": model.get("store_path") or "", "verification_tier": model.get("verification_tier") or "not-run",
-        "owner_cockpit_html": model.get("owner_cockpit_html") or "",
+        "owner_cockpit_html": owner_html,
     }
 
 
@@ -145,7 +156,12 @@ def _fixed_panels(context: dict[str, object]) -> list[str]:
     return [
         _section_overview(root_name=str(context["root_name"]), decision=decision, delivery=delivery_html, now=_now_line(context["next_action"], coherence.get("active")), brain=_brain_line(context["brain"]), mismatch_banner=mismatch_banner, progress=_progress_block(_mapping(context["progress"])), coherence=coherence, git=_mapping(context["git"]), next_action=context["next_action"], owner_cockpit=str(context["owner_cockpit_html"])),
         _section_install(), _section_hooks(), _section_quality(quality, context["verification_tier"], quality_delivery),
-        _section_memory(context["store_path"], context["events"], context["provisions"]),
+        _section_memory(
+            context["store_path"],
+            context["events"],
+            context["provisions"],
+            context["project_history"],
+        ),
         _section_tickets(coherence=coherence, next_action=context["next_action"], read_order=context["read_order"]), _section_features(),
     ]
 

@@ -9,7 +9,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import ClassVar
 
-from pala_authority import atomic_json_write, shared_state_root
+from pala_authority import (
+    atomic_json_write,
+    git_common_dir,
+    repository_instance,
+    runtime_repositories_root,
+    shared_state_root,
+)
 
 PROJECT_CONTRACT_SCHEMA = 1
 PROJECT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}\Z")
@@ -167,11 +173,17 @@ class ProjectLifecycle:
         """Deliberately do nothing: task DONE is not project delivery."""
 
 
-def project_contract_path(root: Path, project_id: str) -> Path:
+def project_contract_path(
+    root: Path, project_id: str, *, read_only: bool = False
+) -> Path:
     """Return the canonical repository-scoped product contract path."""
     if not PROJECT_ID.fullmatch(project_id):
         raise ValueError("project_id must be a safe 1-80 character identifier")
-    authority = shared_state_root(Path(root).resolve())
+    project_root = Path(root).resolve()
+    if read_only and git_common_dir(project_root) is not None:
+        authority = runtime_repositories_root() / repository_instance(project_root)
+    else:
+        authority = shared_state_root(project_root)
     if authority is None:
         raise ValueError("a Git repository is required for durable product authority")
     return authority / "product" / f"{project_id}.json"
@@ -198,7 +210,7 @@ def save_project_contract(root: Path, payload: dict[str, object]) -> Path:
 
 
 def load_project_contract(root: Path, project_id: str) -> dict[str, object]:
-    path = project_contract_path(root, project_id)
+    path = project_contract_path(root, project_id, read_only=True)
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("project contract must be an object")
@@ -215,9 +227,10 @@ def load_project_contract(root: Path, project_id: str) -> dict[str, object]:
 
 
 def load_current_project_contract(root: Path) -> dict[str, object] | None:
-    authority = shared_state_root(Path(root).resolve())
-    if authority is None:
+    project_root = Path(root).resolve()
+    if git_common_dir(project_root) is None:
         return None
+    authority = runtime_repositories_root() / repository_instance(project_root)
     paths = sorted((authority / "product").glob("*.json"))
     if not paths:
         return None

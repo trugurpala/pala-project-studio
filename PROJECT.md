@@ -4,7 +4,8 @@ Pala is a **Provider-Independent Local Software Delivery OS** for people who
 want an AI-assisted software project to remain understandable, resumable,
 verifiable, and publishable without giving one provider control of the product.
 
-Current identity: `1.1.2`. Machine-readable identity lives in
+Current candidate identity: `1.2.0`; the immutable public baseline remains
+`1.1.2`. Machine-readable identity lives in
 `product-identity.json`.
 
 ## Primary outcome
@@ -45,3 +46,18 @@ truthfully and use safe fallbacks rather than appearing healthy.
 
 Advanced provider, lifecycle, integrity, and fallback contracts are documented
 in `docs/ARCHITECTURE.md`.
+
+## Final Agency Build target
+
+The local, unpublished `1.2.0` candidate is delivered in strict
+`M80-T1 -> M80-T6` order. It adds worktree-aware canonical observation,
+professional project/security profiles, bounded Context Receipts, safe Project
+History, evidence-backed host routing and process ownership, a canonical
+read-model Control Center 2, privacy-safe Failure Intelligence, and an
+integrated deterministic release canary with SBOM and file inventory.
+
+These components extend the existing TaskContract / WorkflowStore / Quality
+Engine authority; none becomes a second orchestrator or completion source.
+Local LLMs, uncontrolled daemons, raw chat storage and automatic public
+release/deploy remain outside the product. Its local release evidence is
+`configured-not-verified` until the required current Quality checks exit zero.

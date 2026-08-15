@@ -70,7 +70,7 @@ class UserExperienceContractTests(unittest.TestCase):
         ):
             self.assertIn(required, advanced)
 
-    def test_current_identity_is_one_point_one_without_old_candidate_language(self) -> None:
+    def test_current_identity_is_one_point_two_with_explicit_candidate_language(self) -> None:
         identity = json.loads(
             (PLUGIN_ROOT / "product-identity.json").read_text(encoding="utf-8")
         )
@@ -80,19 +80,19 @@ class UserExperienceContractTests(unittest.TestCase):
         readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
         project = (PLUGIN_ROOT / "PROJECT.md").read_text(encoding="utf-8")
         goal = (PLUGIN_ROOT / "GOAL.md").read_text(encoding="utf-8")
-        release = (PLUGIN_ROOT / "docs" / "RELEASE_1.1.2.md").read_text(
+        release = (PLUGIN_ROOT / "docs" / "RELEASE_1.2.0.md").read_text(
             encoding="utf-8"
         )
         self.assertEqual(manifest["version"], identity["plugin_version"])
-        self.assertIn("Current version: **1.1.2**", readme)
+        self.assertIn("Current candidate: **1.2.0**", readme)
         self.assertNotIn("Yerel yayın adayı **0.8.2**", readme)
         self.assertIn(identity["product_version"], project)
         self.assertIn(identity["product_version"], goal)
-        self.assertIn("pala-project-studio-1.1.2.zip", release)
+        self.assertIn("pala-project-studio-1.2.0.zip", release)
 
     def test_release_notes_name_the_versioned_portable_asset(self) -> None:
         readme = (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8")
-        release = (PLUGIN_ROOT / "docs" / "RELEASE_1.1.2.md").read_text(
+        release = (PLUGIN_ROOT / "docs" / "RELEASE_1.2.0.md").read_text(
             encoding="utf-8"
         )
         manifest = json.loads(
@@ -563,9 +563,12 @@ class UserExperienceContractTests(unittest.TestCase):
         self.assertTrue(path.is_file())
         text = " ".join(path.read_text(encoding="utf-8").casefold().split())
         for required in (
-            "0.8.0 -> 0.8.2",
-            "0.8.1 -> 0.8.2",
-            "doğrulanmış legacy pala",
+            "0.4.4",
+            "1.1.2",
+            "1.2.0",
+            "sha-256",
+            "not-run",
+            "doğrulanmış legacy",
             "modified",
             "external_conflict",
             "professional workbench",
@@ -588,11 +591,16 @@ class UserExperienceContractTests(unittest.TestCase):
             compact,
         )
         self.assertIn("pala_installer.py", wrapper)
+        self.assertIn("function Test-PalaPython", wrapper)
+        self.assertIn("WindowsApps", wrapper)
+        self.assertIn('Join-Path $env:LOCALAPPDATA "Programs\\Python"', wrapper)
         self.assertNotIn("pala_expert_installer.py", wrapper)
         self.assertNotIn("managed-tools.lock.json", wrapper)
         self.assertNotIn("qwen3:4b-instruct", wrapper)
         self.assertNotIn("127.0.0.1:11435", wrapper)
         self.assertIn("--dry-run", wrapper)
+        self.assertIn('return ,@($launcher.Source, "-3")', wrapper)
+        self.assertIn("return ,@($candidate)", wrapper)
         self.assertNotIn("Remove-Item -Path $installRoot -Recurse", wrapper)
         self.assertNotIn("Copy-Item -Path (Join-Path $pluginRoot", wrapper)
 

@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pala_db
+from pala_project_snapshot import capture_project_snapshot, path_identity_digest
 from pala_redaction import redact_remote_url
 
 SCHEMA_VERSION = 1
@@ -51,7 +52,10 @@ def _ensure_migrated(cdir: Path) -> None:
 
 
 def _project_id(project_path: Path) -> str:
-    return re.sub(r"[^a-zA-Z0-9._-]+", "-", str(project_path.resolve())).strip("-")[:160]
+    snapshot = capture_project_snapshot(project_path)
+    if snapshot.repository_id:
+        return snapshot.repository_id
+    return path_identity_digest(project_path.resolve())
 
 
 def _detect_github(root: Path) -> str | None:
@@ -178,10 +182,13 @@ def upsert_project(
     return stored
 
 
-def list_projects(catalog_dir: Path | None = None) -> list[dict[str, object]]:
+def list_projects(
+    catalog_dir: Path | None = None, *, read_only: bool = False
+) -> list[dict[str, object]]:
     cdir = catalog_dir or catalog_root()
-    _ensure_migrated(cdir)
-    return pala_db.list_projects(db_path(cdir))
+    if not read_only:
+        _ensure_migrated(cdir)
+    return pala_db.list_projects(db_path(cdir), read_only=read_only)
 
 
 def plain_summary(catalog_dir: Path | None = None) -> str:

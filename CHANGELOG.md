@@ -5,6 +5,20 @@ All notable changes to Pala Project Studio are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The canonical product identity and Git tags use `X.Y.Z`.
 
+## [1.2.0] - unreleased
+
+### Changed
+
+- Promote the local release candidate identity to `1.2.0` while retaining
+  public `v1.1.2` as immutable baseline evidence.
+- Define the published-byte upgrade matrix and keep its network-enabled
+  evidence separate from the offline local verifier.
+
+### Release status
+
+- Local candidate verification is `configured-not-verified`; publication and
+  deployment are `not-run` until separately authorized and evidenced.
+
 ## [1.1.2] - 2026-08-13
 
 ### Fixed

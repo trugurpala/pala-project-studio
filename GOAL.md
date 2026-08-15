@@ -1,10 +1,12 @@
 # Goal
 
-Deliver Pala `1.1.2` as a clean, public, reproducible patch release that fixes
-natural Workbench bootstrap, deterministic Control Center routing, true
-ensure-current no-op, and capability-gated canonical completion.
+Prepare Pala `1.2.0` as a clean, reproducible local release candidate while
+preserving public `v1.1.2` as immutable baseline evidence. It integrates
+continuity, owned execution, live Control Center privacy, and pinned upgrade
+evidence without publishing.
 
 Completion requires a product-first repository, canonical acceptance mapped to
 fresh Quality Engine evidence, coverage at or above 75%, deterministic package
-reproduction, green GitHub Actions on the exact release commit, public asset
-readback, and truthful separation of publication from deploy.
+reproduction, required current Quality evidence, and truthful separation of
+the local candidate from public publication and deploy. Branch CI, tag,
+public asset readback, and deployment require separate authority.

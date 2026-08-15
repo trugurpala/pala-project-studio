@@ -89,10 +89,20 @@ def resolve_windows_codex_candidates(
     return candidates
 
 
+def _is_windowsapps_alias(value: str | os.PathLike[str]) -> bool:
+    """Identify packaged PATH entries that may reject direct CLI execution."""
+    parts = {
+        part
+        for part in os.fspath(value).replace("\\", "/").casefold().split("/")
+        if part
+    }
+    return "windowsapps" in parts
+
+
 def resolve_codex_executable() -> Path | None:
     """Locate Codex CLI even when Windows desktop install is off PATH."""
     found = shutil.which("codex")
-    if found:
+    if found and (os.name != "nt" or not _is_windowsapps_alias(found)):
         return _host_path(found)
     if os.name != "nt":
         return None
@@ -102,7 +112,7 @@ def resolve_codex_executable() -> Path | None:
                 return _host_path(candidate)
         except OSError:
             continue
-    return None
+    return _host_path(found) if found else None
 
 
 def run_codex_json(

@@ -3,10 +3,17 @@
 
 from __future__ import annotations
 
-import tomllib
+import json
 
+import tomllib
+from pala_project_profile import (
+    ProjectProfile,
+    ProjectProfileError,
+    profile_contract_summary,
+)
 from pala_state_core import *  # compatibility-owned primitives
 from pala_state_core import _record_store_event
+
 
 def instruction_report(
     root: Path,
@@ -175,6 +182,43 @@ def project_profiles(root: Path) -> tuple[str, list[str]]:
         profiles.append("backend-engineering")
     profiles.extend(("modularity-budgets", "runtime-delivery"))
     return project_kind, profiles
+
+
+def professional_project_profile_report(
+    payload: dict[str, object] | None,
+) -> dict[str, object]:
+    """Adapt ProjectProfile into a bounded read model without persistence."""
+    if payload is None:
+        return {
+            **profile_contract_summary(),
+            "validation_status": "not-run",
+            "can_complete": False,
+        }
+    try:
+        profile = ProjectProfile.from_dict(payload)
+    except ProjectProfileError as error:
+        return {
+            "schema_version": profile_contract_summary()["schema_version"],
+            "authority": "ProjectProfile",
+            "status": "blocked",
+            "validation_status": "blocked",
+            "persistence": "not-run",
+            "finding": error.finding(),
+            "can_complete": False,
+        }
+    return {
+        "schema_version": profile.schema_version,
+        "authority": "ProjectProfile",
+        "status": "passed",
+        "validation_status": "passed",
+        "persistence": "not-run",
+        "project_id": profile.project_id,
+        "profile_kind": profile.profile_kind.value,
+        "data_classification": profile.data_classification.value,
+        "risk_level": profile.risk.level.value,
+        "digest": profile.digest(),
+        "can_complete": False,
+    }
 
 
 def write_json(path: Path, payload: dict[str, object]) -> None:
@@ -431,12 +475,30 @@ def discover(root: Path) -> dict[str, object]:
     for purpose, names in CANDIDATES.items():
         match = next((root / name for name in names if (root / name).exists()), None)
         documents[purpose] = relative(root, match) if match else None
+    profile_path = root / ".pala" / "project-profile.json"
+    profile_report = professional_project_profile_report(None)
+    if profile_path.is_file():
+        try:
+            payload = json.loads(profile_path.read_text(encoding="utf-8"))
+            profile_report = professional_project_profile_report(payload)
+        except (OSError, json.JSONDecodeError):
+            profile_report = {
+                "schema_version": "pala.project_profile.v1",
+                "validation_status": "blocked",
+                "finding": "PROJECT_PROFILE_SOURCE_INVALID",
+                "authority": "ProjectProfile/read-only",
+                "can_complete": False,
+            }
     return {
         "root": str(root),
         "manifest": str(root / MANIFEST),
         "registered": (root / MANIFEST).is_file(),
         "project_kind": project_kind,
         "profiles": profiles,
+        "project_profile_path": (
+            ".pala/project-profile.json" if profile_path.is_file() else None
+        ),
+        "project_profile": profile_report,
         "documents": documents,
         "fallbacks": {
             "project": "docs/codex/PROJECT.md",
@@ -510,6 +572,11 @@ def register(args: argparse.Namespace, root: Path) -> int:
         "registered_at": datetime.now(timezone.utc).isoformat(),
         "project_kind": discovery["project_kind"],
         "profiles": discovery["profiles"],
+        "project_profile": normalize_document(
+            root,
+            getattr(args, "project_profile", None)
+            or discovery.get("project_profile_path"),
+        ),
         "documents": documents,
         "memory_contract_version": 1,
     }

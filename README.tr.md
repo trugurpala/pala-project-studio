@@ -16,7 +16,7 @@ transaction'ını çalıştırır ve ancak plugin, runtime bundle, zorunlu Workb
 ve sürüm Doctor tarafından sağlıklı doğrulanırsa başarılı
 der. Kullanıcının bu iç adımları bilmesi veya elle çalıştırması gerekmez.
 
-Güncel sürüm: **1.1.2**
+Güncel aday: **1.2.0** (yerel doğrulama sürüyor; public temel: **1.1.2**)
 
 ## Pala ne yapar?
 

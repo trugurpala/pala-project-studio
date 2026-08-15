@@ -275,9 +275,11 @@ class MemoryContractTests(unittest.TestCase):
             root.mkdir()
             (root / "AGENTS.md").write_text("# A\n", encoding="utf-8")
             import pala_db
+            import pala_catalog
 
             pala_db.add_event(
                 "checkpoint",
+                project_id=pala_catalog._project_id(root),
                 project_name="proj",
                 detail="Continue F2-T2",
                 path=cdir / "pala.sqlite",

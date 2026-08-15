@@ -129,10 +129,10 @@ class PublicRepositoryCleanupTests(unittest.TestCase):
         ):
             self.assertNotIn(retired, {value.casefold() for value in providers})
 
-    def test_product_identity_is_one_point_one(self) -> None:
+    def test_product_identity_is_one_point_two(self) -> None:
         identity = json.loads((ROOT / "product-identity.json").read_text(encoding="utf-8"))
-        self.assertEqual(identity["product_version"], "1.1.2")
-        self.assertEqual(identity["plugin_version"], "1.1.2")
+        self.assertEqual(identity["product_version"], "1.2.0")
+        self.assertEqual(identity["plugin_version"], "1.2.0")
 
 
 if __name__ == "__main__":

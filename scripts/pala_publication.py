@@ -226,10 +226,19 @@ def current_publication_matrix(root: Path) -> dict[str, Any]:
         matrix["surfaces"]["plugin-identity"] = {"status": "DRIFTED", "path": ".codex-plugin/plugin.json"}
         matrix["required_drift"] = sorted(set(matrix["required_drift"]) | {"plugin-identity"})
         matrix["status"] = "blocked"
+    public_version = str(identity.get("current_public_version") or "")
+    published_version = str(identity.get("last_published_version") or "")
+    if not public_version or public_version != published_version:
+        matrix["required_drift"] = sorted(
+            set(matrix["required_drift"]) | {"public-baseline-identity"}
+        )
+        matrix["status"] = "blocked"
     matrix["release_truth"] = {
         "product_version": expected,
         "plugin_base_version": plugin_version,
         "artifact_name": identity.get("artifact_name"),
+        "current_public_version": public_version,
+        "last_published_version": published_version,
         "authority": "product-identity.json",
     }
     return matrix

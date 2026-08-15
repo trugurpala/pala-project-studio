@@ -274,6 +274,31 @@ class InstallerCoreTests(unittest.TestCase):
                 resolved = self.installer.resolve_codex_executable()
             self.assertEqual(resolved, exe)
 
+    def test_resolve_codex_skips_windowsapps_alias_for_local_desktop_binary(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-codex-alias-") as temp:
+            root = Path(temp)
+            nested = root / "OpenAI" / "Codex" / "bin" / "deadbeef"
+            nested.mkdir(parents=True)
+            exe = nested / "codex.exe"
+            exe.write_bytes(b"MZ")
+            environ = {
+                "LOCALAPPDATA": str(root),
+                "APPDATA": str(root / "Roaming"),
+                "USERPROFILE": str(root),
+            }
+            windowsapps_alias = str(root / "Microsoft" / "WindowsApps" / "codex.exe")
+            with patch.object(
+                self.installer.shutil,
+                "which",
+                return_value=windowsapps_alias,
+            ), patch.dict(os.environ, environ, clear=False), patch.object(
+                self.installer.os,
+                "name",
+                "nt",
+            ):
+                resolved = self.installer.resolve_codex_executable()
+            self.assertEqual(resolved, exe)
+
     def test_codex_bridge_is_sibling_loaded_and_cli_call_is_shell_free(self) -> None:
         bridge = self.installer._codex_bridge
         self.assertEqual(
@@ -2396,6 +2421,8 @@ class InstallerCoreTests(unittest.TestCase):
             try:
                 link.symlink_to(target)
             except OSError as exc:
+                if os.environ.get("PALA_REQUIRE_SYMLINK_CANARY") == "1":
+                    self.fail(f"required symlink canary unavailable: {exc}")
                 self.skipTest(f"symlinks unavailable in this profile: {exc}")
 
             report = self.installer.uninstall_bundle(install_root, state_root)

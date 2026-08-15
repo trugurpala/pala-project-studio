@@ -160,6 +160,8 @@ def build_cold_packet(
     documents: dict[str, object] | None = None,
     workflow: dict[str, object] | None = None,
     authority: dict[str, bool] | None = None,
+    context_receipt: object | None = None,
+    context_expectation: object | None = None,
     max_bytes: int | None = None,
     operations: dict[str, object],
 ) -> dict[str, object]:
@@ -177,6 +179,31 @@ def build_cold_packet(
     )
     records, blocker, do_not_retry = _context_records(
         state, profile=profile, documents=documents, operations=operations
+    )
+    if context_receipt is None:
+        receipt_model: dict[str, object] = {
+            "schema_version": "pala.context_receipt.v1",
+            "validation_status": "not-run",
+            "can_complete": False,
+            "authority": "ContextReceipt/read-only",
+        }
+    else:
+        receipt_model = operations["context_receipt_read_model"](
+            context_receipt,
+            expected=context_expectation,
+        )
+    records.append(
+        operations["context_record"](
+            name="context_receipt",
+            scope="context_receipt",
+            text=(
+                f"{receipt_model.get('validation_status')}:"
+                f"{receipt_model.get('receipt_id') or 'none'}"
+            ),
+            freshness="receipt",
+            confidence="high",
+            protected=True,
+        )
     )
     git = state["git"]
     stale = state["stale"]
@@ -220,7 +247,11 @@ def build_cold_packet(
         ),
         "worktree_conflict": conflict,
         "capability": state["capability"],
-        "context_records": [{key: value for key, value in item.items() if key != "text"} for item in records],
+        "context_receipt": receipt_model,
+        "context_records": [
+            {key: value for key, value in item.items() if key != "text"}
+            for item in records
+        ],
         "generated_at": operations["_utc_now"](),
         "milestones": operations["current_milestones"](state["root"]),
     }

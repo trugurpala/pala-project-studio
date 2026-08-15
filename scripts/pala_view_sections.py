@@ -317,6 +317,39 @@ def provisions_html(provisions: list[object]) -> str:
     )
 
 
+def project_history_html(model: object) -> str:
+    """Render only the bounded, non-authoritative Project History read model."""
+    if not isinstance(model, dict):
+        return '<p class="muted">Project History okunamadi.</p>'
+    items = model.get("items")
+    rows: list[str] = []
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict):
+            continue
+        lifecycle = str(item.get("lifecycle") or "")
+        label = "Kapandi" if lifecycle == "project-closed" else "Yeniden acildi"
+        commit = str(item.get("final_commit") or "")[:12] or "—"
+        release = str(item.get("release_ref") or "—")
+        rows.append(
+            "<tr>"
+            f"<td>{escape(label)}</td>"
+            f'<td class="mono">{escape(commit)}</td>'
+            f"<td>{escape(release)}</td>"
+            f"<td>{escape(item.get('summary') or '')}</td>"
+            "</tr>"
+        )
+    status = str(model.get("validation_status") or "not-run")
+    if not rows:
+        return f'<p class="muted" data-history-status="{escape(status)}">Henuz kalici proje gecmisi yok.</p>'
+    return (
+        f'<p class="section-note" data-history-status="{escape(status)}">'
+        "Project History salt-okunur bir continuity gorunumudur; is tamamlayamaz.</p>"
+        "<table><thead><tr><th>Yasam dongusu</th><th>Commit</th>"
+        "<th>Surum</th><th>Ozet</th></tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody></table>"
+    )
+
+
 def section_overview(
     *,
     root_name: str,
@@ -427,7 +460,12 @@ def section_quality(quality: object, verification_tier: object, delivery: str) -
     )
 
 
-def section_memory(store_path: object, events: list[object], provisions: list[object]) -> str:
+def section_memory(
+    store_path: object,
+    events: list[object],
+    provisions: list[object],
+    history: object,
+) -> str:
     return (
         '<section id="panel-memory" class="panel" data-admin-section="memory">'
         "<h2>Hafiza / store</h2>"
@@ -440,6 +478,8 @@ def section_memory(store_path: object, events: list[object], provisions: list[ob
         "</div>"
         "<h2>Son olaylar</h2>"
         f"{timeline_html(events)}"
+        "<h2>Gecmis Projeler</h2>"
+        f"{project_history_html(history)}"
         "<h2>Son URL kurulumlari</h2>"
         f"{provisions_html(provisions)}"
         "</section>"

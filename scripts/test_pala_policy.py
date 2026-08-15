@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,8 +37,19 @@ class PolicyPackTests(unittest.TestCase):
         self.assertEqual(before, (ROOT / "policies" / "accessibility.json").read_bytes())
 
     def test_stale_verified_local_source_becomes_configured_not_verified(self) -> None:
-        result = evaluate_profile(ROOT / "policies", "Release", now=datetime(2028, 8, 12, tzinfo=timezone.utc))
-        self.assertTrue(any(item.freshness == "stale" and item.status == "configured-not-verified" for item in result))
+        payload = json.loads((ROOT / "policies" / "release.json").read_text(encoding="utf-8"))
+        payload["source"]["status"] = "verified-local"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fixture = Path(temp_dir) / "release.json"
+            fixture.write_text(json.dumps(payload), encoding="utf-8")
+            result = evaluate_profile(
+                fixture.parent,
+                "Release",
+                now=datetime(2028, 8, 12, tzinfo=timezone.utc),
+            )
+        self.assertTrue(
+            any(item.freshness == "stale" and item.status == "configured-not-verified" for item in result)
+        )
 
 
 if __name__ == "__main__":

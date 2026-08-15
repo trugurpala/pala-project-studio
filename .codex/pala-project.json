@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "managed_by": "pala-project-finisher",
-  "registered_at": "2026-08-07T14:46:56.436967+00:00",
+  "registered_at": "2026-08-14T01:59:27.236612+00:00",
   "project_kind": "existing",
   "profiles": [
     "project-intake",
@@ -10,6 +10,7 @@
     "modularity-budgets",
     "runtime-delivery"
   ],
+  "project_profile": ".pala/project-profile.json",
   "documents": {
     "instructions": "AGENTS.md",
     "project": "PROJECT.md",

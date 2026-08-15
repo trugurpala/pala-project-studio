@@ -111,9 +111,6 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "policies" / "release.json",
         plugin_root / ".github" / "workflows" / "quality.yml",
         plugin_root / "docs" / "README.md",
-        plugin_root / "docs" / "RELEASE_1.1.0.md",
-        plugin_root / "docs" / "RELEASE_1.1.1.md",
-        plugin_root / "docs" / "RELEASE_1.1.2.md",
         plugin_root / "docs" / "ARCHITECTURE.md",
         plugin_root / "docs" / "QUALITY_ENGINE.md",
         plugin_root / "docs" / "CODEX_SCOPE_AND_LIMITS.md",
@@ -130,6 +127,9 @@ def source_files(plugin_root: Path) -> list[Path]:
         plugin_root / "portable" / "cursor" / "SKILL.md",
         plugin_root / ".cursor" / "rules" / "pala-memory.mdc",
     ]
+    # Historical notes and the current release notes are all portable
+    # documentation.  Discover them instead of freezing an old release list.
+    candidates.extend(sorted((plugin_root / "docs").glob("RELEASE_*.md")))
     for directory in ("hooks", "skills", "workbench"):
         candidates.extend(path for path in (plugin_root / directory).rglob("*") if path.is_file())
     demo_root = plugin_root / "examples" / "demo-software-project"
@@ -224,6 +224,7 @@ def build_archive(output: Path, plugin_root: Path = PLUGIN_ROOT) -> list[str]:
         ) as archive:
             for source, name in entries:
                 info = zipfile.ZipInfo(name, date_time=FIXED_TIMESTAMP)
+                info.create_system = 3
                 info.compress_type = zipfile.ZIP_DEFLATED
                 info.external_attr = 0o100644 << 16
                 archive.writestr(info, source.read_bytes(), compresslevel=9)

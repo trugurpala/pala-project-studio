@@ -323,8 +323,11 @@ class QualityPlanTests(unittest.TestCase):
         self.assertIn("authentication", plan["risk"]["reasons"])
         self.assertIn("migration", plan["risk"]["reasons"])
         self.assertIn("git", plan)
-        migration = next(item for item in plan["checks"] if item["kind"] == "migration")
-        self.assertEqual(migration["id"], "migration:workbench-adversarial")
+        migration = next(
+            item
+            for item in plan["checks"]
+            if item["id"] == "migration:workbench-adversarial"
+        )
         self.assertEqual(migration["status"], "not-run")
         self.assertIsNotNone(migration["argv"])
         security = next(item for item in plan["checks"] if item["id"] == "security:pala-code-audit")

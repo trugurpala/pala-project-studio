@@ -11,7 +11,13 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from pala_authority import shared_state_root, worktree_id
+from pala_authority import (
+    git_common_dir,
+    repository_instance,
+    runtime_repositories_root,
+    shared_state_root,
+    worktree_id,
+)
 from pala_models import VERIFICATION_STATUSES, SessionKey
 from pala_task_contract import Evidence, TaskContract, scope_violations
 
@@ -290,7 +296,17 @@ class WorkflowStore:
     def active_task_contract(self) -> dict[str, object] | None:
         """Return one canonical dirty task contract for generated read models."""
         candidates: list[dict[str, object]] = []
-        for directory in {self._ticket_path("__scan__").parent, self._legacy_ticket_path("__scan__").parent}:
+        legacy_directory = self._legacy_ticket_path("__scan__").parent
+        directories = {legacy_directory}
+        if git_common_dir(self.root) is not None:
+            runtime_directory = (
+                runtime_repositories_root()
+                / repository_instance(self.root)
+                / "tasks"
+            )
+            if runtime_directory.is_dir():
+                directories = {runtime_directory}
+        for directory in directories:
             if not directory.is_dir():
                 continue
             for path in sorted(directory.glob("*.json"), key=lambda item: item.name):

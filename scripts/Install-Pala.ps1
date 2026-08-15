@@ -20,11 +20,47 @@ if (-not $env:PYTHONUTF8) { $env:PYTHONUTF8 = "1" }
 $pluginRoot = Split-Path -Path $PSScriptRoot -Parent
 $core = Join-Path $PSScriptRoot "pala_installer.py"
 
+function Test-PalaPython([string]$Executable, [string[]]$PrefixArgs = @()) {
+    if ([string]::IsNullOrWhiteSpace($Executable)) { return $false }
+    if (-not (Test-Path -LiteralPath $Executable -PathType Leaf)) { return $false }
+    try {
+        $probeArgs = @($PrefixArgs)
+        $probeArgs += @(
+            "-c",
+            "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)"
+        )
+        & $Executable @probeArgs *> $null
+        return $LASTEXITCODE -eq 0
+    } catch {
+        return $false
+    }
+}
+
 function Resolve-PalaPython {
     $launcher = Get-Command py -ErrorAction SilentlyContinue
-    if ($launcher) { return @($launcher.Source, "-3") }
+    if ($launcher -and (Test-PalaPython $launcher.Source @("-3"))) {
+        return ,@($launcher.Source, "-3")
+    }
+
+    $candidates = @()
     $python = Get-Command python -ErrorAction SilentlyContinue
-    if ($python) { return @($python.Source) }
+    if ($python) { $candidates += $python.Source }
+    if ($env:LOCALAPPDATA) {
+        $localPrograms = Join-Path $env:LOCALAPPDATA "Programs\Python"
+        if (Test-Path -LiteralPath $localPrograms -PathType Container) {
+            $candidates += Get-ChildItem -LiteralPath $localPrograms -Directory -Filter "Python*" |
+                Sort-Object Name -Descending |
+                ForEach-Object { Join-Path $_.FullName "python.exe" }
+        }
+    }
+    $candidates += Join-Path (Get-Location).Path ".venv\Scripts\python.exe"
+    if ($env:USERPROFILE) {
+        $candidates += Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
+    }
+    foreach ($candidate in ($candidates | Select-Object -Unique)) {
+        if ($candidate -match '[\\/]WindowsApps[\\/]') { continue }
+        if (Test-PalaPython $candidate) { return ,@($candidate) }
+    }
     throw "Python bulunamadi. Pala icin Python 3.10 veya ustu gereklidir."
 }
 

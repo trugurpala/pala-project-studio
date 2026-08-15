@@ -9,6 +9,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parent
 ROOT = SCRIPTS.parent
@@ -32,6 +33,14 @@ def load_verify():
 
 
 class VerifyModeTests(unittest.TestCase):
+    def test_source_contract_tests_explicitly_disable_networked_workbench_bootstrap(self) -> None:
+        verify = load_verify()
+        with patch.object(verify.subprocess, "run") as run:
+            verify.run_contract_tests(ROOT)
+
+        environment = run.call_args.kwargs["env"]
+        self.assertEqual(environment["PALA_VERIFY_OFFLINE"], "1")
+
     def test_source_gate_keeps_bounded_headroom_for_real_windows_bootstrap(self) -> None:
         verify = load_verify()
         workflow = (ROOT / ".github" / "workflows" / "quality.yml").read_text(

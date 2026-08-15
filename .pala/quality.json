@@ -23,6 +23,766 @@
       ]
     },
     {
+      "id": "m76-project-snapshot",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_project_snapshot",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m76-project-profile",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_project_profile",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m76-project-profile-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_project_profile.py",
+        "scripts/test_pala_project_profile.py",
+        "scripts/pala_state_documents.py",
+        "--ignore",
+        "F403,F405"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m76-context-receipt",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_context_receipt",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m76-context-receipt-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_context_receipt.py",
+        "scripts/test_pala_context_receipt.py",
+        "scripts/pala_cold_packet_packet.py"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m76-context-adapter-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_cold_packet.py",
+        "scripts/pala_state_core.py",
+        "--ignore",
+        "F401,E501,SIM102,I001,B905"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m76-project-history",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_project_history",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m76-project-history-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_privacy.py",
+        "scripts/pala_project_history.py",
+        "scripts/test_pala_project_history.py",
+        "scripts/pala_db.py"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m76-history-adapters",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_db",
+        "scripts.test_pala_catalog",
+        "scripts.test_pala_memory",
+        "scripts.test_pala_runtime_authority",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m76-history-adapter-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_catalog.py",
+        "scripts/pala_report.py",
+        "scripts/pala_view_layout.py",
+        "scripts/pala_view_sections.py",
+        "scripts/pala_state_core.py",
+        "--select",
+        "E9,F63,F7,F82"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-continuity-integration",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_continuity",
+        "scripts.test_pala_continuity_integration",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-continuity-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_continuity.py",
+        "scripts/test_pala_continuity.py",
+        "scripts/test_pala_continuity_integration.py",
+        "scripts/pala_state_core.py",
+        "scripts/pala_state_documents.py",
+        "scripts/pala_state_cli.py",
+        "scripts/pala_cold_packet.py",
+        "scripts/pala_report.py",
+        "--ignore",
+        "E501,E402,F401,F403,F405,F841,I001,B905,SIM102,SIM108"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m77-host-broker",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_host_capability_broker",
+        "scripts.test_pala_product",
+        "scripts.test_pala_product_wiring",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m77-host-broker-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_host_capability_broker.py",
+        "scripts/pala_subagent_contract.py",
+        "scripts/pala_execution.py",
+        "scripts/pala_agent_provider.py",
+        "scripts/test_pala_host_capability_broker.py"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m77-process-supervisor",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_process_supervisor",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m77-process-supervisor-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_process_supervisor.py",
+        "scripts/test_pala_process_supervisor.py"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-quality-runner-supervision",
+      "kind": "integration",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_quality_runner_supervision",
+        "scripts.test_pala_quality.QualityRunnerTests",
+        "scripts.test_pala_m75_completion",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-quality-runner-supervision-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_process_supervisor.py",
+        "scripts/pala_quality_runner.py",
+        "scripts/test_pala_process_supervisor.py",
+        "scripts/test_pala_quality_runner_supervision.py"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m78-failure-intelligence",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_failure_intelligence",
+        "scripts.test_pala_cmd_memory",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m78-failure-intelligence-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_failure_intelligence.py",
+        "scripts/test_pala_failure_intelligence.py"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m78-control-center",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_control_center",
+        "scripts.test_pala_design",
+        "scripts.test_pala_tokens",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m78-control-center-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_owner_cockpit.py",
+        "scripts/pala_view_styles.py",
+        "scripts/pala_view_layout.py",
+        "scripts/test_pala_control_center.py",
+        "--ignore",
+        "E501,E731,I001"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-runtime-observations",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_runtime_observations",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-runtime-observations-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_runtime_observations.py",
+        "scripts/test_pala_runtime_observations.py"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-control-center-authority",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "scripts/test_pala_runtime_authority.py",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-control-center-authority-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_report.py",
+        "scripts/pala_owner_cockpit.py",
+        "scripts/pala_runtime_observations.py",
+        "scripts/pala_store.py",
+        "scripts/pala_state_core.py",
+        "scripts/pala_product.py",
+        "scripts/test_pala_control_center.py",
+        "scripts/test_pala_runtime_observations.py",
+        "scripts/test_pala_runtime_authority.py",
+        "--ignore",
+        "E501,E402,E731,F401,I001,B905,SIM102,SIM108"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-live-secret-scan",
+      "kind": "security",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_publication.PublicationGovernanceTests.test_live_repository_secret_scan_passes_without_test_tree_exemption",
+        "scripts.test_pala_publication.PublicationGovernanceTests.test_runtime_bearer_fixture_still_blocks_without_source_literal",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m79-release-candidate",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_release_candidate",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m79-upgrade-matrix",
+      "kind": "migration",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_upgrade_matrix",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m79-release-governance",
+      "kind": "security",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_governance",
+        "-v"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m79-release-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_release_candidate.py",
+        "scripts/test_pala_release_candidate.py",
+        "scripts/pala_upgrade_matrix.py",
+        "scripts/test_pala_upgrade_matrix.py",
+        "scripts/test_pala_governance.py"
+      ],
+      "tiers": [
+        "narrow",
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-release-identity",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_release_truth",
+        "scripts.test_pala_repo_cleanup",
+        "scripts.test_plugin_experience",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-release-candidate-self-verify",
+      "kind": "integration",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_release_candidate",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-upgrade-contract",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_upgrade_matrix",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-real-upgrade-matrix",
+      "kind": "migration",
+      "argv": [
+        "py",
+        "-3",
+        "scripts/pala_upgrade_matrix.py",
+        "--candidate",
+        ".",
+        "--cache",
+        ".pala/tmp/release-assets",
+        "--output",
+        "artifacts/quality/m80-t5-real-upgrade.json",
+        "--network-enabled"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-release-package-lint",
+      "kind": "lint",
+      "argv": [
+        "uv",
+        "run",
+        "--group",
+        "dev",
+        "ruff",
+        "check",
+        "scripts/pala_release_candidate.py",
+        "scripts/test_pala_release_candidate.py",
+        "scripts/pala_upgrade_matrix.py",
+        "scripts/test_pala_upgrade_matrix.py",
+        "scripts/test_pala_governance.py",
+        "scripts/build_portable.py"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-cross-os-metadata",
+      "kind": "unit",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_release_candidate.FinalAgencyReleaseCandidateTests.test_two_builds_are_byte_identical_and_inventory_covers_every_member",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
+      "id": "m80-windows-symlink-canary",
+      "kind": "integration",
+      "argv": [
+        "py",
+        "-3",
+        "-m",
+        "unittest",
+        "scripts.test_pala_release_candidate.FinalAgencyReleaseCandidateTests.test_portable_archive_rejects_a_symlink_canary",
+        "-v"
+      ],
+      "tiers": [
+        "ticket",
+        "milestone",
+        "release"
+      ]
+    },
+    {
       "id": "unittest",
       "kind": "unit",
       "argv": [
@@ -162,12 +922,14 @@
         "scripts/pala_product.py",
         "scripts/pala_product_e2e.py",
         "scripts/pala_product_planner.py",
+        "scripts/pala_project_snapshot.py",
         "scripts/pala_quality.py",
         "scripts/pala_quality_discovery.py",
         "scripts/pala_store.py",
         "scripts/pala_task_packet.py",
         "scripts/test_pala_hardening.py",
         "scripts/test_pala_product.py",
+        "scripts/test_pala_project_snapshot.py",
         "scripts/test_pala_quality.py",
         "scripts/test_pala_tools.py",
         "--ignore",

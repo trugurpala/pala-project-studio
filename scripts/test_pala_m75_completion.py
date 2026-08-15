@@ -13,14 +13,19 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
-from pala_product import load_project_contract, save_project_contract
-from pala_product_cli import complete_product, start_product
-from pala_quality import main as quality_main, quality_gate
-from pala_quality_runner import EXECUTION_AUTHORITY
-from pala_store import WorkflowStore
-
-
 SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from pala_host_capability_broker import observe_codex_host  # noqa: E402, I001
+from pala_product import load_project_contract, save_project_contract  # noqa: E402
+from pala_product_cli import complete_product, start_product  # noqa: E402
+from pala_quality import main as quality_main  # noqa: E402
+from pala_quality import quality_gate  # noqa: E402
+from pala_quality_runner import EXECUTION_AUTHORITY  # noqa: E402
+from pala_store import WorkflowStore  # noqa: E402
+
+
 ROOT = SCRIPT_DIR.parent
 FIXTURES = ROOT / "fixtures" / "product-flow"
 PROJECT_ID = "water-tracker"
@@ -65,6 +70,12 @@ class M75CompletionAuthorityTests(unittest.TestCase):
             _fixture("natro-capabilities.json"),
             _fixture("codex-candidate.json"),
             SESSION_KEY,
+            observe_codex_host(
+                available_tools=["apply_patch"],
+                evidence_ref="test/observed-host-tools",
+                max_concurrency=1,
+            ).to_dict(),
+            "a" * 64,
         )
         quality_contract = self.project / ".pala" / "quality.json"
         quality_contract.parent.mkdir(parents=True, exist_ok=True)

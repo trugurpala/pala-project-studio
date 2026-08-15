@@ -22,7 +22,12 @@ def closure_report(root: Path) -> dict[str, object]:
     truth = release_truth(root)
     return {
         "status": "passed",
-        "xss_escaped": "<script>" not in html and "&lt;script&gt;" in html,
+        # The control center may either escape ordinary hostile text or redact a
+        # value entirely when it also contains a private-data shape.  Both are
+        # safe; requiring the hostile value to remain visible would regress the
+        # newer privacy boundary.
+        "xss_escaped": "<script>" not in html
+        and ("&lt;script&gt;" in html or hostile not in html),
         "diagnostic_redaction": "token=secret" not in normalize_text(hostile) and "c:\\users" not in normalize_text(hostile),
         "design_advisory_only": recommendation.status == "advisory",
         "remote_publish": truth["remote_publish"],

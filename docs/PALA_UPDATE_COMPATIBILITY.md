@@ -6,17 +6,21 @@ fazla 24 saatte bir okuyup yalnız `current`, `update-available` veya
 `unknown` sonucu verir. Güncelleme, yeni resmi portable paketin `Update` moduyla
 çalıştırılmasıdır.
 
-## Desteklenen 0.8.2 yükseltme matrisi
+## 1.2.0 için yayınlanmış-byte yükseltme matrisi
 
-| Başlangıç | Hedef | Beklenen davranış |
+| Başlangıç | Kurulum türü | `1.2.0` hedef davranışı |
 | --- | --- | --- |
-| `0.8.0 -> 0.8.2` | Yönetilen eski kurulum | Yeni bundle atomik kurulur; Codex kaydı ve cache yenilenir. |
-| `0.8.1 -> 0.8.2` | Yönetilen mevcut release | Sürüm farkı görünür; yeni runtime/skill/hook dosyaları bütünüyle aktarılır. |
-| Doğrulanmış legacy Pala | Yönetim kaydı olmayan resmi eski kurulum | Manifest adı, resmi repository ve author doğrulanır; kaynak eski klasör değiştirilmeden yeni yönetilen kurulum etkinleştirilir. |
+| `0.4.4` | Yönetilen ve doğrulanmış legacy | İki yol da izole profilde atomik olarak güncellenir; legacy kaynak yerinde korunur. |
+| `0.8.0` | Yönetilen ve doğrulanmış legacy | İki yol da izole profilde atomik olarak güncellenir; legacy kaynak yerinde korunur. |
+| `0.8.1` | Yönetilen resmi release | Yeni bundle atomik kurulur; Codex kaydı ve cache yenilenir. |
+| `1.0.0` | Yönetilen resmi release | Sürüm farkı görünür; yeni runtime, skill ve hook dosyaları bütünüyle aktarılır. |
+| `1.1.2` | Yönetilen public baseline | No-op ikinci kurulum, Doctor sağlığı, SQLite ve Failure Intelligence sürekliliği korunur. |
 
-Bu satırlar release kanıtı ancak gerçek yayımlanmış paket matrisi çalıştırılıp
-`passed` kaydedildiğinde olur. Sözleşmenin bulunması tek başına yükseltme kanıtı
-değildir.
+Her satır yalnız SHA-256 pinli yayımlanmış ZIP byte'larıyla, ayrı geçici
+profilde çalıştırılan gerçek upgrade matrix sonucu `passed` olduğunda kanıttır.
+Matrix; ikinci kurulumun no-op olduğunu, Doctor sağlığını, Pala SQLite şema ve
+Failure Intelligence satırlarını doğrular. Ağ kullanan bu release kapısı yerel
+`verify.py` kapısından ayrıdır; sonuç yoksa durum `not-run` kalır.
 
 ## Koruma durumları
 

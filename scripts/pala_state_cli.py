@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 from pathlib import Path
@@ -49,6 +50,10 @@ def parser() -> argparse.ArgumentParser:
     register_parser.add_argument("--decisions")
     register_parser.add_argument("--open-source", dest="open_source")
     register_parser.add_argument("--demo")
+    register_parser.add_argument(
+        "--project-profile",
+        help="Repository-relative ProjectProfile v1 JSON source",
+    )
     begin_parser = subparsers.add_parser(
         "begin",
         help="Start a ticket; --goal zorunlu",
@@ -99,6 +104,20 @@ def parser() -> argparse.ArgumentParser:
                 "--quality-ticket",
                 help="Bu ticket icin quality ledger passed olmadan complete yapma",
             )
+    close_parser = subparsers.add_parser("close-project")
+    close_parser.add_argument("--cwd", default=".")
+    close_parser.add_argument("--ticket", required=True)
+    close_parser.add_argument("--summary", required=True)
+    close_parser.add_argument("--final-commit", required=True)
+    close_parser.add_argument("--release-ref")
+    close_parser.add_argument("--risk-code", action="append", default=[])
+    close_parser.add_argument("--lesson", action="append", default=[])
+    close_parser.add_argument("--authority-ref", required=True)
+    reopen_parser = subparsers.add_parser("reopen-project")
+    reopen_parser.add_argument("--cwd", default=".")
+    reopen_parser.add_argument("--ticket", required=True)
+    reopen_parser.add_argument("--closure-id", required=True)
+    reopen_parser.add_argument("--authority-ref", required=True)
     debug_gate_parser = subparsers.add_parser("debug-gate")
     debug_gate_parser.add_argument("--cwd", default=".")
     debug_gate_parser.add_argument(
@@ -297,6 +316,15 @@ def _checkpoint_command(args: argparse.Namespace, root: Path) -> int:
         result = WorkflowStore(root).checkpoint(
             args.ticket, args.session_key, args.next_action
         )
+        if result.status == "checkpointed":
+            task_contract = result.record.get("task_contract")
+            if isinstance(task_contract, dict):
+                with contextlib.suppress(
+                    OSError, ValueError, TypeError, json.JSONDecodeError
+                ):
+                    core.refresh_continuity(
+                        root, task_contract=task_contract, persist=True
+                    )
         if result.status == "checkpointed" and legacy_active:
             try:
                 core.checkpoint_work(
@@ -314,7 +342,7 @@ def _checkpoint_command(args: argparse.Namespace, root: Path) -> int:
         print(json.dumps({"status": result.status, "record": result.record}, ensure_ascii=False))
         return 0 if result.status == "checkpointed" else 2
     try:
-        manifest = core.load_manifest(root)
+        core.load_manifest(root)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -334,6 +362,58 @@ def _checkpoint_command(args: argparse.Namespace, root: Path) -> int:
         print(str(exc), file=sys.stderr)
         return 2
     print(str(root / core.WORKFLOW))
+    return 0
+
+
+def _project_lifecycle_command(args: argparse.Namespace, root: Path) -> int:
+    """Run an explicit project-history mutation without task completion authority."""
+    from pala_continuity import close_context, reopen_context
+    from pala_store import WorkflowStore
+
+    try:
+        record = WorkflowStore(root).ticket_record(args.ticket)
+        task_contract = (
+            record.get("task_contract") if isinstance(record, dict) else None
+        )
+        if not isinstance(task_contract, dict):
+            raise ValueError("canonical task record is required")
+        status = str(task_contract.get("status") or "")
+        if args.command == "close-project" and status != "DONE":
+            raise ValueError("project closure requires a canonical DONE task")
+        if args.command == "reopen-project" and status not in {
+            "CLAIMED",
+            "IN_PROGRESS",
+            "REOPENED",
+        }:
+            raise ValueError("project reopen requires an active canonical task")
+        context = core.build_registered_continuity_context(
+            root, task_contract=task_contract
+        )
+        if context is None:
+            raise ValueError("live registered continuity context is required")
+        db_path = core._continuity_db_path()
+        if args.command == "close-project":
+            result = close_context(
+                context,
+                summary=args.summary,
+                final_commit=args.final_commit,
+                release_ref=args.release_ref,
+                risk_codes=args.risk_code,
+                lessons=args.lesson,
+                authority_ref=args.authority_ref,
+                db_path=db_path,
+            )
+        else:
+            result = reopen_context(
+                context,
+                closure_id=args.closure_id,
+                authority_ref=args.authority_ref,
+                db_path=db_path,
+            )
+    except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    print(json.dumps({"status": "passed", "history": result}, ensure_ascii=False))
     return 0
 
 
@@ -379,6 +459,8 @@ def main() -> int:
         return _checkpoint_command(args, root)
     if args.command in {"record-verification", "recover", "complete"}:
         return _v3_command(args, root)
+    if args.command in {"close-project", "reopen-project"}:
+        return _project_lifecycle_command(args, root)
     if args.command == "doctor":
         payload = documents.doctor_report(root, session=args.session_key)
         print(json.dumps(payload, ensure_ascii=False, indent=2))

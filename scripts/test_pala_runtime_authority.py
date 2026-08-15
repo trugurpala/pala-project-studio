@@ -79,6 +79,66 @@ class RuntimeRootContractTests(unittest.TestCase):
             self.assertIsNotNone(authority_root)
             self.assertEqual(ticket_path.parent, authority_root / "tasks")
 
+    def test_external_runtime_active_task_supersedes_stale_legacy_dirty_copy(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pala-r6-active-read-") as value:
+            fixture = Path(value)
+            repository = fixture / "repository"
+            repository.mkdir()
+            subprocess.run(["git", "init", "-q"], cwd=repository, check=True)
+            local_app_data = fixture / "local-app-data"
+
+            with patch.dict(os.environ, {"LOCALAPPDATA": str(local_app_data)}):
+                authority_root = shared_state_root(repository)
+                runtime_task = authority_root / "tasks" / "current.json"
+                runtime_task.write_text(
+                    json.dumps(
+                        {
+                            "dirty": True,
+                            "task_contract": {"id": "M80-T4", "status": "IN_PROGRESS"},
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                projection = authority_root / "generated" / "pala-workflow.json"
+                projection.write_text(
+                    json.dumps(
+                        {
+                            "schema_version": 2,
+                            "active_ticket": None,
+                            "goal": "stale projection",
+                            "next_action": "stale next action",
+                            "dirty": False,
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                legacy_task = (
+                    repository
+                    / ".codex"
+                    / "plugin-data"
+                    / "pala"
+                    / "v3"
+                    / "tickets"
+                    / "stale.json"
+                )
+                legacy_task.parent.mkdir(parents=True)
+                legacy_task.write_text(
+                    json.dumps(
+                        {
+                            "dirty": True,
+                            "task_contract": {"id": "M44-T1", "status": "IN_PROGRESS"},
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+                active = WorkflowStore(repository).active_task_contract()
+                workflow = pala_state_core.load_workflow(repository)
+
+            self.assertEqual(active, {"id": "M80-T4", "status": "IN_PROGRESS"})
+            self.assertEqual(workflow["active_ticket"], "M80-T4")
+            self.assertTrue(workflow["dirty"])
+
     def test_runtime_root_materializes_declared_layout(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-r6-layout-") as value:
             fixture = Path(value)
@@ -219,29 +279,34 @@ class RuntimeRootContractTests(unittest.TestCase):
             self.assertTrue(projection.is_file())
             self.assertFalse((repository / ".codex" / "pala-workflow.json").exists())
 
-    def test_runtime_events_use_existing_database_engine_under_events_directory(self) -> None:
+    def test_runtime_events_use_single_machine_local_catalog_database(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pala-r6-events-") as value:
             fixture = Path(value)
             repository = fixture / "repository"
             repository.mkdir()
             subprocess.run(["git", "init", "-q"], cwd=repository, check=True)
             local_app_data = fixture / "local-app-data"
+            event_db = fixture / "catalog" / "pala.sqlite"
 
             with (
-                patch.dict(os.environ, {"LOCALAPPDATA": str(local_app_data)}),
+                patch.dict(
+                    os.environ,
+                    {
+                        "LOCALAPPDATA": str(local_app_data),
+                        "PALA_DB_PATH": str(event_db),
+                    },
+                ),
                 patch.object(pala_db, "add_event") as add_event,
             ):
-                authority_root = shared_state_root(repository)
                 pala_state_core._record_store_event(
                     repository,
                     "begin",
                     detail="R6-M0: runtime authority",
                 )
 
-            self.assertIsNotNone(authority_root)
             self.assertEqual(
                 add_event.call_args.kwargs["path"],
-                authority_root / "events" / "pala.sqlite",
+                event_db,
             )
 
     def test_cold_packet_updates_runtime_workflow_projection(self) -> None:

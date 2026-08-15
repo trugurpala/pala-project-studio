@@ -88,6 +88,10 @@ class FakeCodexPluginHost:
 
 
 @unittest.skipUnless(os.name == "nt", "M75 managed Workbench target is Windows x64")
+@unittest.skipIf(
+    os.environ.get("PALA_VERIFY_OFFLINE") == "1",
+    "networked Workbench bootstrap belongs to an explicit release/Doctor job",
+)
 class M75InstallContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

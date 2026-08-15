@@ -12,6 +12,7 @@ from pala_credentials import (
 )
 from pala_delivery import FakeDeliveryAdapter, create_cpanel_plan, run_delivery
 from pala_execution import ExecutionCoordinator
+from pala_host_capability_broker import observe_codex_host
 from pala_owner_cockpit import LiveVerification, render_owner_cockpit
 from pala_product import PROJECT_STATES, ProductSpec, ProjectLifecycle
 from pala_product_e2e import run_golden_scenarios
@@ -250,11 +251,24 @@ class AgentProviderTests(unittest.TestCase):
         self.assertEqual(result.provider, "fake")
 
     def test_codex_provider_wraps_host_execution_as_candidate_only(self) -> None:
-        provider = CodexProvider(lambda request: {"summary": request.task_id})
+        snapshot = observe_codex_host(
+            available_tools=["apply_patch"],
+            evidence_ref="test/codex-tools",
+            max_concurrency=1,
+        )
+        provider = CodexProvider(lambda request: {"summary": request.task_id}, snapshot)
         result = provider.execute(self.request())
 
         self.assertEqual(result.candidate["summary"], "T-1")
         self.assertFalse(result.canonical_done)
+
+    def test_codex_provider_does_not_infer_capabilities_from_its_name(self) -> None:
+        snapshot = observe_codex_host(
+            available_tools=[], evidence_ref="test/codex-tools", max_concurrency=1
+        )
+        provider = CodexProvider(lambda _request: {}, snapshot)
+        with self.assertRaises(ValueError):
+            provider.execute(self.request())
 
     def test_missing_provider_capability_fails_closed(self) -> None:
         with self.assertRaises(ValueError):

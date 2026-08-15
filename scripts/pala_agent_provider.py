@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from pala_host_capability_broker import HostCapabilitySnapshot
+
 
 @dataclass(frozen=True)
 class ProviderCapability:
@@ -81,11 +83,20 @@ class CodexProvider(AgentProvider):
 
     name = "codex"
 
-    def __init__(self, executor: Callable[[ExecutionRequest], dict[str, object]]) -> None:
+    def __init__(
+        self,
+        executor: Callable[[ExecutionRequest], dict[str, object]],
+        host_snapshot: HostCapabilitySnapshot,
+    ) -> None:
         self._executor = executor
+        self._host_snapshot = host_snapshot
 
     def capabilities(self) -> list[ProviderCapability]:
-        return [ProviderCapability("local_edit")]
+        return [
+            ProviderCapability(item.capability_id)
+            for item in self._host_snapshot.capabilities
+            if item.status == "passed"
+        ]
 
     def execute(self, request: ExecutionRequest) -> AgentResult:
         self._require(request)

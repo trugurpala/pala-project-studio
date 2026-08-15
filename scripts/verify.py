@@ -88,6 +88,11 @@ def run_code_audit(root: Path, *, profile: str) -> None:
 
 
 def run_contract_tests(root: Path) -> None:
+    # The source gate validates the repository only.  Workbench bootstrap tests
+    # intentionally fetch/probe third-party artifacts and must be run from an
+    # explicit network-enabled release/Doctor job instead.
+    environment = os.environ.copy()
+    environment["PALA_VERIFY_OFFLINE"] = "1"
     command = [
         sys.executable,
         "-m",
@@ -105,6 +110,7 @@ def run_contract_tests(root: Path) -> None:
         check=True,
         shell=False,
         timeout=CONTRACT_TEST_TIMEOUT_SECONDS,
+        env=environment,
     )
 
 

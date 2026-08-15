@@ -326,23 +326,82 @@ def build_status_model(
     memory = contract_context(root, documents, workflow)
     coherence = memory.get("ticket_coherence")
     coherence = coherence if isinstance(coherence, dict) else {}
+    canonical_task: dict[str, object] | None = None
+    try:
+        from pala_store import WorkflowStore
+
+        observed = WorkflowStore(root).active_task_contract()
+        canonical_task = observed if isinstance(observed, dict) else None
+    except (ImportError, OSError, RuntimeError, ValueError, TypeError):
+        canonical_task = None
+    if canonical_task is not None:
+        ticket_id = str(canonical_task.get("id") or "").strip()
+        if ticket_id:
+            workflow = {
+                **workflow,
+                "active_ticket": ticket_id,
+                "lifecycle": str(canonical_task.get("status") or "IN_PROGRESS"),
+                "next_action": str(canonical_task.get("next_action") or ""),
+                "verification_tier": "ticket",
+            }
+            coherence = {
+                **coherence,
+                "active": ticket_id,
+                "inferred_next": str(canonical_task.get("next_action") or ""),
+            }
     brain = memory.get("debugging_brain")
     brain = brain if isinstance(brain, dict) else {}
     git = memory.get("git")
     git = git if isinstance(git, dict) else {}
     read_order = memory.get("read_order")
     read_order = read_order if isinstance(read_order, list) else []
-    projects = pala_catalog.list_projects(catalog_dir=catalog_root)
+    try:
+        projects = pala_catalog.list_projects(
+            catalog_dir=catalog_root, read_only=True
+        )
+    except (OSError, RuntimeError, ValueError, TypeError):
+        projects = []
 
     db = pala_catalog.db_path(catalog_root)
+    project_id = pala_catalog._project_id(root)
+    continuity_bundle: dict[str, object] = {}
+    if pala_state is not None:
+        try:
+            continuity_bundle = pala_state.refresh_continuity(
+                root, persist=False, db_path=db
+            )
+        except (OSError, RuntimeError, ValueError, TypeError, json.JSONDecodeError):
+            continuity_bundle = {
+                "status": "blocked",
+                "finding": "CONTINUITY_READ_MODEL_UNAVAILABLE",
+                "can_complete": False,
+            }
     try:
-        events = pala_db.recent_events(limit=15, path=db)
-    except (OSError, ValueError, TypeError):
+        events = pala_db.recent_events(
+            limit=15,
+            path=db,
+            project_id=project_id,
+            read_only=True,
+        )
+    except (OSError, RuntimeError, ValueError, TypeError):
         events = []
     try:
-        provisions = pala_db.recent_provisions(limit=10, path=db)
-    except (OSError, ValueError, TypeError):
+        provisions = pala_db.recent_provisions(limit=10, path=db, read_only=True)
+    except (OSError, RuntimeError, ValueError, TypeError):
         provisions = []
+    try:
+        from pala_project_history import list_history
+
+        history_model = list_history(repository_id=project_id, path=db)
+    except (ImportError, OSError, RuntimeError, ValueError, TypeError):
+        history_model = {
+            "validation_status": "blocked",
+            "items": [],
+            "can_complete": False,
+        }
+    live_history = continuity_bundle.get("history")
+    if isinstance(live_history, dict):
+        history_model = live_history
 
     if update is None:
         update, update_checked_at = _resolve_update(cache_path)
@@ -369,7 +428,142 @@ def build_status_model(
         product = public_status(root)
         snapshot = product.get("owner_cockpit")
         if isinstance(snapshot, dict):
-            owner_cockpit = render_owner_cockpit(snapshot, fragment=True)
+            owner_snapshot = dict(snapshot)
+            if canonical_task is not None:
+                acceptance = canonical_task.get("acceptance")
+                acceptance = acceptance if isinstance(acceptance, list) else []
+                owner_snapshot.update(
+                    {
+                        "project": root.name,
+                        "state": str(canonical_task.get("status") or "IN_PROGRESS"),
+                        "acceptance_verified": sum(
+                            1
+                            for item in acceptance
+                            if isinstance(item, dict) and item.get("status") == "passed"
+                        ),
+                        "acceptance_total": max(1, len(acceptance)),
+                        "quality": quality.get("status") or "not-run",
+                        "delivery": delivery.get("status") or "not-run",
+                        "next_action": str(
+                            canonical_task.get("next_action") or next_action
+                        ),
+                    }
+                )
+            active_ticket = coherence.get("active")
+            owner_snapshot["queue"] = {
+                "items": [
+                    {
+                        "ticket": active_ticket,
+                        "status": (
+                            canonical_task.get("status")
+                            if canonical_task is not None
+                            else workflow.get("lifecycle")
+                        )
+                        or "not-run",
+                    }
+                ]
+                if active_ticket
+                else [],
+                "can_complete": False,
+            }
+            receipt = continuity_bundle.get("receipt")
+            if not isinstance(receipt, dict):
+                receipt = workflow.get("context_receipt")
+            owner_snapshot["context_receipts"] = {
+                "items": [receipt] if isinstance(receipt, dict) else [],
+                "can_complete": False,
+            }
+            owner_snapshot["project_history"] = history_model
+            continuity_read_model = continuity_bundle.get("continuity")
+            owner_snapshot["project_continuity"] = (
+                continuity_read_model
+                if isinstance(continuity_read_model, dict)
+                else {
+                    "validation_status": "not-run",
+                    "can_complete": False,
+                }
+            )
+            try:
+                from pala_failure_intelligence import list_failures
+
+                owner_snapshot["failure_intelligence"] = list_failures(
+                    project_ref=project_id, limit=8, path=db
+                )
+            except (ImportError, OSError, RuntimeError, ValueError, TypeError):
+                owner_snapshot["failure_intelligence"] = {
+                    "status": "blocked",
+                    "items": [],
+                    "findings": ["FAILURE_INTELLIGENCE_UNAVAILABLE"],
+                    "can_complete": False,
+                }
+            profile = continuity_bundle.get("profile")
+            owner_snapshot["profiles"] = {
+                "items": [profile] if isinstance(profile, dict) else [],
+                "findings": (
+                    []
+                    if isinstance(profile, dict)
+                    else ["PROFILE_SUMMARY_NOT_AVAILABLE"]
+                ),
+                "can_complete": False,
+            }
+            try:
+                from pala_runtime_observations import read_runtime_observations
+
+                runtime = read_runtime_observations(root)
+                host = runtime.get("host")
+                processes = runtime.get("processes")
+                owner_snapshot["host_capabilities"] = (
+                    host
+                    if isinstance(host, dict)
+                    else {
+                        "items": [],
+                        "findings": ["HOST_OBSERVATION_UNAVAILABLE"],
+                        "can_complete": False,
+                    }
+                )
+                owner_snapshot["host_processes"] = (
+                    processes
+                    if isinstance(processes, dict)
+                    else {
+                        "items": [],
+                        "findings": ["PROCESS_OBSERVATION_UNAVAILABLE"],
+                        "can_complete": False,
+                    }
+                )
+            except (ImportError, OSError, RuntimeError, ValueError, TypeError):
+                owner_snapshot["host_capabilities"] = {
+                    "items": [],
+                    "findings": ["HOST_OBSERVATION_UNAVAILABLE"],
+                    "can_complete": False,
+                }
+                owner_snapshot["host_processes"] = {
+                    "items": [],
+                    "findings": ["PROCESS_OBSERVATION_UNAVAILABLE"],
+                    "can_complete": False,
+                }
+            owner_snapshot["security_release"] = {
+                "items": [
+                    {
+                        "quality_status": quality.get("status") or "not-run",
+                        "quality_ticket": quality.get("ticket") or "not-run",
+                        "required_checks": (
+                            f"{quality.get('coverage', {}).get('passed', 0)}/"
+                            f"{quality.get('coverage', {}).get('required', 0)}"
+                            if isinstance(quality.get("coverage"), dict)
+                            else "0/0"
+                        ),
+                        "delivery_status": delivery.get("status") or "not-run",
+                        "verification_tier": delivery.get("tier") or "not-run",
+                    }
+                ],
+                "findings": (
+                    [str(quality.get("last_problem") or "")[:120]]
+                    if quality.get("status") == "blocked" and quality.get("last_problem")
+                    else []
+                ),
+                "can_complete": False,
+            }
+            owner_cockpit = render_owner_cockpit(owner_snapshot, fragment=True)
     except (ImportError, OSError, ValueError, json.JSONDecodeError):
         owner_cockpit = ""
 
@@ -384,6 +578,8 @@ def build_status_model(
         "progress": _read_order_progress(read_order),
         "projects": projects,
         "events": events,
+        "project_history": history_model,
+        "continuity": continuity_bundle,
         "provisions": provisions,
         "next_action": next_action,
         "last_gate": last_gate_signal(workflow, events),
@@ -442,12 +638,15 @@ def write_report(
     update_checked_at: str | None = None,
     catalog_root: Path | None = None,
 ) -> Path:
-    authority_root = shared_state_root(root)
-    target = out or (
-        authority_root / "generated" / "pala-status.html"
-        if authority_root is not None
-        else root / REPORT_REL
-    )
+    if out is not None:
+        target = out
+    else:
+        authority_root = shared_state_root(root)
+        target = (
+            authority_root / "generated" / "pala-status.html"
+            if authority_root is not None
+            else root / REPORT_REL
+        )
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
         render_html(

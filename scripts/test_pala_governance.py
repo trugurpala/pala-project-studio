@@ -9,7 +9,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pala_governance
 
-
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -18,6 +17,14 @@ class GovernanceTests(unittest.TestCase):
         result = pala_governance.validate(ROOT)
         self.assertEqual(result["status"], "passed")
         self.assertEqual(result["global_installation"], "not-performed")
+        inventory = json.loads(
+            (ROOT / "artifacts" / "governance" / "third-party-inventory.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        names = {item["name"] for item in inventory["entries"]}
+        self.assertGreaterEqual(len(names), 5)
+        self.assertTrue({"playwright", "semgrep", "codegraph"} <= names)
 
     def test_imported_donor_files_require_hashes(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -34,9 +41,17 @@ class GovernanceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "locales").mkdir()
-            (root / "locales" / "en.json").write_text(json.dumps({"locale": "en", "canonical": True, "messages": {"x": "X"}}), encoding="utf-8")
-            (root / "locales" / "tr-ascii.json").write_text(json.dumps({"locale": "tr-ascii", "canonical": False, "messages": {"x": "ö"}}), encoding="utf-8")
-            self.assertIn("tr-ascii message is not ASCII-safe: x", pala_governance.validate_locales(root))
+            (root / "locales" / "en.json").write_text(
+                json.dumps({"locale": "en", "canonical": True, "messages": {"x": "X"}}),
+                encoding="utf-8",
+            )
+            (root / "locales" / "tr-ascii.json").write_text(
+                json.dumps({"locale": "tr-ascii", "canonical": False, "messages": {"x": "ö"}}),
+                encoding="utf-8",
+            )
+            self.assertIn(
+                "tr-ascii message is not ASCII-safe: x", pala_governance.validate_locales(root)
+            )
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - codex/**
   workflow_dispatch:
 
 permissions:
@@ -15,6 +16,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  browser-e2e:
+    name: Real generated Control Center browser journey
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install locked browser runtime
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run real generated page journey
+        env:
+          PYTHONIOENCODING: utf-8
+        run: npm run test:e2e
+
   verify:
     name: Local verification contract
     runs-on: ${{ matrix.os }}
@@ -35,7 +65,95 @@ jobs:
       - name: Verify plugin
         env:
           PYTHONIOENCODING: utf-8
+          PALA_VERIFY_OFFLINE: "1"
         run: python scripts/verify.py
+
+  real-upgrade-matrix:
+    name: Real SHA-pinned upgrade and rollback matrix (network-enabled)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Download public releases and run isolated upgrade matrix
+        env:
+          PYTHONIOENCODING: utf-8
+          PALA_UPGRADE_MATRIX_NETWORK: "enabled"
+        run: >-
+          python scripts/pala_upgrade_matrix.py
+          --candidate "${{ github.workspace }}"
+          --cache "${{ runner.temp }}/pala-upgrade-assets"
+          --output "${{ runner.temp }}/pala-upgrade-matrix.json"
+          --network-enabled
+
+      - name: Upload upgrade matrix evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: real-upgrade-matrix
+          path: ${{ runner.temp }}/pala-upgrade-matrix.json
+          if-no-files-found: error
+
+  deterministic-build:
+    name: Deterministic artifact (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Build M79 release candidate and hash
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $out = Join-Path $env:RUNNER_TEMP "m79"
+          New-Item -ItemType Directory -Path $out | Out-Null
+          python scripts/pala_release_candidate.py --output $out
+          if ($LASTEXITCODE -ne 0) { throw "release candidate build failed" }
+          $zip = Join-Path $out "pala-project-studio-1.2.0.zip"
+          $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash
+          $hashFile = Join-Path $out "hash-${{ matrix.os }}.txt"
+          Set-Content -LiteralPath $hashFile -Value $hash -Encoding ascii
+
+      - name: Upload platform hash
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: hash-${{ matrix.os }}
+          path: ${{ runner.temp }}/m79/hash-${{ matrix.os }}.txt
+          if-no-files-found: error
+
+  compare-build-hashes:
+    name: Compare Windows and Linux artifact hashes
+    needs: deterministic-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download platform hashes
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: hash-*
+          path: ${{ runner.temp }}/hashes
+          merge-multiple: true
+
+      - name: Require exact cross-OS digest equality
+        env:
+          HASH_ROOT: ${{ runner.temp }}/hashes
+        run: python -c "from pathlib import Path; import os; files=sorted(Path(os.environ['HASH_ROOT']).glob('hash-*.txt')); values={p.read_text(encoding='ascii').strip() for p in files}; assert len(files)==2 and len(values)==1, (files, values); print(next(iter(values)))"
 
   artifact-install-smoke:
     name: Install artifact runtime smoke
@@ -70,3 +188,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "runtime self-audit failed" }
           $env:PALA_SMOKE_ROOT = $root
           python -c "from pathlib import Path; import importlib.util, os; root=Path(os.environ['PALA_SMOKE_ROOT']); spec=importlib.util.spec_from_file_location('pala_installer', root/'scripts'/'pala_installer.py'); mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); before=mod.tree_fingerprint(root); cache=root/'scripts'/'__pycache__'; cache.mkdir(exist_ok=True); (cache/'smoke.pyc').write_bytes(b'x'); after=mod.tree_fingerprint(root); assert before==after, (before, after); print('fingerprint_stable_after_pycache')"
+
+      - name: Run isolated real install, no-op, SQLite, and rollback canary
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python -m unittest scripts.test_pala_release_candidate.FinalAgencyReleaseCandidateTests.test_isolated_install_noop_and_fault_rollback_preserve_sqlite -v
+
+      - name: Capability-aware Windows symlink preservation canary
+        env:
+          PYTHONIOENCODING: utf-8
+          PALA_REQUIRE_SYMLINK_CANARY: "1"
+        run: >-
+          python -m unittest
+          scripts.test_pala_installer.InstallerCoreTests.test_uninstall_refuses_user_added_symlink
+          scripts.test_pala_release_candidate.FinalAgencyReleaseCandidateTests.test_portable_archive_rejects_a_symlink_canary
+          -v

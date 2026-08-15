@@ -4,7 +4,7 @@ Evidence labels only: `passed` | `not-run` | `blocked` | `configured-not-verifie
 
 | Row | Surface | Evidence |
 | --- | --- | --- |
-| Manifest `.codex-plugin/plugin.json` | Source `1.1.2` | `configured-not-verified` (M75 candidate; public remains `v1.1.1`) |
+| Manifest `.codex-plugin/plugin.json` | Local candidate `1.2.0` | `configured-not-verified`; public baseline remains `v1.1.2` |
 | Marketplace `.agents/plugins/marketplace.json` | Local `./` single plugin | `passed` |
 | Hooks convention `hooks/hooks.json` | SessionStart + statusMessage | `passed` |
 | Skill body size | Thin skill; detail in `references/kontrol-et.md` | contract tests |
@@ -12,7 +12,7 @@ Evidence labels only: `passed` | `not-run` | `blocked` | `configured-not-verifie
 | `/hooks` UI trust | Human Codex Work click | `configured-not-verified` |
 | Installed vs source verify | `docs/INSTALL_ARTIFACT_CONTRACT.md` | `passed` (runtime profile + `--mode installed`) |
 | Integrity fingerprint | Allowlisted `tree_fingerprint` | `passed` (issue #13) |
-| Artifact E2E CI smoke | `quality.yml` job | `configured-not-verified` until Actions runs on push |
+| Artifact E2E CI smoke | `quality.yml` job | `configured-not-verified` until branch CI runs on the candidate commit |
 | Cold-start ms JSON | `pala_cold_start.py` | `passed` (ms only; no %) |
 | OpenSSF Scorecard | Haftalık/manual gözlem workflow'u; PR/release kapısı değil | `not-run` until push |
 

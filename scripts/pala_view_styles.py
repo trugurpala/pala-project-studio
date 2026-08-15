@@ -100,7 +100,7 @@ def _shell_rules(checked_label_css: str, focus_label_css: str, show_css: str) ->
   }}
   .panel {{ display: none; }}
   {show_css}
-"""
+""".replace("{{", "{").replace("}}", "}")
 
 
 def _component_rules() -> str:
@@ -187,7 +187,7 @@ def _component_rules() -> str:
     display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 12px; margin: 12px 0;
   }}
-"""
+""".replace("{{", "{").replace("}}", "}")
 
 
 def _responsive_rules() -> str:
@@ -258,21 +258,21 @@ def _responsive_rules() -> str:
   footer {{ color: var(--muted); font-size: 12px; margin-top: 24px; }}
   .catalog-wrap {{ overflow-x: auto; -webkit-overflow-scrolling: touch; }}
   @media (max-width: 720px) {{
-    .shell {{ grid-template-columns: 1fr; }}
+    .shell {{ grid-template-columns: minmax(0, 1fr); width: 100%; min-width: 0; }}
     .sidebar {{
       border-right: none; border-bottom: 1px solid var(--line);
       flex-direction: row; flex-wrap: wrap; gap: 8px;
-      max-height: 46vh; overflow-y: auto;
+      max-height: 46vh; overflow-y: auto; min-width: 0; width: 100%;
     }}
     .brand-block, .sidebar .nav-title {{ width: 100%; }}
     .nav-item {{ flex: 1 1 42%; min-width: 8rem; }}
-    .main {{ padding: 16px; }}
+    .main {{ padding: 16px; min-width: 0; width: 100%; }}
     .nowline {{ font-size: 1rem; }}
     .decision-strip {{ grid-template-columns: 1fr 1fr; }}
     .decision-strip .signal:first-child {{ grid-column: 1 / -1; }}
     .timeline li {{ grid-template-columns: 1fr; }}
     table {{ font-size: 12px; }}
-  }}"""
+  }}""".replace("{{", "{").replace("}}", "}")
 
 
 def render_css(checked_label_css: str, focus_label_css: str, show_css: str) -> str:

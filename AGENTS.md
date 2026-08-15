@@ -2,7 +2,7 @@
 
 ## Amaç
 
-- PALA `1.1.2-local-rc` Provider-Independent Local Software Delivery OS'u
+- PALA `1.2.0` aday Provider-Independent Local Software Delivery OS'u
   güvenli, yerel ve kanıta bağlı olarak tamamla.
 - Yeni üründe niyeti kalıcı ProductSpec ve canonical task akışına; mevcut
   projede canonical context/task akışına bağla.

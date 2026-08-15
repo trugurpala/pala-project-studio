@@ -10,7 +10,6 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
-
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "pala_upgrade_matrix.py"
 
@@ -27,7 +26,10 @@ def load_module():
 class UpgradeMatrixContracts(unittest.TestCase):
     def test_real_release_specs_are_sha_pinned(self) -> None:
         module = load_module()
-        self.assertEqual(set(module.RELEASES), {"0.4.4", "0.8.0", "0.8.1", "1.0.0"})
+        self.assertEqual(
+            set(module.RELEASES),
+            {"0.4.4", "0.8.0", "0.8.1", "1.0.0", "1.1.2"},
+        )
         for version, item in module.RELEASES.items():
             self.assertIn(f"/v{version}/", item["url"])
             self.assertRegex(item["sha256"], r"^[0-9A-F]{64}$")
@@ -84,14 +86,42 @@ class UpgradeMatrixContracts(unittest.TestCase):
             )
 
         self.assertEqual(result["status"], "passed")
-        self.assertEqual(result["state_preservation"], {
-            "canonical_user_state": True,
-            "project_catalog": True,
-            "failure_intelligence": True,
-        })
+        self.assertEqual(
+            result["state_preservation"],
+            {
+                "canonical_user_state": True,
+                "project_catalog": True,
+                "pala_sqlite": True,
+                "failure_intelligence": True,
+            },
+        )
+        self.assertEqual(result["sqlite_schema_version"], 2)
+        self.assertEqual(result["failure_rows"], 1)
         self.assertEqual(result["second_ensure_current_status"], "ready")
         self.assertFalse(result["second_ensure_current_changed"])
         self.assertTrue(result["doctor_healthy"])
+
+    def test_upgrade_case_fault_rolls_back_bundle_and_preserves_sqlite(self) -> None:
+        """A state-write failure after activation must leave the old release intact."""
+        module = load_module()
+        from scripts.test_pala_installer import load_installer, make_bundle
+
+        with tempfile.TemporaryDirectory(prefix="pala-upgrade-rollback-contract-") as temp:
+            root = Path(temp)
+            old_root = make_bundle(root / "old", "0.4.4+codex.published")
+            candidate = make_bundle(root / "candidate", "1.2.0")
+            result = module.run_fault_rollback_case(
+                load_installer(),
+                candidate,
+                old_root,
+                root / "case",
+            )
+
+        self.assertEqual(result["status"], "passed")
+        self.assertTrue(result["rollback_restored"])
+        self.assertTrue(result["sqlite_preserved"])
+        self.assertTrue(result["failure_intelligence_preserved"])
+        self.assertEqual(result["fault"], "state-write")
 
     def test_matrix_runs_published_044_as_managed_and_legacy(self) -> None:
         module = load_module()
@@ -100,6 +130,10 @@ class UpgradeMatrixContracts(unittest.TestCase):
             @staticmethod
             def bundle_fingerprint(_candidate: Path) -> str:
                 return "A" * 64
+
+            @staticmethod
+            def copy_bundle(_source: Path, destination: Path) -> None:
+                destination.mkdir(parents=True)
 
         with tempfile.TemporaryDirectory(prefix="pala-upgrade-matrix-") as temp:
             root = Path(temp)
@@ -118,13 +152,38 @@ class UpgradeMatrixContracts(unittest.TestCase):
                 patch.object(module, "safe_extract", return_value=root / "published"),
                 patch.object(module, "sha256", return_value="B" * 64),
                 patch.object(module, "run_case", side_effect=run_case),
+                patch.object(
+                    module,
+                    "run_fault_rollback_case",
+                    return_value={"status": "passed", "rollback_restored": True},
+                ),
             ):
-                result = module.run_matrix(root, root / "cache")
+                result = module.run_matrix(root, root / "cache", network_enabled=True)
 
         self.assertEqual(result["status"], "passed")
         self.assertIn(("1.0.0", False), calls)
         self.assertIn(("1.0.0", True), calls)
         self.assertEqual(sum(1 for row in result["rows"] if row["source_release"] == "0.4.4"), 2)
+        self.assertEqual(
+            sum(1 for row in result["rows"] if row.get("mode") == "fault-rollback"),
+            len(module.RELEASES),
+        )
+
+    def test_matrix_refuses_network_downloads_without_explicit_authorization(self) -> None:
+        module = load_module()
+        with tempfile.TemporaryDirectory(prefix="pala-upgrade-network-contract-") as temp:
+            root = Path(temp)
+            with self.assertRaisesRegex(ValueError, "--network-enabled"):
+                module.run_matrix(root, root / "cache")
+
+    def test_release_ci_keeps_offline_verify_and_enables_real_matrix_only_explicitly(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "quality.yml").read_text(encoding="utf-8")
+        self.assertIn("PALA_VERIFY_OFFLINE: \"1\"", workflow)
+        self.assertIn("Real SHA-pinned upgrade and rollback matrix", workflow)
+        self.assertIn("--network-enabled", workflow)
+        self.assertIn("- codex/**", workflow)
+        self.assertIn("pala-project-studio-1.2.0.zip", workflow)
+        self.assertNotIn("pala-project-studio-1.1.2-local-rc.zip", workflow)
 
 
 if __name__ == "__main__":

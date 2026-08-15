@@ -328,6 +328,19 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(result["projects"], 0)
             self.assertEqual(result["provisions"], 0)
+            broken.write_text(
+                json.dumps(
+                    {"schema_version": 1, "projects": [project_entry("repaired")]}
+                ),
+                encoding="utf-8",
+            )
+            retried = pala_db.migrate_from_json(
+                catalog_path=broken,
+                registry_path=root / "missing.json",
+                path=root / "pala.sqlite",
+            )
+            self.assertEqual(retried["projects"], 1)
+            self.assertEqual(pala_db.list_projects(root / "pala.sqlite")[0]["id"], "repaired")
 
     def test_registry_migrates_after_catalog_marker(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

@@ -4,14 +4,16 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from dataclasses import asdict
 from pathlib import Path
 
 from pala_agent_provider import CodexProvider, ExecutionRequest
+from pala_authority import repository_instance, worktree_id
 from pala_capabilities import ArchitectureDecision, CapabilityProfile, choose_architecture
-from pala_execution import ExecutionCoordinator
+from pala_host_capability_broker import HostCapabilityBroker, HostCapabilitySnapshot
 from pala_product import (
     PROJECT_CONTRACT_SCHEMA,
     ProjectLifecycle,
@@ -22,7 +24,9 @@ from pala_product import (
 from pala_product_planner import ProductPlan, validate_plan
 from pala_quality import quality_gate, read_ledger
 from pala_quality_runner import EXECUTION_AUTHORITY, run_approved_check
+from pala_runtime_observations import record_host_observation
 from pala_store import WorkflowStore
+from pala_subagent_contract import SubagentTaskContract
 from pala_task_packet import compile_task_packet
 
 
@@ -162,6 +166,8 @@ def start_product(
     capability_payload: dict[str, object],
     provider_candidate: dict[str, object],
     session_key: str,
+    host_snapshot_payload: dict[str, object],
+    context_receipt_id: str,
 ) -> dict[str, object]:
     if not intent.strip():
         raise ValueError("natural-language intent is required")
@@ -215,12 +221,49 @@ def start_product(
         packet=asdict(packet),
         requested_capabilities=["local_edit"],
     )
-    provider = CodexProvider(lambda _request: dict(provider_candidate))
+    host_snapshot = HostCapabilitySnapshot.from_dict(host_snapshot_payload)
+    record_host_observation(root, host_snapshot.to_dict())
+    broker = HostCapabilityBroker(host_snapshot)
+    broker.route(["local_edit"])
+    provider = CodexProvider(lambda _request: dict(provider_candidate), host_snapshot)
     result = provider.execute(request)
-    lease_holder = str(configured.record.get("owner") or "")
-    coordinator = ExecutionCoordinator()
-    coordinator.claim(task_id, lease_holder, [str(item) for item in write_surface])
-    candidate = coordinator.submit_candidate(task_id, lease_holder, result.candidate)
+    task_contract_digest = hashlib.sha256(
+        json.dumps(
+            task_contract, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+        ).encode("utf-8")
+    ).hexdigest()
+    delegation = SubagentTaskContract.create(
+        task_id=task_id,
+        parent_task_id=task_id,
+        task_contract_digest=task_contract_digest,
+        context_receipt_id=context_receipt_id,
+        repository_id=repository_instance(root),
+        worktree_id=worktree_id(root),
+        requested_capabilities=["local_edit"],
+        read_scope=[str(item) for item in write_surface],
+        write_scope=[str(item) for item in write_surface],
+        deny_scope=[".git", ".pala"],
+        acceptance_ids=[str(item["id"]) for item in acceptance],
+        verification_check_ids=["quality:pending"],
+        execution_mode="writer",
+        integration_mode="candidate-only",
+    )
+    broker.reserve(
+        delegation,
+        capability="local_edit",
+        live_repository_id=repository_instance(root),
+        live_worktree_id=worktree_id(root),
+        expected_context_receipt_id=context_receipt_id,
+        parent_write_scope=[str(item) for item in write_surface],
+    )
+    changed_paths = result.candidate.get("changed_files")
+    if not isinstance(changed_paths, list) or not all(
+        isinstance(item, str) for item in changed_paths
+    ):
+        raise ValueError("provider candidate changed_files are required")
+    candidate = broker.submit_candidate(
+        delegation, result.candidate, changed_paths=changed_paths
+    )
 
     lifecycle = ProjectLifecycle(plan.product_spec.project_status)
     lifecycle.transition("PLANNED")
@@ -246,6 +289,9 @@ def start_product(
             "provider": result.provider,
             "status": candidate["status"],
             "request_id": result.request_id,
+            "delegation_id": delegation.delegation_id,
+            "host_snapshot_id": host_snapshot.snapshot_id,
+            "can_complete": False,
         },
         "quality": {"status": "not-run", "check_id": None},
         "environment_status": "configured-not-verified",
@@ -260,7 +306,7 @@ def start_product(
     }
     path = save_project_contract(root, record)
     return {
-        "status": "awaiting_quality",
+        "status": "awaiting_primary_review",
         "project_id": plan.product_spec.project_id,
         "task_id": task_id,
         "provider": result.provider,
@@ -596,6 +642,8 @@ def parser() -> argparse.ArgumentParser:
     start.add_argument("--plan", required=True, type=Path)
     start.add_argument("--capabilities", required=True, type=Path)
     start.add_argument("--provider-candidate", required=True, type=Path)
+    start.add_argument("--host-snapshot", required=True, type=Path)
+    start.add_argument("--context-receipt-id", required=True)
     start.add_argument("--session-key", required=True)
     status = subparsers.add_parser("status")
     status.add_argument("--cwd", default=".")
@@ -633,6 +681,8 @@ def main(argv: list[str] | None = None) -> int:
                 _read_object(args.capabilities),
                 _read_object(args.provider_candidate),
                 args.session_key,
+                _read_object(args.host_snapshot),
+                args.context_receipt_id,
             )
         elif args.command == "complete":
             if args.quality_command is not None or args.quality_exit_code is not None:
