@@ -51,10 +51,18 @@ current canonical completion evidence; M80 is the ordered release-ready path.
 - **Bağımlılık:** M80-T4
 - **Kanıt:** source/installed/package 7/8 `passed`; commit `f54883f`; Windows branch symlink canary `configured-not-verified`
 
+#### M81-T1 — Branch CI portability remediation
+- **Sahip ajan:** Codex/Pala
+- **Amaç:** Repair only the symlink, browser-cache and POSIX orphan regressions found by branch CI run 31882450222.
+- **Dosyalar:** portable builder, process supervisor, Quality workflow, focused contracts and `DEBUGGING.md`
+- **Bitti sayılır:** focused Windows/Linux contracts, full local verifier and replacement branch CI all exit 0.
+- **Bağımlılık:** M80-T4; returns evidence to M80-T5
+- **Kanıt:** focused Windows/Linux/browser contracts and full local verifier `passed`; replacement branch CI `not-run`
+
 #### M80-T6 — Release-quality handoff
 - **Sahip ajan:** Codex/Pala
 - **Amaç:** Run required local Quality and prepare branch-CI evidence without publishing.
 - **Dosyalar:** Quality mapping, ReleaseTruth, CI and release handoff
 - **Bitti sayılır:** every current required Quality check exits 0 and the authorized branch CI is bound to the final commit.
-- **Bağımlılık:** M80-T5
+- **Bağımlılık:** M80-T5 and M81-T1
 - **Kanıt:** `not-run`

@@ -19,10 +19,14 @@
 - M80-T5 local package/upgrade Quality: 7/8 `passed`; current source verifier
   is `passed` (763 tests, 5 expected skips); Windows branch symlink canary is
   `configured-not-verified`.
+- Initial branch CI run 31882450222 passed cross-OS artifact/hash and the real
+  upgrade matrix, then exposed three portability regressions (`blocked`).
+- M81-T1 fixed symlink archive validation, Playwright cache alignment and POSIX
+  orphan detection; focused cross-platform tests and full source verifier `passed`.
 - M80-T6 final local Quality/branch-CI handoff: `not-run`.
 
 Branch/commit/push and branch-CI monitoring are authorized. PR, tag, public
 release and deploy remain unauthorized and `not-run`.
-Release-candidate runtime is committed as `f54883f`; canonical handoff commit
-and push are the next actions.
+Release-ready commits `f54883f` and `783b315` are on origin; remediation commit,
+replacement push and branch CI monitoring are the next actions.
 Labels: `passed` | `not-run` | `blocked` | `configured-not-verified`.

@@ -191,12 +191,19 @@ def validate_internal_markdown_links(plugin_root: Path) -> list[str]:
 
 def archive_entries(plugin_root: Path) -> list[tuple[Path, str]]:
     """Map allowlisted sources to safe, collision-free archive names."""
+    files = source_files(plugin_root)
+    # ``source_files`` normally owns this validation.  Keep it at the archive
+    # boundary as well: callers and tests can supply an alternate source list,
+    # and a link must never be dereferenced into a portable artifact.
+    for path in files:
+        if path.is_symlink():
+            raise ValueError(f"symbolic links are not portable: {path}")
     entries = [
         (
             path,
             validate_archive_name(f"{ARCHIVE_ROOT}/{path.relative_to(plugin_root).as_posix()}"),
         )
-        for path in source_files(plugin_root)
+        for path in files
     ]
     ensure_unique_names(name for _, name in entries)
     return sorted(entries, key=lambda item: item[1].casefold())

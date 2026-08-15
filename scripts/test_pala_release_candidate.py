@@ -139,6 +139,11 @@ class FinalAgencyReleaseCandidateTests(unittest.TestCase):
 
     def test_ci_runs_browser_and_real_installer_canaries(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "quality.yml").read_text(encoding="utf-8")
+        browser_job = workflow.split("  browser-e2e:", 1)[1].split("  verify:", 1)[0]
+        self.assertRegex(
+            browser_job,
+            r"(?m)^    env:\r?\n(?:      .*\r?\n)*?      PLAYWRIGHT_BROWSERS_PATH: \"0\"$",
+        )
         for marker in (
             "actions/setup-node@",
             "npm ci",

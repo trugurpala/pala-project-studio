@@ -497,7 +497,22 @@ class ProcessSupervisor:
                 os.killpg(owned.handle.pid, signal.SIGTERM)  # type: ignore[attr-defined]
 
     def _job_active_processes(self, owned: _OwnedProcess) -> int | None:
-        if os.name != "nt" or owned.job is None:
+        if os.name != "nt":
+            if owned.handle.poll() is None:
+                return 1
+            # start_new_session makes the direct child the leader of an exact,
+            # supervisor-owned session/process group.  Once that leader exits,
+            # its handle alone cannot reveal whether an inherited descendant is
+            # still alive.  Probe only that known group; never enumerate or
+            # target arbitrary PIDs.
+            try:
+                os.killpg(owned.handle.pid, 0)  # type: ignore[attr-defined]
+            except ProcessLookupError:
+                return 0
+            except PermissionError:
+                return None
+            return 1
+        if owned.job is None:
             return 0 if owned.handle.poll() is not None else 1
         return owned.job.active_processes()  # type: ignore[attr-defined,no-any-return]
 

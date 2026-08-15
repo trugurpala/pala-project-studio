@@ -19,6 +19,10 @@ jobs:
   browser-e2e:
     name: Real generated Control Center browser journey
     runs-on: ubuntu-latest
+    # Keep Playwright's install and test lookup rooted in node_modules.
+    # playwright.config.js uses this same local path at test time.
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: "0"
     timeout-minutes: 10
     steps:
       - name: Check out repository
