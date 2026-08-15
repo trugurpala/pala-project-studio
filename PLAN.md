@@ -65,4 +65,12 @@ current canonical completion evidence; M80 is the ordered release-ready path.
 - **Dosyalar:** Quality mapping, ReleaseTruth, CI and release handoff
 - **Bitti sayılır:** every current required Quality check exits 0 and the authorized branch CI is bound to the final commit.
 - **Bağımlılık:** M80-T5 and M81-T1
-- **Kanıt:** `not-run`
+- **Kanıt:** final release Quality 62/62 and branch-head run 31884221216 8/8 `passed`; canonical `DONE`
+
+#### M82-T1 — Human-readable UTF-8 Control Center
+- **Sahip ajan:** Codex/Pala
+- **Amaç:** Remove replacement characters and present primary Control Center navigation/actions in natural Turkish.
+- **Dosyalar:** view layout/sections, Control Center and real browser text contracts
+- **Bitti sayılır:** UTF-8 byte/render checks, focused UI contracts, full release Quality and branch CI exit 0.
+- **Bağımlılık:** M80-T6
+- **Kanıt:** red-first UTF-8 contract, 54 focused Python contracts, real Chromium and 765-test reproducible source verifier `passed`; replacement branch CI `not-run`

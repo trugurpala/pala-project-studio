@@ -54,15 +54,6 @@ Date, Status. Keep data sanitized and use canonical evidence labels.
 - **Date:** 2026-08-15
 - **Status:** fixed (`passed`)
 
-### INC-20260815-m81-roadmap-card-count
-- **Symptoms:** Full verifier failed self-audit after the explicit M81 remediation card raised the parsed roadmap total from seven to eight.
-- **Root cause:** The repository contract still asserted the earlier exact card count.
-- **Fix criteria:** Self-audit and its repository contract agree on all eight current cards without weakening card parsing.
-- **Proved by:** focused self-audit contract and replacement full verifier (763 tests, exit 0).
-- **Related files:** `PLAN.md`, `scripts/test_pala_self_audit.py`.
-- **Date:** 2026-08-15
-- **Status:** fixed (`passed`)
-
 ### INC-20260815-m81-posix-python-launcher
 - **Symptoms:** Branch browser job installed Chromium successfully, then failed with `spawnSync py ENOENT` on Ubuntu.
 - **Root cause:** The real generated-page journey invoked the Windows-only `py -3` launcher.
@@ -71,6 +62,15 @@ Date, Status. Keep data sanitized and use canonical evidence labels.
 - **Related files:** generated-page Playwright journey and its launcher contract.
 - **Date:** 2026-08-15
 - **Status:** fixed (`passed`)
+
+### INC-20260815-m82-control-center-utf8
+- **Symptoms:** Current generated panel renders `??eri?e ge?`, `Pala kontrol ?` and `g?ster` in primary labels.
+- **Root cause:** Replacement characters were committed in view source and rendered-text UTF-8 assertions did not cover them.
+- **Fix criteria:** Primary labels use natural Turkish; UTF-8 bytes and real browser text contain no replacement markers or mojibake.
+- **Proved by:** red-first rendered-text failure; 54 focused Python contracts, fatal lint, real offline Chromium and 765-test reproducible source verifier `passed`; branch CI `not-run`.
+- **Related files:** Control Center layout/sections and UI/browser contracts.
+- **Date:** 2026-08-15
+- **Status:** open (`configured-not-verified`)
 
 Historical incidents and public-release evidence remain in Git history and
 Failure Intelligence; only active failures are projected here.

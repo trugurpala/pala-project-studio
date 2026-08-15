@@ -35,20 +35,20 @@ def _update_banner(
     update: dict[str, object] | None, cache_checked_at: str | None = None
 ) -> str:
     if not update:
-        return '<div class="warnline">Pala guncellik: bilinmiyor</div>'
+        return '<div class="warnline">Pala güncelliği bilinmiyor</div>'
     status = str(update.get("status") or "unavailable")
     installed = _e(update.get("installed_version") or "?")
     available = _e(update.get("available_version") or "")
     url = update.get("url")
     checked = ""
     if isinstance(cache_checked_at, str) and cache_checked_at:
-        checked = f' <span class="muted-inline">(son bakis: {_e(cache_checked_at)})</span>'
+        checked = f' <span class="muted-inline">(son kontrol: {_e(cache_checked_at)})</span>'
     if status == "update-available":
         link = f' <a href="{_e(url)}">indir</a>' if isinstance(url, str) and url.startswith("https://") else ""
-        return f'<div class="alert">Guncelleme var: {installed} &rarr; {available}{link}{checked}</div>'
+        return f'<div class="alert">Güncelleme var: {installed} &rarr; {available}{link}{checked}</div>'
     if status == "current":
-        return f'<div class="okline">Pala guncel ({installed}){checked}</div>'
-    return f'<div class="warnline">Pala guncellik: cevrimdisi / bilinmiyor{checked}</div>'
+        return f'<div class="okline">Pala güncel ({installed}){checked}</div>'
+    return f'<div class="warnline">Pala güncelliği çevrimdışı veya bilinmiyor{checked}</div>'
 
 
 def _project_detail_html(item: dict[str, object], freshness_fn: Any) -> str:
@@ -59,20 +59,21 @@ def _project_detail_html(item: dict[str, object], freshness_fn: Any) -> str:
     level = freshness_fn(item.get("updated_at"))
     github = item.get("github")
     github_html = (
-        '<details class="private-detail"><summary>GitHub ba?lant?s?n? g?ster</summary>'
+        '<details class="private-detail"><summary>GitHub ba\u011flant\u0131s\u0131n\u0131 g\u00f6ster</summary>'
         f'<a href="{_e(github)}">{_e(github)}</a></details>'
         if isinstance(github, str) and github.startswith("https://") else ""
     )
     blocker_html = ""
+    path_label = "Yerel yolu g\u00f6ster"
     if blocker_list:
         items = "".join(f"<li>{_e(b)}</li>" for b in blocker_list[:8])
         blocker_html = f"<p>Blokajlar:</p><ul>{items}</ul>"
     return (
         f'<div class="grid"><div class="card"><div class="k">Faz</div><div class="v">{_e(item.get("phase") or "belirsiz")}</div></div>'
-        f'<div class="card"><div class="k">Sonraki is</div><div class="v">{_e(item.get("next_action") or "yok")}</div></div>'
+        f'<div class="card"><div class="k">Sonraki iş</div><div class="v">{_e(item.get("next_action") or "yok")}</div></div>'
         f'<div class="card"><div class="k">Kalite</div><div class="v">{_e(item.get("quality_result") or "yok")}</div></div>'
         f'<div class="card"><div class="k">Tazelik</div><div class="v">{_freshness_badge(level)}</div></div></div>'
-        f'{_private_detail("Yerel yolu g?ster", item.get("path"))}'
+        f"{_private_detail(path_label, item.get('path'))}"
         f'<p>Teknoloji: {_e(tech_text or "?")}</p>{github_html}{blocker_html}'
     )
 
@@ -93,7 +94,7 @@ def _theme_script() -> str:
     root.setAttribute("data-soft-fail-closed", read(KEYS.softFail, "0") === "1" ? "1" : "0");
     root.setAttribute("data-show-quality-tier", read(KEYS.qualityTier, "1") === "0" ? "0" : "1");
     var themeBtn = document.getElementById("pala-theme-toggle");
-    if (themeBtn) { themeBtn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false"); themeBtn.textContent = theme === "dark" ? "Acik tema" : "Koyu tema"; }
+    if (themeBtn) { themeBtn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false"); themeBtn.textContent = theme === "dark" ? "A\u00e7\u0131k tema" : "Koyu tema"; }
     var map = [["pref-show-experts", KEYS.experts, "1"], ["pref-soft-fail-closed", KEYS.softFail, "0"], ["pref-show-quality-tier", KEYS.qualityTier, "1"]];
     for (var i = 0; i < map.length; i++) { var el = document.getElementById(map[i][0]); if (el) el.checked = read(map[i][1], map[i][2]) === "1"; }
   }
@@ -176,7 +177,7 @@ def _navigation(context: dict[str, object], panels: list[str], freshness_fn: Any
         radios.append(f'<input type="radio" name="pala-nav" id="{pid}" aria-controls="panel-project-{index}">')
         project_labels.append(f'<label for="{pid}" class="nav-item"><span class="nav-name">{_e(item.get("name"))}</span>{_freshness_badge(freshness_fn(item.get("updated_at")))}</label>')
         panels.append(f'<section id="panel-project-{index}" class="panel"><h2>{_e(item.get("name"))}</h2>{_project_detail_html(item, freshness_fn)}</section>')
-    return {"radios": radios, "labels": labels, "panels": panels, "ordered": ordered, "project_nav": "".join(project_labels) if project_labels else '<p class="muted-inline">Kayit yok</p>'}
+    return {"radios": radios, "labels": labels, "panels": panels, "ordered": ordered, "project_nav": "".join(project_labels) if project_labels else '<p class="muted-inline">Kay\u0131t yok</p>'}
 
 
 def _navigation_css(ordered: list[dict[str, object]]) -> tuple[str, str, str]:
@@ -191,7 +192,7 @@ def _navigation_css(ordered: list[dict[str, object]]) -> tuple[str, str, str]:
 
 def _catalog_rows(ordered: list[dict[str, object]], freshness_fn: Any) -> str:
     if not ordered:
-        return '<tr><td colspan="6" class="muted">Henuz kayitli proje yok. Bir projede register calistir.</td></tr>'
+        return '<tr><td colspan="6" class="muted">Henüz kayıtlı proje yok. Önce projeyi Pala\'ya kaydedin.</td></tr>'
     rows: list[str] = []
     for item in ordered:
         tech = item.get("tech")
@@ -202,17 +203,18 @@ def _catalog_rows(ordered: list[dict[str, object]], freshness_fn: Any) -> str:
 
 def _document(context: dict[str, object], navigation: dict[str, object], style: str, catalog: str) -> str:
     update_checked = context["update_checked_at"] if isinstance(context["update_checked_at"], str) else None
+    local_path_label = "Yerel proje yolunu g\u00f6ster"
     return f"""<!doctype html>
 <html lang="tr" data-theme="dark" data-show-experts="1" data-soft-fail-closed="0" data-show-quality-tier="1">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Pala kontrol - {_e(context["root_name"])}</title><style>{style}</style></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Pala Kontrol Merkezi - {_e(context["root_name"])}</title><style>{style}</style></head>
 <body>
-  <a class="skip-link" href="#pala-main">??eri?e ge?</a>{"".join(navigation["radios"])}
-  <div class="shell"><nav class="sidebar" aria-label="Pala kontrol menusu" id="pala-admin-nav">
-    <div class="brand-block"><p class="brand-name">Pala</p><p class="brand-tag">kontrol merkezi</p></div><p class="nav-title">Bolumler</p>{"".join(navigation["labels"])}<p class="nav-title">Projeler</p>{navigation["project_nav"]}
-  </nav><main id="pala-main" class="main"><div class="topbar"><div><h1 class="title">Pala kontrol ? {_e(context["root_name"])}</h1><div class="sub">Yerel yol gizli &middot; {context["stamp"]}</div>{_private_detail("Yerel proje yolunu g?ster", context["root_path"])}</div><button type="button" class="theme-toggle" id="pala-theme-toggle" aria-pressed="true">Acik tema</button></div>
+  <a class="skip-link" href="#pala-main">\u0130\u00e7eri\u011fe ge\u00e7</a>{"".join(navigation["radios"])}
+  <div class="shell"><nav class="sidebar" aria-label="Pala kontrol men\u00fcs\u00fc" id="pala-admin-nav">
+    <div class="brand-block"><p class="brand-name">Pala</p><p class="brand-tag">Kontrol Merkezi</p></div><p class="nav-title">B\u00f6l\u00fcmler</p>{"".join(navigation["labels"])}<p class="nav-title">Projeler</p>{navigation["project_nav"]}
+  </nav><main id="pala-main" class="main"><div class="topbar"><div><h1 class="title">Pala Kontrol Merkezi \u00b7 {_e(context["root_name"])}</h1><div class="sub">Yerel yol gizli &middot; {context["stamp"]}</div>{_private_detail(local_path_label, context["root_path"])}</div><button type="button" class="theme-toggle" id="pala-theme-toggle" aria-pressed="true">A\u00e7\u0131k tema</button></div>
   {_update_banner(context["update"], update_checked)}{"".join(navigation["panels"])}
-  <h2>Proje katalogu</h2><div class="catalog-wrap"><table><thead><tr><th>Proje</th><th>Faz</th><th>Sonraki is</th><th>Kalite</th><th>Tazelik</th><th>Teknoloji</th></tr></thead><tbody>{catalog}</tbody></table></div>
-  <footer>Sohbet gecmisine guvenme; yukaridaki dosyalari sirayla oku. Bu sayfa yerel kayitlardan uretildi; guncellik 24 saat onbelleklidir (hook icinde ag yok). Tema/tercihler localStorage.</footer></main></div>{_theme_script()}
+  <h2>Proje kataloğu</h2><div class="catalog-wrap"><table><thead><tr><th>Proje</th><th>Faz</th><th>Sonraki iş</th><th>Kalite</th><th>Tazelik</th><th>Teknoloji</th></tr></thead><tbody>{catalog}</tbody></table></div>
+  <footer>Bu sayfa yerel Pala kayıtlarından üretildi. Son durumu görmek için yenileyin; bu sayfa ağa bağlanmaz. Tema tercihleri yalnız bu tarayıcıda saklanır.</footer></main></div>{_theme_script()}
 </body></html>
 """
 

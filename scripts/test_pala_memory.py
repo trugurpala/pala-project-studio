@@ -247,8 +247,8 @@ class MemoryContractTests(unittest.TestCase):
             self.assertTrue(target.is_file())
             markup = target.read_text(encoding="utf-8")
             self.assertIn("<!doctype html>", markup)
-            self.assertIn("Okuma sirasi", markup)
-            self.assertIn("Proje katalogu", markup)
+            self.assertIn("Zorunlu okuma sırası", markup)
+            self.assertIn("Proje kataloğu", markup)
             self.assertIn("Şimdi:", markup)
             self.assertIn("hazir", markup)
             self.assertIn("Son olaylar", markup)
@@ -290,8 +290,8 @@ class MemoryContractTests(unittest.TestCase):
             )
             self.assertIn("Continue F2-T2", markup)
             self.assertIn("checkpoint", markup)
-            self.assertIn("Henuz URL kurulumu yok", markup)
-            self.assertIn("Henuz kayitli proje yok", markup)
+            self.assertIn("Henüz URL ile kurulan proje yok", markup)
+            self.assertIn("Henüz kayıtlı proje yok", markup)
 
     def test_report_progress_counts_ready_slots(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -372,7 +372,7 @@ class MemoryContractTests(unittest.TestCase):
                 },
                 update_checked_at="2026-08-07T12:00:00+00:00",
             )
-            self.assertIn("Guncelleme var", available)
+            self.assertIn("Güncelleme var", available)
             self.assertIn("0.6.0", available)
             self.assertIn("https://github.com/trugurpala/pala-project-studio/releases", available)
             current = pala_report.render_html(
@@ -384,7 +384,7 @@ class MemoryContractTests(unittest.TestCase):
                     "url": None,
                 },
             )
-            self.assertIn("Pala guncel", current)
+            self.assertIn("Pala güncel", current)
 
     def test_report_escapes_untrusted_text(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

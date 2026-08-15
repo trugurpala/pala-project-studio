@@ -49,7 +49,7 @@ test('generated Pala 1.2.0 Control Center passes real local browser checks', asy
     [
       ...python.args,
       '-c',
-      "import json,sys;from pathlib import Path;sys.path.insert(0,sys.argv[1]);from pala_owner_cockpit import render_control_center;snapshot=json.loads(sys.argv[4]);Path(sys.argv[3]).write_text('<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body>'+render_control_center(snapshot)+'</body></html>',encoding='utf-8')",
+      "import json,sys;from pathlib import Path;sys.path.insert(0,sys.argv[1]);from pala_owner_cockpit import render_owner_cockpit;from pala_view import render;snapshot=json.loads(sys.argv[4]);page=render({'root_name':'Pala browser fixture','stamp':'2026-08-15','next_action':'Run the required check','owner_cockpit_html':render_owner_cockpit(snapshot,fragment=True)},freshness_fn=lambda _:'fresh');Path(sys.argv[3]).write_text(page,encoding='utf-8')",
       path.join(repository, 'scripts'),
       projectRoot,
       pagePath,
@@ -64,6 +64,14 @@ test('generated Pala 1.2.0 Control Center passes real local browser checks', asy
   await context.setOffline(true);
   await page.goto(pathToFileURL(pagePath).href);
 
+  const skipText = String.fromCodePoint(0x130, 0x00e7, 0x65, 0x72, 0x69, 0x11f, 0x65, 0x20, 0x67, 0x65, 0x00e7);
+  const themeText = String.fromCodePoint(0x41, 0x00e7, 0x131, 0x6b, 0x20, 0x74, 0x65, 0x6d, 0x61);
+  const skipLink = page.getByRole('link', { name: skipText });
+  await skipLink.focus();
+  await expect(skipLink).toBeFocused();
+  await expect(skipLink).toHaveText(skipText);
+  await expect(page.getByRole('heading', { name: /Pala Kontrol Merkezi/ }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: themeText })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'PALA CONTROL CENTER' })).toBeVisible();
   await expect(page.getByText('Pala 1.2.0', { exact: false }).first()).toBeVisible();
   for (const label of ['Queue', 'Receipts', 'Failure Intelligence', 'Profiles', 'Host Capabilities', 'Host & Processes', 'Security & Release']) {

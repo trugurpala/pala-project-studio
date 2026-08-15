@@ -11,13 +11,13 @@ from __future__ import annotations
 import html
 
 SECTION_NAV = (
-    ("overview", "Genel bakis"),
-    ("install", "Kurulum / Doctor"),
-    ("hooks", "Hooks trust"),
-    ("quality", "Quality engine"),
-    ("memory", "Hafiza / store"),
-    ("tickets", "Ticket / sonraki is"),
-    ("features", "Yetki / ozellik"),
+    ("overview", "Genel Bak\u0131\u015f"),
+    ("install", "Kurulum ve Denetim"),
+    ("hooks", "Hook g\u00fcveni"),
+    ("quality", "Kalite"),
+    ("memory", "Haf\u0131za"),
+    ("tickets", "\u0130\u015fler ve sonraki ad\u0131m"),
+    ("features", "Ayarlar"),
 )
 
 _PURPOSE_LABELS = {
@@ -264,8 +264,8 @@ def is_temporary_project_name(value: object) -> bool:
 def timeline_html(events: list[object]) -> str:
     if not events:
         return (
-            '<p class="muted">Henuz olay yok. register, begin, checkpoint, '
-            "debug_attempt veya provision calisinca burada gorunur.</p>"
+            '<p class="muted">Henüz olay yok. Bir proje kaydedildiğinde veya '
+            "bir iş başlatıldığında burada görünür.</p>"
         )
     items: list[str] = []
     for event in events:
@@ -294,8 +294,7 @@ def timeline_html(events: list[object]) -> str:
 def provisions_html(provisions: list[object]) -> str:
     if not provisions:
         return (
-            '<p class="muted">Henuz URL kurulumu yok. '
-            "pala_provision.py ile HTTPS repo ekle.</p>"
+            '<p class="muted">Henüz URL ile kurulan proje yok.</p>'
         )
     rows: list[str] = []
     for item in provisions:
@@ -320,14 +319,14 @@ def provisions_html(provisions: list[object]) -> str:
 def project_history_html(model: object) -> str:
     """Render only the bounded, non-authoritative Project History read model."""
     if not isinstance(model, dict):
-        return '<p class="muted">Project History okunamadi.</p>'
+        return '<p class="muted">Proje geçmişi okunamadı.</p>'
     items = model.get("items")
     rows: list[str] = []
     for item in items if isinstance(items, list) else []:
         if not isinstance(item, dict):
             continue
         lifecycle = str(item.get("lifecycle") or "")
-        label = "Kapandi" if lifecycle == "project-closed" else "Yeniden acildi"
+        label = "Kapandı" if lifecycle == "project-closed" else "Yeniden açıldı"
         commit = str(item.get("final_commit") or "")[:12] or "—"
         release = str(item.get("release_ref") or "—")
         rows.append(
@@ -340,12 +339,12 @@ def project_history_html(model: object) -> str:
         )
     status = str(model.get("validation_status") or "not-run")
     if not rows:
-        return f'<p class="muted" data-history-status="{escape(status)}">Henuz kalici proje gecmisi yok.</p>'
+        return f'<p class="muted" data-history-status="{escape(status)}">Henüz kalıcı proje geçmişi yok.</p>'
     return (
         f'<p class="section-note" data-history-status="{escape(status)}">'
-        "Project History salt-okunur bir continuity gorunumudur; is tamamlayamaz.</p>"
-        "<table><thead><tr><th>Yasam dongusu</th><th>Commit</th>"
-        "<th>Surum</th><th>Ozet</th></tr></thead>"
+        "Proje geçmişi salt okunur bir görünümdür; iş tamamlayamaz.</p>"
+        "<table><thead><tr><th>Yaşam döngüsü</th><th>Commit</th>"
+        "<th>Sürüm</th><th>Özet</th></tr></thead>"
         f"<tbody>{''.join(rows)}</tbody></table>"
     )
 
@@ -369,7 +368,7 @@ def section_overview(
         '<div class="hero" id="pala-admin-hero">'
         '<p class="hero-brand">Pala</p>'
         '<p class="hero-lead">Yerel kontrol merkezi — hafıza, ticket, kalite ve '
-        "kurulum. Bağlam penceresi büyütmez; yalnız gerekli sinyali gösterir.</p>"
+        "kurulum. Bağlam penceresini büyütmez; yalnız gerekli bilgiyi gösterir.</p>"
         "</div>"
         f"{owner_cockpit}"
         f"{decision}"
@@ -381,11 +380,11 @@ def section_overview(
         '<div class="grid">'
         '<div class="card"><div class="k">Aktif ticket</div>'
         f'<div class="v">{escape(coherence.get("active") or "yok")}</div></div>'
-        '<div class="card"><div class="k">Sonraki is</div>'
+        '<div class="card"><div class="k">Sonraki iş</div>'
         f'<div class="v">{escape(coherence.get("inferred_next") or next_action or "yok")}</div></div>'
         '<div class="card"><div class="k">Git</div>'
         f'<div class="v mono">{escape(git.get("branch") or "?")}</div></div>'
-        '<div class="card"><div class="k">Degisen dosya</div>'
+        '<div class="card"><div class="k">Değişen dosya</div>'
         f'<div class="v">{escape(git.get("dirty_count", 0))}</div></div>'
         "</div>"
         f'<p class="muted-inline">Proje: {escape(root_name)}</p>'
@@ -396,9 +395,9 @@ def section_overview(
 def section_install() -> str:
     return (
         '<section id="panel-install" class="panel" data-admin-section="install">'
-        "<h2>Kurulum / Doctor</h2>"
-        '<p class="section-note">Hook icinde Install/Doctor calismaz. '
-        "Asagidaki komutlar agent veya Status yolunda elle calistirilir.</p>"
+        "<h2>Kurulum ve Denetim</h2>"
+        '<p class="section-note">Pala bu işlemleri siz istemeden başlatmaz. '
+        "Kurulum, denetim ve onarım komutları gerektiğinde elle çalıştırılır.</p>"
         '<div class="cmd mono">codex plugin marketplace add trugurpala/pala-project-studio</div>'
         '<div class="cmd mono">codex plugin add pala-project-studio@pala-project-studio</div>'
         '<div class="cmd mono">powershell -NoProfile -ExecutionPolicy Bypass '
@@ -406,8 +405,8 @@ def section_install() -> str:
         '<div class="cmd mono">powershell -NoProfile -ExecutionPolicy Bypass '
         "-File .\\Install-Pala.ps1 -Mode Repair</div>"
         '<div class="warnline">Doctor <span class="mono">healthy</span> / '
-        '<span class="mono">plugin_ready</span> dosya kanitidir; '
-        "/hooks trust degildir.</div>"
+        '<span class="mono">plugin_ready</span> dosyaların hazır olduğunu gösterir; '
+        "/hooks ekranındaki güven izninin verildiğini göstermez.</div>"
         "</section>"
     )
 
@@ -415,13 +414,13 @@ def section_install() -> str:
 def section_hooks() -> str:
     return (
         '<section id="panel-hooks" class="panel" data-admin-section="hooks">'
-        "<h2>Hooks trust</h2>"
+        "<h2>Hook güveni</h2>"
         '<div class="warnline" id="pala-hooks-trust" data-evidence="configured-not-verified">'
-        "Kanit: <strong>configured-not-verified</strong> — Codex Work &rarr; "
-        '<span class="mono">/hooks</span> icinde Pala\'ya guven insan tiklamasidir. '
-        "Bu sayfa trust'i gecemez.</div>"
-        '<p class="section-note">hook_safety=passed yalniz dosya/sozlesme kontroludur; '
-        "UI trust ile karistirma.</p>"
+        "Dosyalar hazır. Son adım: Codex'te <span class=\"mono\">/hooks</span> "
+        "ekranını açın, Pala'ya güven verin ve yeni bir görev başlatın. "
+        "<strong>configured-not-verified</strong></div>"
+        '<p class="section-note"><span class="mono">hook_safety=passed</span> '
+        "yalnız dosya ve sözleşme kontrolüdür; ekrandaki güven izninin kanıtı değildir.</p>"
         "</section>"
     )
 
@@ -433,28 +432,28 @@ def section_quality(quality: object, verification_tier: object, delivery: str) -
     tier = str(verification_tier or "not-run")
     return (
         '<section id="panel-quality" class="panel" data-admin-section="quality">'
-        "<h2>Quality engine (0.9)</h2>"
-        '<p class="section-note">Delivery Quality Engine: proje-yerel kapilar, '
-        "ledger kaniti, soft % yok.</p>"
+        "<h2>Kalite kontrolleri</h2>"
+        '<p class="section-note">Zorunlu kontroller ve kanıtlar burada özetlenir. '
+        "Bir kontrol çalışmadıysa tamamlanmış sayılmaz.</p>"
         f"{delivery}"
         '<div class="grid">'
         '<div class="card"><div class="k">Durum</div>'
         f'<div class="v">{escape(quality.get("status") or "not-run")}</div></div>'
-        '<div class="card"><div class="k">Ticket</div>'
+        '<div class="card"><div class="k">İş kartı</div>'
         f'<div class="v">{escape(quality.get("ticket") or "yok")}</div></div>'
         '<div class="card"><div class="k">Risk</div>'
         f'<div class="v">{escape(risk.get("level") or "unknown")}</div></div>'
-        '<div class="card"><div class="k">Coverage</div>'
+        '<div class="card"><div class="k">Geçen kontroller</div>'
         f'<div class="v">{escape(int(coverage.get("passed") or 0))}/'
         f'{escape(int(coverage.get("required") or 0))}</div></div>'
         "</div>"
         f'<div class="warnline">Son eksik: {escape(quality.get("last_problem") or "yok")}</div>'
         f'<div class="okline">Sonraki: {escape(quality.get("next_action") or "yok")}</div>'
         '<div class="quality-tier-panel card" id="pala-quality-tier">'
-        '<div class="k">Verification tier (gorunum)</div>'
+        '<div class="k">Doğrulama düzeyi</div>'
         f'<div class="v mono">{escape(tier)}</div>'
-        '<p class="pref-desc">Bu satir «quality tier goster» tercihiyle gizlenebilir; '
-        "workflow gercegini degistirmez.</p>"
+        '<p class="pref-desc">Bu satır görünüm ayarlarından gizlenebilir; '
+        "iş akışının gerçek durumunu değiştirmez.</p>"
         "</div>"
         "</section>"
     )
@@ -468,17 +467,17 @@ def section_memory(
 ) -> str:
     return (
         '<section id="panel-memory" class="panel" data-admin-section="memory">'
-        "<h2>Hafiza / store</h2>"
+        "<h2>Hafıza</h2>"
         '<p class="section-note">SQLite yerel store yolu varsayılan olarak gizli.</p>'
         f'{private_detail("SQLite yolunu göster", store_path)}'
         '<div class="experts-panel card" id="pala-experts-panel">'
-        '<div class="k">Experts (istege bagli)</div>'
-        '<div class="v">Node/uv ile hazir olabilir; hook otomatik kurmaz/calistirmaz.</div>'
-        '<p class="pref-desc">«Uzmanlari goster» kapaliysa bu panel gizlenir.</p>'
+        '<div class="k">Uzman araçlar (isteğe bağlı)</div>'
+        '<div class="v">Node veya uv ile hazır olabilir; Pala bunları kendiliğinden kurmaz ya da çalıştırmaz.</div>'
+        '<p class="pref-desc">«Uzman araçları göster» kapalıysa bu panel gizlenir.</p>'
         "</div>"
         "<h2>Son olaylar</h2>"
         f"{timeline_html(events)}"
-        "<h2>Gecmis Projeler</h2>"
+        "<h2>Geçmiş projeler</h2>"
         f"{project_history_html(history)}"
         "<h2>Son URL kurulumlari</h2>"
         f"{provisions_html(provisions)}"
@@ -491,15 +490,15 @@ def section_tickets(
 ) -> str:
     return (
         '<section id="panel-tickets" class="panel" data-admin-section="tickets">'
-        "<h2>Ticket / sonraki is</h2>"
+        "<h2>\u0130\u015fler ve sonraki ad\u0131m</h2>"
         f"{now_line(next_action, coherence.get('active'))}"
         '<div class="grid">'
         '<div class="card"><div class="k">Aktif</div>'
         f'<div class="v">{escape(coherence.get("active") or "yok")}</div></div>'
-        '<div class="card"><div class="k">Cikarilan sonraki</div>'
+        '<div class="card"><div class="k">Bulunan sonraki adım</div>'
         f'<div class="v">{escape(coherence.get("inferred_next") or next_action or "yok")}</div></div>'
         "</div>"
-        "<h2>Okuma sirasi (zorunlu)</h2>"
+        "<h2>Zorunlu okuma sırası</h2>"
         "<table><thead><tr><th>#</th><th>Amac</th><th>Dosya</th><th>Durum</th>"
         f"</tr></thead><tbody>{read_order_rows(read_order)}</tbody></table>"
         "</section>"
@@ -509,28 +508,26 @@ def section_tickets(
 def section_features() -> str:
     return (
         '<section id="panel-features" class="panel" data-admin-section="features">'
-        "<h2>Yetki / ozellik</h2>"
-        '<p class="section-note">Yalniz gercek Pala gorunum tercihleri. '
-        "Ucretli kilit yok; ag ozeligi hook yolunda iddia edilmez. "
-        "Tercihler tarayici localStorage'da kalir.</p>"
+        "<h2>Ayarlar</h2>"
+        '<p class="section-note">Yalnız Pala görünümünü değiştirir. '
+        "Ücretli kilit yoktur. Tercihler bu tarayıcıda saklanır ve iş akışını etkilemez.</p>"
         '<ul class="pref-list" id="pala-feature-toggles">'
         '<li class="pref-row">'
         '<input type="checkbox" id="pref-show-experts" checked>'
         '<label for="pref-show-experts">'
-        '<span class="pref-title">Uzmanlari goster</span>'
-        '<span class="pref-desc">Hafiza bolumunde experts panelini goster/gizle '
-        "(kurulum otomatik baslatmaz).</span></label></li>"
+        '<span class="pref-title">Uzman araçları göster</span>'
+        '<span class="pref-desc">Hafıza bölümündeki isteğe bağlı araçları gösterir. '
+        "Herhangi bir kurulum başlatmaz.</span></label></li>"
         '<li class="pref-row">'
         '<input type="checkbox" id="pref-soft-fail-closed">'
         '<label for="pref-soft-fail-closed">'
-        '<span class="pref-title">Kapali INC soft-fail hatirlatma</span>'
-        '<span class="pref-desc">Hata beyni satirinda kapali kayit sayisini '
-        "ek hatirlatma olarak goster.</span></label></li>"
+        '<span class="pref-title">Kapanmış sorunları hatırlat</span>'
+        '<span class="pref-desc">Kapanmış sorun sayısını ek bilgi olarak gösterir.</span></label></li>'
         '<li class="pref-row">'
         '<input type="checkbox" id="pref-show-quality-tier" checked>'
         '<label for="pref-show-quality-tier">'
-        '<span class="pref-title">Quality tier goster</span>'
-        '<span class="pref-desc">Quality bolumunde verification_tier gorunumunu ac.</span>'
+        '<span class="pref-title">Doğrulama düzeyini göster</span>'
+        '<span class="pref-desc">Kalite bölümünde doğrulama düzeyini gösterir.</span>'
         "</label></li>"
         "</ul>"
         "</section>"

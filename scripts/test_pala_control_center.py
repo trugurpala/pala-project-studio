@@ -43,6 +43,23 @@ class ControlCenterTests(unittest.TestCase):
         self.assertIn("&lt;script&gt;", html)
         self.assertIn("prefers-reduced-motion", html)
 
+    def test_status_surface_uses_utf8_turkish_for_primary_navigation_and_actions(self) -> None:
+        html = render_status_view(
+            {
+                "root_name": "örnek",
+                "root_path": r"C:\\gizli",
+                "stamp": "2026-08-15",
+            },
+            freshness_fn=lambda _value: "fresh",
+        )
+        encoded = html.encode("utf-8")
+        self.assertEqual(encoded.decode("utf-8"), html)
+        for text in ("İçeriğe geç", "Pala Kontrol Merkezi", "Açık tema"):
+            self.assertIn(text, html)
+        self.assertNotIn("??eri?e ge?", html)
+        self.assertNotIn("Pala kontrol ?", html)
+        self.assertNotIn("g?ster", html)
+
     def test_control_center_2_renders_owner_read_models_and_dynamic_milestone(self) -> None:
         snapshot = {
             **self.snapshot,

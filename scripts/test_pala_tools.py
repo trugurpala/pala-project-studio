@@ -1716,7 +1716,7 @@ class PalaViewA11yTests(unittest.TestCase):
         self.assertIn('id="pref-show-quality-tier"', html)
         self.assertNotIn("src=\"http", html.casefold())
         self.assertNotIn("<link ", html.casefold())
-        self.assertIn("ucretli kilit yok", html.casefold())
+        self.assertIn("ücretli kilit yok", html.casefold())
         self.assertNotIn("purple", html.casefold())
 
     def test_decision_strip_has_five_signals_no_vanity_speed(self) -> None:
