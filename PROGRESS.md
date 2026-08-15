@@ -1,40 +1,28 @@
 # Pala progress
 
-Pala 1.1.2 retains the complete local delivery flow from public 1.1.1 and fixes
-the four blockers found by its final clean-user canary:
+## Immutable baseline
 
-- M75 natural install + required Workbench bootstrap focused contract: `passed`.
-- M75 full-state transactional no-op focused contract: `passed`.
-- M75 dedicated Control Center routing and portable discovery: `passed`.
-- M75 environment/capability completion adversarial matrix: `passed`.
-- Full Quality (24/24), deterministic package, source/portable/installed,
-  fresh install/no-op, host routing, professional authority, and browser
-  operator canaries: `passed`.
-- Public `v1.1.2` tag/release, independent asset readback, final clean-user
-  install/no-op/routing/completion canary and PC cleanup: `passed`.
-- M75-T1 canonical acceptance mapping and TaskContract completion: `passed`.
+- Public `v1.1.2` release history: `passed`.
+- M76--M79 implementation is retained as imported WIP; current canonical task,
+  Quality and release evidence for its historical claims: `not-run`.
 
-Historical 1.1.1 result:
+## Current program
 
-- M74 Control Center bootstrap and explicit-open regression: `passed`.
-- Installed Codex professional self-test with controlled failure/repair: `passed`.
-- Full source/portable/installed verification (643 tests): `passed`.
-- Coverage: `75.22%`; deterministic two-build digest equality: `passed`.
-- Public `v1.1.1` tag/release and exact-asset readback: `passed`.
-- Final public install: plugin install `passed`; Doctor/core bootstrap `blocked`.
-- Final no-project native panel routing: one run `passed`, isolated repeat `blocked`.
-- Final installed-skill Decision Log Mini workflow: canonical Quality `passed`,
-  but CodeGraph `absent` and Semgrep `blocked` while package-ready was allowed.
+- M44-T1 installed 1.2.0 plugin/cache/marketplace, resolver, Doctor, runtime
+  self-audit and installed verifier: `passed`; fresh 1.2.0 session presence and
+  `/hooks` UI trust: `configured-not-verified`.
+- M80-T1 canonical reconciliation and hermetic source Quality: `passed` (733 tests, reproducible ZIP, exit 0).
+- M80-T1 full local verifier before remediation: `blocked` by root-document budgets.
+- M80-T2 continuity production wiring and canonical Quality: `passed` (12/12).
+- M80-T3 host/process Quality wiring: `passed` (7/7).
+- M80-T4 live Control Center/privacy: `passed` (10/10).
+- M80-T5 local package/upgrade Quality: 7/8 `passed`; current source verifier
+  is `passed` (763 tests, 5 expected skips); Windows branch symlink canary is
+  `configured-not-verified`.
+- M80-T6 final local Quality/branch-CI handoff: `not-run`.
 
-- intent and project intake;
-- canonical task ownership and evidence-gated completion;
-- capability-backed code understanding, security, and browser verification;
-- Failure Intelligence and owner-readable Control Center;
-- deterministic packaging, upgrade/rollback handling, and ReleaseTruth;
-- source, portable, installed-profile, security, policy, and publication gates.
-
-M74-T1 implementation and publication are complete, but its final public canary
-is blocked. Prior milestone logs, experimental reports, and checkpoint
-narratives are retained in Git history, not duplicated in this projection.
-
+Branch/commit/push and branch-CI monitoring are authorized. PR, tag, public
+release and deploy remain unauthorized and `not-run`.
+Release-candidate runtime is committed as `f54883f`; canonical handoff commit
+and push are the next actions.
 Labels: `passed` | `not-run` | `blocked` | `configured-not-verified`.

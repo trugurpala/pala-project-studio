@@ -2,75 +2,78 @@
 
 ## Format
 
-Each incident includes Symptoms, Root cause, Fix criteria, Proved by,
-Related files, Date, Status. Never store secrets, credentials, transcripts, tokens, or
-customer data. Labels: `passed|not-run|blocked|configured-not-verified`.
+Required fields: Symptoms, Root cause, Fix criteria, Proved by, Related files,
+Date, Status. Keep data sanitized and use canonical evidence labels.
 
 ## Incidents
 
-### INC-20260813-release-ci-portability
-
-- **Symptoms:** GitHub Quality failed on Linux and Windows while local release gates passed.
-- **Root cause:** tests assumed local `.mcp.json`, Windows spelling/separators.
-- **Fix criteria:** portable assertions; local source and exact CI commit pass.
-- **Proved by:** focused tests + source verify passed; CI run `31674469025` passed.
-- **Related files:** `scripts/test_pala_playwright.py`, `scripts/test_pala_semgrep.py`.
-- **Date:** 2026-08-13
-- **Status:** fixed (`passed` contract)
-
-### INC-20260813-m74-control-center-bootstrap
-
-- **Symptoms:** An explicit `paneli ac` request opened one generated status HTML file, but a clean installation with no registered project did not contain the Pala Control Center or its four owner questions.
-- **Root cause:** `pala_report.build_status_model()` delegated the owner fragment to `pala_product_cli.public_status()`, which raised when no canonical ProductContract existed; the report caught that error and replaced the complete fragment with an empty string. The retained projection also hard-coded `Pala 1.0 Owner Cockpit`.
-- **Fix criteria:** the real report-generation path renders canonical product identity and a complete read-only Control Center for no-project, active-project, and unreadable-project states; explicit panel intents open it once and ordinary flows open nothing.
-- **Proved by:** RED `py -3 -m unittest scripts.test_pala_control_center.ControlCenterTests.test_real_report_path_bootstraps_control_center_without_project_contract -v` = exit 1 before the fix; GREEN `py -3 -m unittest scripts.test_pala_control_center -v` = exit 0 (11/11).
-- **Related files:** `scripts/pala_report.py`, `scripts/pala_product_cli.py`, `scripts/pala_owner_cockpit.py`, `scripts/test_pala_control_center.py`, `artifacts/release-1.1.1/m74-red.json`.
-- **Date:** 2026-08-13
-- **Status:** fixed
-
-### INC-20260813-m74-installed-codegraph-runner
-
-- **Root cause:** CodeGraph lifecycle lacked a packaged Quality-runner CLI; the
-  self-test created it in marketplace, correctly causing ownership drift.
-- **Symptoms:** Doctor `plugin=modified`; diff was `pala_codegraph_runner.py`.
-- **Fix criteria:** packaged bounded runner, explicit state root, stale fail-close,
-  Quality discovery, and fresh install without marketplace writes.
-- **Proved by:** `py -3 -m unittest scripts.test_pala_codegraph.CodeGraphContractTests.test_quality_runner_requires_current_graph_and_supports_explicit_state_root -v`; `py -3 scripts/pala_codegraph_runner.py --project .`.
-- **Related files:** `pala_codegraph_runner.py`, its tests, `.pala/quality.json`.
-- **Date:** 2026-08-13
-- **Status:** fixed
-
-### INC-20260813-m74-public-bootstrap-and-routing
-
-- **Symptoms:** Public `1.1.1` lacked Workbench; routing varied; completion
-  reached `PACKAGE_READY` with required providers blocked.
-- **Root cause:** plugin-only bootstrap, broad routing, missing environment gate.
-- **Fix criteria:** From a genuinely empty Codex and Pala state, the single URL
-  instruction installs plugin plus required Pala core providers, second install
-  is a proved no-op, Doctor exits `0`, and exact `paneli aç` always invokes one
-  complete Control Center. Product completion must remain blocked whenever a
-  required core provider is absent or blocked.
-- **Proved by:** public 1.1.1 readback passed; Doctor exit 2; native routing and
-  required providers blocked while installed sample Quality passed.
-- **Related files:** `artifacts/release-1.1.1/public-install-canary.json`, `scripts/pala_installer.py`, `scripts/pala_product_cli.py`, `skills/pala-project-finisher/SKILL.md`.
-- **Date:** 2026-08-13
-- **Attempts:** Real canaries found exact bootstrap adoption, VERIFIED retry, and
-  `Pala panelini aç` guard gaps; all now fail closed outside exact contracts.
-- **Proved by:** 16 focused/9 adversarial tests, 659 source tests, fresh Doctor,
-  no-op, 3 positive/2 negative routes, canonical Quality 24/24: all passed.
-- **CI portability:** Ubuntu correctly cannot install the Windows-x64 managed
-  Workbench; its real-install contract is now explicitly Windows-only while
-  cross-platform source/portable contracts continue to run on Ubuntu.
-- **Status:** fixed (`passed` local candidate; public canary `not-run`)
-
-### INC-20260813-m75-windows-wheel-lock
-
-- **Symptoms:** Windows CI first rejected the wheelhouse, then its corrected real install exceeded the old 240-second suite limit.
-- **Root cause:** one CPython 3.13 lock served 3.12, and the pre-bootstrap timeout had no real-install headroom.
-- **Fix criteria:** exact 3.10-3.14 locks/caches plus a bounded 420-second suite and 10-minute job limit.
-- **Proved by:** RED failed at 240; local 661-test source gate and CI `31704132994` passed on Windows/Ubuntu/artifact.
-- **Related files:** `pala_workbench_bootstrap.py`, `test_pala_semgrep.py`, `requirements-win-amd64-cp3*.lock`.
-- **Date:** 2026-08-13
+### INC-20260815-m80-cross-os-zip-metadata
+- **Symptoms:** Equal Windows/Linux payloads produced different ZIP SHA-256 values.
+- **Root cause:** `ZipInfo.create_system` inherited host defaults (0 versus 3).
+- **Fix criteria:** Pin ZIP creator metadata and compare two real host builds.
+- **Proved by:** Windows + Linux Docker builds, 211 entries, equal `FCA481DD...CA4330F` SHA.
+- **Related files:** `scripts/build_portable.py`, release-candidate tests.
+- **Date:** 2026-08-15
 - **Status:** fixed (`passed`)
 
-Historical incidents remain in Git/Failure Intelligence; new failures stay here.
+### INC-20260815-m80-windows-symlink-capability
+- **Symptoms:** Windows symlink canaries skip with WinError 1314 on this profile.
+- **Root cause:** The local host lacks symlink privilege; product behavior was not executed.
+- **Fix criteria:** Required Windows CI must create and reject both package and installed-tree links.
+- **Proved by:** local required mode exits nonzero; branch CI is `not-run` before the authorized push.
+- **Related files:** installer/release-candidate tests and Quality workflow.
+- **Date:** 2026-08-15
+- **Status:** open (`configured-not-verified`)
+
+### INC-20260815-m80-source-secret-fixtures
+
+- **Symptoms:** Live repository secret scan blocked three test modules on bearer-shaped literals.
+- **Root cause:** Redaction fixtures embedded complete credential syntax in source text.
+- **Fix criteria:** Assemble fixtures at runtime; do not exempt tests; retain a blocking real-fixture regression.
+- **Proved by:** full-repo secret scan and runtime bearer regression (2 tests, exit 0).
+- **Related files:** Control Center, Failure Intelligence, broker and publication tests.
+- **Date:** 2026-08-15
+- **Status:** fixed (`passed`)
+
+### INC-20260815-m80-m75-test-isolation
+
+- **Symptoms:** `scripts.test_pala_m75_completion` failed alone but appeared green after another module.
+- **Root cause:** Local imports relied on an earlier test mutating `sys.path`.
+- **Fix criteria:** Bootstrap the scripts path locally and pass observed host/receipt inputs.
+- **Proved by:** isolated M75 completion suite (9 tests, exit 0) and Ruff (exit 0).
+- **Related files:** `scripts/test_pala_m75_completion.py`.
+- **Date:** 2026-08-15
+- **Status:** fixed (`passed`)
+
+### INC-20260815-m80-policy-stale-fixture
+
+- **Symptoms:** Full verification failed the stale verified-source policy contract.
+- **Root cause:** The test reused the now-truthful unverified 1.2.0 release source as a verified fixture.
+- **Fix criteria:** Build a private verified-local stale fixture without changing release truth.
+- **Proved by:** focused policy and debugging contracts, then the full verifier.
+- **Related files:** `scripts/test_pala_policy.py`, `policies/release.json`, `DEBUGGING.md`.
+- **Date:** 2026-08-15
+- **Status:** fixed (`passed`)
+
+### INC-20260815-m80-root-document-budget
+
+- **Symptoms:** `py -3 scripts/verify.py` stopped because STATUS (87/80), PROGRESS (61/60) and DEBUGGING (90/80) exceeded concise root-document budgets.
+- **Root cause:** Imported M76--M79 narrative and historical evidence were retained as current projections instead of concise, evidence-scoped read models.
+- **Fix criteria:** Keep immutable public baseline history concise, mark imported WIP current evidence `not-run`, and keep STATUS/PLAN/PROGRESS/DEBUGGING within 80/80/60/80 lines without relaxing tests.
+- **Proved by:** focused document tests (29, exit 0) and `py -3 scripts/verify.py` (733 tests, reproducible ZIP, exit 0).
+- **Related files:** `STATUS.md`, `PLAN.md`, `PROGRESS.md`, `DEBUGGING.md`, `scripts/test_pala_repo_cleanup.py`.
+- **Date:** 2026-08-15
+- **Status:** fixed (`passed`)
+
+### INC-20260815-m44-windows-plugin-host-bootstrap
+
+- **Symptoms:** Existing Plugins/hooks UI did not show newly installed Pala; launcher discovery selected a denied WindowsApps executable.
+- **Root cause:** Host snapshot predated install/config; the active session also retains its pre-update plugin snapshot.
+- **Fix criteria:** Installed 1.2.0 Doctor/resolver/self-audit pass, then trust `/hooks` and observe 1.2.0 in a fresh session.
+- **Proved by:** installed 1.2.0 plugin/cache/marketplace, resolver, Doctor, runtime self-audit and installed verifier `passed`; fresh-session UI observation `configured-not-verified`.
+- **Related files:** `scripts/Install-Pala.ps1`, `scripts/pala_installer_codex.py`, installed marketplace.
+- **Date:** 2026-08-15
+- **Status:** open (`configured-not-verified`)
+
+Historical incidents and public-release evidence remain in Git history and
+Failure Intelligence; only active failures are projected here.

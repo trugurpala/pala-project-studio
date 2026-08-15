@@ -1,48 +1,31 @@
 # Pala current status
 
-- Product version: `1.1.2` public release verified
-- Branch: `main`
-- Local release candidate: `passed`
-- Current work: `M75-T1` canonical `DONE`
-- Last published version: `1.1.2`
-- Public `v1.1.2`: `passed`
-- Final public-install canary: `passed`
-- Real remote deploy: `not-run`
-- Canonical authority: TaskContract → WorkflowStore → Pala Quality Engine
+- Public baseline: `v1.1.2` (`passed` historical release evidence).
+- Git basis: `codex/pala-1.2.0-release-ready`; source commit `f54883f`; remaining changes are canonical handoff documents.
+- Canonical authority: TaskContract -> WorkflowStore -> Pala Quality Engine.
+- Canonical active task: `M80-T5`; recovered lease, Quality is `blocked` at 7/8.
+- External acceptance: `M44-T1` fresh-session hook visibility is `configured-not-verified`.
 
-Public `1.1.0` remains immutable. Its clean-user canary found one patch blocker:
-explicit panel intent opened a legacy shell without the actual Control Center.
+## Current evidence
 
-The real no-project report path now renders the complete canonical Control
-Center. An isolated Codex candidate discovered the installed Pala skill, built a
-disposable professional sample, blocked an early closure, repaired it, and
-reached canonical `DONE` only after current Quality evidence.
+- Installed 1.2.0 plugin/cache/marketplace, resolver, Workbench Doctor, runtime self-audit and installed verifier: `passed` (fresh 2026-08-15 evidence).
+- Fresh 1.2.0 Codex session presence and `/hooks` UI trust: `configured-not-verified`; the current session loaded the pre-update 1.1.2 snapshot.
+- Required narrow gate: `passed` (128 tests, exit 0; 2026-08-15).
+- Current network-free source verifier: `passed` (763 tests, 5 expected skips, reproducible ZIP, exit 0; 2026-08-15).
+- M80-T2 continuity Quality: `passed` (12/12 required checks, trusted runner, exit 0; 2026-08-15).
+- M80-T3 host/process Quality: `passed` (7/7 required checks, supervised execution, exit 0; 2026-08-15).
+- M80-T4 live Control Center/privacy Quality: `passed` (10/10 required checks, supervised execution, exit 0; 2026-08-15).
+- M80-T5 local package/upgrade evidence: `passed` for 7/8 required checks; Windows symlink branch canary is `configured-not-verified`.
+- M76--M79 code is imported local WIP. Its historical `DONE`, count and release claims are `not-run` until current TaskContract and Quality evidence exist.
+- Remote `main` CI evidence applies only to public baseline; it does not validate imported WIP.
 
-The complete local release Quality matrix, deterministic build, fresh isolated
-candidate Doctor and installed Codex-native professional self-test passed. The
-exact verified ZIP was published as `v1.1.1` after green Windows, Linux, and
-installed-artifact CI, and public readback matched its sealed SHA-256.
+## Delivery truth
 
-The final clean public path installed and enabled the Codex plugin at `1.1.1`,
-but did not bootstrap the Pala bundle or required Workbench providers. Doctor
-therefore returned exit `2` with `healthy=false`. A second completely empty
-workspace also failed to route the exact `paneli aç` intent to Pala. The
-installed skill remained usable when explicitly selected, but reached package
-ready with CodeGraph absent and Semgrep blocked.
+The public `v1.1.2` release remains immutable history. The local 1.2.0 artifact,
+SBOM, inventory, self-verification and upgrade matrix are ready; M80-T5 stays
+incomplete until authorized Windows branch CI proves the required symlink canary.
+Source commit is `passed`; push and branch CI are `not-run` under granted authority.
+PR, tag, release and deploy remain outside authority and are `not-run`.
 
-M75 local acceptance now passes: fresh install bootstraps required Workbench,
-second ensure-current is mutation-free, all positive/negative host-routing
-cases are deterministic, and completion blocks then succeeds only after
-Doctor-backed repair. Canonical Quality is 24/24 with 76% coverage.
-
-Public `v1.1.2` readback matched the sealed SHA-256. A completely new public
-Git marketplace profile installed plugin, runtime, CodeGraph and Semgrep;
-Doctor was healthy and the second install was a fingerprint-stable no-op.
-Empty-workspace routing selected the installed Control Center skill exactly,
-and completion remained blocked until Pala Doctor repaired required CodeGraph.
-Canary profiles and processes were removed without changing the normal profile.
-
-M75-T1 is canonically complete: all nine acceptance criteria map to the current
-24/24 exit-code-0 Pala Quality evidence on `afc8c6e`, and the public-truth CI
-passed on Windows, Ubuntu and artifact smoke. Do not rewrite `v1.1.1` or start
-M72.
+Evidence labels: `passed` | `not-run` | `blocked` |
+`configured-not-verified`.

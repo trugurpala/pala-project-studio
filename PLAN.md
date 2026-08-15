@@ -1,19 +1,60 @@
 # Pala roadmap
 
-Pala `1.1.2` is the bounded M75 public-bootstrap safety patch. M72 remains out
-of scope.
+Public `v1.1.2` is immutable baseline evidence. Imported M76--M79 WIP has no
+current canonical completion evidence; M80 is the ordered release-ready path.
 
-#### M75-T1 — Public Bootstrap + Routing + Completion Safety
+#### M44-T1 — Fresh installed host confirmation
+- **Sahip ajan:** User + Codex/Pala
+- **Amaç:** Restart Codex once, trust `/hooks`, and observe Pala in a new session.
+- **Dosyalar:** installed marketplace, `DEBUGGING.md`, `STATUS.md`
+- **Bitti sayılır:** Doctor/resolver remain `passed`; UI observation is recorded.
+- **Bağımlılık:** none
+- **Kanıt:** `configured-not-verified`
 
-- **Sahip ajan:** Codex primary
-- **Amaç:** Fix natural bootstrap, deterministic Pala panel routing, true no-op, and capability-gated completion; prove the complete public `1.1.2` journey.
-- **Dosyalar:** installer/runtime/Workbench, product completion authority, Pala skills, focused tests, current release surfaces, sanitized M75 evidence
-- **Bitti sayılır:** AC-01–AC-09 map to current exit-code-0 Quality evidence; deterministic artifact and fresh public clean-user canary pass.
-- **Bağımlılık:** M74-T1 public canary blocker evidence
-- **Kanıt:** local candidate, public publication/readback, clean install/no-op,
-  native routing, completion block/repair and cleanup `passed`; canonical
-  TaskContract `DONE`
+#### M80-T1 — WIP reconciliation and local gate
+- **Sahip ajan:** Codex/Pala
+- **Amaç:** Preserve WIP, create canonical M80 tasks, reconcile imported claims, and make `verify.py` network-free.
+- **Dosyalar:** runtime task/Quality records, `scripts/verify.py`, root state documents
+- **Bitti sayılır:** recovery manifest, canonical claim/evidence chain, concise docs, and full local verifier exit 0.
+- **Bağımlılık:** M44-T1 observation may remain configured-not-verified
+- **Kanıt:** `passed`
 
-Historical milestone plans remain available in Git history and are not current
-product authority. Canonical active work lives in TaskContract/WorkflowStore;
-this file is a concise roadmap projection.
+#### M80-T2 — Continuity production wiring
+- **Sahip ajan:** Codex/Pala
+- **Amaç:** Wire snapshot, profile, receipt and history through safe SQLite-backed production context.
+- **Dosyalar:** continuity, state/history, report adapters and contracts
+- **Bitti sayılır:** end-to-end privacy, migration, rollback and linked-worktree checks exit 0.
+- **Bağımlılık:** M80-T1
+- **Kanıt:** `passed` (12/12 current required Quality checks)
+
+#### M80-T3 — Host and process execution wiring
+- **Sahip ajan:** Codex/Pala
+- **Amaç:** Connect observed host capabilities and owned process supervision to Quality execution.
+- **Dosyalar:** host broker, coordinator, process supervisor, Quality runner and contracts
+- **Bitti sayılır:** conflict, timeout, cancel, restart, orphan and foreign-process checks exit 0.
+- **Bağımlılık:** M80-T2
+- **Kanıt:** `passed` (7/7 current required Quality checks)
+
+#### M80-T4 — Live Control Center and privacy
+- **Sahip ajan:** Codex/Pala
+- **Amaç:** Render bounded live read models and close source secret-scan/E2E gaps.
+- **Dosyalar:** Control Center, read models, browser/security tests and CI browser setup
+- **Bitti sayılır:** escaped/private-safe offline keyboard and responsive generated-page checks exit 0.
+- **Bağımlılık:** M80-T3
+- **Kanıt:** `passed` (10/10 current required Quality checks)
+
+#### M80-T5 — 1.2.0 package and upgrade evidence
+- **Sahip ajan:** Codex/Pala
+- **Amaç:** Produce deterministic 1.2.0 identity, package and pinned upgrade/rollback evidence.
+- **Dosyalar:** identity, manifest, release/SBOM/inventory, package and upgrade tests
+- **Bitti sayılır:** clean-build SHA equality, Windows canary and pinned upgrade matrix exit 0.
+- **Bağımlılık:** M80-T4
+- **Kanıt:** source/installed/package 7/8 `passed`; commit `f54883f`; Windows branch symlink canary `configured-not-verified`
+
+#### M80-T6 — Release-quality handoff
+- **Sahip ajan:** Codex/Pala
+- **Amaç:** Run required local Quality and prepare branch-CI evidence without publishing.
+- **Dosyalar:** Quality mapping, ReleaseTruth, CI and release handoff
+- **Bitti sayılır:** every current required Quality check exits 0 and the authorized branch CI is bound to the final commit.
+- **Bağımlılık:** M80-T5
+- **Kanıt:** `not-run`
