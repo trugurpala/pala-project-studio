@@ -1,9 +1,21 @@
 const { test, expect } = require('@playwright/test');
-const { execFileSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { pathToFileURL } = require('url');
+
+function pythonLauncher(environment = process.env, platform = process.platform) {
+  if (environment.PALA_PYTHON) {
+    return { command: environment.PALA_PYTHON, args: [] };
+  }
+  if (platform === 'win32') {
+    return { command: 'py', args: ['-3'] };
+  }
+  return spawnSync('python3', ['--version'], { stdio: 'ignore' }).status === 0
+    ? { command: 'python3', args: [] }
+    : { command: 'python', args: [] };
+}
 
 test('generated Pala 1.2.0 Control Center passes real local browser checks', async ({ browser, context, page }) => {
   const consoleMessages = [];
@@ -31,10 +43,11 @@ test('generated Pala 1.2.0 Control Center passes real local browser checks', asy
     host_processes: { items: [{ status: 'not-run', authority: 'RuntimeObservations/read-only' }], can_complete: false },
     security_release: { items: [{ quality: 'blocked', delivery: 'not-assessed' }], findings: [privatePath], can_complete: false },
   };
+  const python = pythonLauncher();
   execFileSync(
-    'py',
+    python.command,
     [
-      '-3',
+      ...python.args,
       '-c',
       "import json,sys;from pathlib import Path;sys.path.insert(0,sys.argv[1]);from pala_owner_cockpit import render_control_center;snapshot=json.loads(sys.argv[4]);Path(sys.argv[3]).write_text('<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body>'+render_control_center(snapshot)+'</body></html>',encoding='utf-8')",
       path.join(repository, 'scripts'),

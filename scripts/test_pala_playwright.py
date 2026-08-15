@@ -20,6 +20,14 @@ from pala_playwright import (
 
 
 class PlaywrightProfileTests(unittest.TestCase):
+    def test_product_journey_uses_a_cross_platform_python_launcher(self) -> None:
+        journey = (SCRIPTS.parent / "tests" / "product-journey.spec.js").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("environment.PALA_PYTHON", journey)
+        self.assertIn("platform === 'win32'", journey)
+        self.assertIn("python3", journey)
+
     def test_exact_project_test_dependency_is_reused_without_mutation(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

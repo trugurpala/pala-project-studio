@@ -23,10 +23,14 @@
   upgrade matrix, then exposed three portability regressions (`blocked`).
 - M81-T1 fixed symlink archive validation, Playwright cache alignment and POSIX
   orphan detection; focused cross-platform tests and full source verifier `passed`.
+- Replacement run 31883582516 passed 7/8 jobs, including the required Windows
+  symlink canary and both OS verifies; its only failure was the Ubuntu-only `py`
+  launcher. Cross-platform launcher contracts, real E2E and the 764-test source
+  verifier now `passed`; the next branch CI is `not-run`.
 - M80-T6 final local Quality/branch-CI handoff: `not-run`.
 
 Branch/commit/push and branch-CI monitoring are authorized. PR, tag, public
 release and deploy remain unauthorized and `not-run`.
-Release-ready commits `f54883f` and `783b315` are on origin; remediation commit,
-replacement push and branch CI monitoring are the next actions.
+Release-ready commits through `2ae2c02` are on origin; launcher commit, push and
+final branch CI monitoring are the next actions.
 Labels: `passed` | `not-run` | `blocked` | `configured-not-verified`.

@@ -57,7 +57,7 @@ current canonical completion evidence; M80 is the ordered release-ready path.
 - **Dosyalar:** portable builder, process supervisor, Quality workflow, focused contracts and `DEBUGGING.md`
 - **Bitti sayılır:** focused Windows/Linux contracts, full local verifier and replacement branch CI all exit 0.
 - **Bağımlılık:** M80-T4; returns evidence to M80-T5
-- **Kanıt:** focused Windows/Linux/browser contracts and full local verifier `passed`; replacement branch CI `not-run`
+- **Kanıt:** run 31883582516 proved 7/8 jobs including required symlink and both OS verifies; POSIX launcher contracts, real browser journey and 764-test full verifier `passed`; replacement branch CI `not-run`
 
 #### M80-T6 — Release-quality handoff
 - **Sahip ajan:** Codex/Pala

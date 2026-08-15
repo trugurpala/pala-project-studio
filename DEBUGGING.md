@@ -11,10 +11,10 @@ Date, Status. Keep data sanitized and use canonical evidence labels.
 - **Symptoms:** Local canaries skip with WinError 1314; branch CI created links, installer rejection passed, but portable rejection raised no error.
 - **Root cause:** The portable test replaced `source_files`, bypassing its only link check; `archive_entries` trusted the injected list.
 - **Fix criteria:** The archive boundary independently rejects every link; both required Windows canaries and branch CI exit 0.
-- **Proved by:** run 31882450222 `blocked`; focused release suite 8/8 passed with one local privilege skip; replacement CI `not-run`.
+- **Proved by:** focused release suite 8/8 passed with one local privilege skip; required Windows canaries passed in run 31883582516.
 - **Related files:** installer/release-candidate tests and Quality workflow.
 - **Date:** 2026-08-15
-- **Status:** open (`configured-not-verified`)
+- **Status:** fixed (`passed`)
 
 ### INC-20260815-m80-root-document-budget
 
@@ -40,19 +40,19 @@ Date, Status. Keep data sanitized and use canonical evidence labels.
 - **Symptoms:** Branch browser job installed Chromium in the runner cache, then looked for it below `node_modules`.
 - **Root cause:** `PLAYWRIGHT_BROWSERS_PATH=0` was applied only when test config loaded, after the CI install step.
 - **Fix criteria:** Install and run share one explicit browser path; generated-page E2E exits 0.
-- **Proved by:** run 31882450222 `blocked`; CI contract and real local Chromium journey `passed`; replacement CI `not-run`.
+- **Proved by:** CI contract and real local Chromium journey `passed`; browser install step passed in run 31883582516.
 - **Related files:** Quality workflow and release-candidate CI contract.
 - **Date:** 2026-08-15
-- **Status:** open (`configured-not-verified`)
+- **Status:** fixed (`passed`)
 
 ### INC-20260815-m81-posix-orphan-observation
 - **Symptoms:** Ubuntu source verify classified a live descendant as `unexpected_exit`, not `orphan_detected`.
 - **Root cause:** POSIX active-process lookup returned zero as soon as the owned parent exited and never inspected its process group.
 - **Fix criteria:** Observe only the owned process group, detect its live descendant, and clean it without foreign PID targeting.
-- **Proved by:** run 31882450222 `blocked`; Linux Docker and Windows focused suites 11/11 `passed`; replacement CI `not-run`.
+- **Proved by:** Linux Docker and Windows focused suites 11/11, then Ubuntu verify in run 31883582516 `passed`.
 - **Related files:** process supervisor and focused contracts.
 - **Date:** 2026-08-15
-- **Status:** open (`configured-not-verified`)
+- **Status:** fixed (`passed`)
 
 ### INC-20260815-m81-roadmap-card-count
 - **Symptoms:** Full verifier failed self-audit after the explicit M81 remediation card raised the parsed roadmap total from seven to eight.
@@ -62,6 +62,15 @@ Date, Status. Keep data sanitized and use canonical evidence labels.
 - **Related files:** `PLAN.md`, `scripts/test_pala_self_audit.py`.
 - **Date:** 2026-08-15
 - **Status:** fixed (`passed`)
+
+### INC-20260815-m81-posix-python-launcher
+- **Symptoms:** Branch browser job installed Chromium successfully, then failed with `spawnSync py ENOENT` on Ubuntu.
+- **Root cause:** The real generated-page journey invoked the Windows-only `py -3` launcher.
+- **Fix criteria:** The journey selects a deterministic platform Python launcher and exits 0 on Ubuntu and Windows.
+- **Proved by:** run 31883582516 browser job 95009422370 `blocked`; launcher contracts 7/7, real journey 1/1 and full verifier 764 tests `passed`; replacement CI `not-run`.
+- **Related files:** generated-page Playwright journey and its launcher contract.
+- **Date:** 2026-08-15
+- **Status:** open (`configured-not-verified`)
 
 Historical incidents and public-release evidence remain in Git history and
 Failure Intelligence; only active failures are projected here.
